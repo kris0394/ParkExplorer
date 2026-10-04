@@ -11,6 +11,12 @@ export class WildlifeManager {
   public group: THREE.Group;
   public deerList: DeerEntity[] = [];
 
+  /** Task 8: exposed so the world can warn about distance and startled animals. */
+  public nearestDist = Infinity;
+  public nearestState = 'FEED';
+  public totalStartles = 0;
+  private prevStates = new Map<string, string>();
+
   private observationTimer = 0;
   private hasRewardedObservation = false;
 
@@ -76,6 +82,11 @@ export class WildlifeManager {
 
     for (const deer of this.deerList) {
       deer.update(dt, playerPos, isSprinting, isCrouching);
+      const before = this.prevStates.get(deer.id);
+      if (deer.state === 'FLEE' && before !== undefined && before !== 'FLEE') {
+        this.totalStartles += 1;
+      }
+      this.prevStates.set(deer.id, deer.state);
       const d = Math.hypot(deer.pos.x - playerPos.x, deer.pos.z - playerPos.z);
       if (d < nearestDist) {
         nearestDist = d;
@@ -83,6 +94,9 @@ export class WildlifeManager {
         nearestIsDoe = !deer.isBuck;
       }
     }
+
+    this.nearestDist = nearestDist;
+    this.nearestState = nearestState;
 
     // Responsible Observation Reward
     const isObservingCalmly = (nearestDist >= 5.0 && nearestDist <= 32.0 && nearestState === 'FEED') || isLookingThroughTelescope;
