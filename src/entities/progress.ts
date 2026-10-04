@@ -73,9 +73,9 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'canteen_standard',
     name: 'Stainless Steel Trail Canteen (1.0 L)',
     category: 'water',
-    price: 20,
+    price: 0,
     iconName: 'droplet',
-    shortDesc: 'Insulated double-wall canteen for mountain hydration.',
+    shortDesc: 'Starting gear: insulated double-wall canteen for mountain hydration.',
     capability: 'Carries 1.0 L of clean water. Press [X] to drink and restore hydration. Refillable at treated potable trailhead fountains.',
     tier: 1,
   },
@@ -114,16 +114,16 @@ export const SHOP_ITEMS: ShopItem[] = [
     price: 30,
     iconName: 'heart-pulse',
     shortDesc: 'Compact backcountry medical kit with electrolyte packets.',
-    capability: 'Doubles stamina regeneration rate when resting or walking, reducing mountain climb fatigue.',
+    capability: 'Doubles stamina recovery when resting or walking, and electrolytes cut water loss while hiking by 20%.',
   },
   {
     id: 'bear_bell_whistle',
-    name: 'Trail Safety Bell & Rescue Whistle',
+    name: 'Emergency Rescue Whistle',
     category: 'safety',
     price: 15,
     iconName: 'bell',
-    shortDesc: 'Acoustic trail chime and pealess 115dB emergency whistle.',
-    capability: 'Gentle cadence alerts resting wildlife so you don’t startle them on blind corners, preventing sudden alert/flee reactions.',
+    shortDesc: 'Loud pealess emergency whistle for signalling rescuers (three blasts is the international distress signal).',
+    capability: 'Lets you signal for help if you get into trouble, so the slowdown from running low on water is cut in half. It is a safety tool only: noise does not keep wildlife away, and you should never use it to chase or scare animals.',
   },
 ];
 
@@ -230,9 +230,12 @@ function migrateSaveData(raw: unknown): SaveData {
   if (!raw || typeof raw !== 'object') return def;
   const o = raw as Record<string, unknown>;
 
-  const owned = (o.ownedEquipment && typeof o.ownedEquipment === 'object')
-    ? (o.ownedEquipment as Record<string, boolean>)
-    : { canteen_standard: true };
+  const owned: Record<string, boolean> = {
+    ...((o.ownedEquipment && typeof o.ownedEquipment === 'object')
+      ? (o.ownedEquipment as Record<string, boolean>)
+      : {}),
+    canteen_standard: true, // starting gear is always owned
+  };
 
   let maxW = 1.0;
   if (owned.canteen_pro) maxW = 2.5;
@@ -486,26 +489,32 @@ class ProgressStore {
   }
 
   public refillWater(stationName: string = 'Trailhead Water Station'): { success: boolean; message: string } {
+    // Already full: do nothing (stops repeat-clicking from doing anything)
+    if (this.snapshot.data.waterLiters >= this.snapshot.data.maxWaterLiters - 0.01) {
+      return { success: false, message: 'Your canteen is already full.' };
+    }
     const d = structuredClone(this.snapshot.data);
     d.waterLiters = d.maxWaterLiters;
-    d.hydration = 100;
+    // Refilling the canteen does not hydrate you; you still need to drink [X].
 
     const toast = this.award(
       d,
       `Refilled at ${stationName}`,
-      `Filled canteen with ${d.maxWaterLiters.toFixed(1)} L of treated potable water. Safe and cold!`,
+      `Filled canteen with ${d.maxWaterLiters.toFixed(1)} L of treated potable water.`,
       0,
-      1,
+      0,
       true
     );
     this.commit(d, toast);
-    return { success: true, message: `Refilled to ${d.maxWaterLiters.toFixed(1)} L clean water!` };
+    return { success: true, message: `Canteen refilled to ${d.maxWaterLiters.toFixed(1)} L. Press [X] to drink.` };
   }
 
+  private hydrationNotifyTimer = 0;
+
   public updateHydrationDrain(dt: number, isSprinting: boolean, isMoving: boolean): void {
-    const d = structuredClone(this.snapshot.data);
-    const hasBladder = Boolean(d.ownedEquipment.canteen_pro);
-    const hasElectrolytes = Boolean(d.ownedEquipment.first_aid);
+    const cur = this.snapshot.data;
+    const hasBladder = Boolean(cur.ownedEquipment.canteen_pro);
+    const hasElectrolytes = Boolean(cur.ownedEquipment.first_aid);
 
     let drainRate = 0.4; // % per minute resting
     if (isMoving) drainRate = 1.6;
@@ -515,12 +524,17 @@ class ProgressStore {
     if (hasElectrolytes) drainRate *= 0.8;
 
     const drain = (drainRate / 60) * dt;
-    d.hydration = Math.max(0, d.hydration - drain);
+    // Change the number in place (cheap) instead of copying the whole save every frame
+    cur.hydration = Math.max(0, cur.hydration - drain);
 
-    // Save periodically
-    this.snapshot = { ...this.snapshot, data: d };
-    this.scheduleSave();
-    this.notify();
+    // Tell the screen and save to disk only about once per second
+    this.hydrationNotifyTimer += dt;
+    if (this.hydrationNotifyTimer >= 1) {
+      this.hydrationNotifyTimer = 0;
+      this.snapshot = { ...this.snapshot, data: { ...cur } };
+      this.scheduleSave();
+      this.notify();
+    }
   }
 
   public visitPark(parkId: string, parkName: string): void {
