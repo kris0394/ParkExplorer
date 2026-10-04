@@ -107,6 +107,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
   const isLookingThroughTelescopeRef = useRef(false);
   const isNearTelescopeRef = useRef(false);
   const isNearWaterStationRef = useRef(false);
+  const lowWaterWarnedRef = useRef(false);
   const isBinocularsActiveRef = useRef(false);
   const binocularsFovRef = useRef(17.5);
   const isCameraActiveRef = useRef(false);
@@ -1093,10 +1094,24 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
 
       // First-aid kit & electrolytes capability (Task 7): doubles recovery rate
       const hasFirstAid = progress.isOwned('first_aid');
-      const regenBoost = hasFirstAid ? 2.0 : 1.0;
+      let regenBoost = hasFirstAid ? 2.0 : 1.0;
+
+      // Dehydration: below 15% hydration you tire faster and recover slower.
+      // The rescue whistle (signalling for help) halves the penalty.
+      const currentHydration = progress.getSnapshot().data.hydration;
+      const isDehydrated = currentHydration < 15;
+      const hasWhistle = progress.isOwned('bear_bell_whistle');
+      const dehydratedDrain = isDehydrated ? (hasWhistle ? 1.25 : 1.5) : 1.0;
+      if (isDehydrated) regenBoost *= hasWhistle ? 0.75 : 0.5;
+      if (isDehydrated && !lowWaterWarnedRef.current) {
+        lowWaterWarnedRef.current = true;
+        showToast('Low on water: you tire faster. Drink [X] or refill at a fountain.');
+      } else if (currentHydration >= 30) {
+        lowWaterWarnedRef.current = false;
+      }
 
       if (sprinting) {
-        p.stamina -= WORLD_SETTINGS.staminaDrain * dt;
+        p.stamina -= WORLD_SETTINGS.staminaDrain * dehydratedDrain * dt;
         p.regenTimer = WORLD_SETTINGS.staminaRegenDelay;
         if (p.stamina <= 0) {
           p.stamina = 0;
