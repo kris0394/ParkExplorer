@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getSeasonDef } from '../data/seasons.ts';
 import * as THREE from 'three';
 import { heightAt, getRiverDistance } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
@@ -327,11 +328,14 @@ export class DeerEntity {
     }
 
     const roll = Math.random();
+    // Season shifts how often deer wander (winter: conserve energy, autumn: restless)
+    const wander = getSeasonDef().deer.wanderChance;
+    const idleEnd = 1 - wander;
     if (roll < 0.70) {
       // Primary state: feeding / nibbling grass
       this.state = 'FEED';
       this.stateTimer = 7.0 + Math.random() * 8.0;
-    } else if (roll < 0.88) {
+    } else if (roll < idleEnd) {
       // Standing calmly, looking around meadow
       this.state = 'IDLE';
       this.stateTimer = 3.5 + Math.random() * 4.0;
@@ -356,7 +360,7 @@ export class DeerEntity {
     // When visitors are on trails or walking quietly, deer tolerate people down to 3.8m (2.2m if crouching!)
     // Only if the player sprints / rushes right at them do they get startled.
     const fleeDistance = isPlayerSprinting ? 10.0 : isPlayerCrouching ? 2.2 : 3.8;
-    const alertDistance = isPlayerSprinting ? 18.0 : isPlayerCrouching ? 4.5 : 7.5;
+    const alertDistance = (isPlayerSprinting ? 18.0 : isPlayerCrouching ? 4.5 : 7.5) * getSeasonDef().deer.alertMult;
 
     if (distToPlayer < fleeDistance) {
       if (this.state !== 'FLEE') {
