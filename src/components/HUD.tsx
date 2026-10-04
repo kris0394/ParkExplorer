@@ -665,7 +665,9 @@ export const HUD: React.FC<HUDProps> = ({
               <span className="font-semibold tracking-wider text-cyan-300 uppercase text-[10px] flex items-center gap-1">
                 <Droplet size={11} /> Hydration
               </span>
-              <span className="font-mono text-xs text-stone-300">{Math.round(hydration)}%</span>
+              <span className={`font-mono text-xs ${hydration < 15 ? 'text-rose-300' : 'text-stone-300'}`}>
+                {hydration < 15 ? 'Low: slowing you down · ' : ''}{Math.round(hydration)}%
+              </span>
             </div>
             <div className="w-full h-1.5 rounded-full bg-stone-800/90 overflow-hidden border border-stone-700/40 mb-1.5">
               <div
