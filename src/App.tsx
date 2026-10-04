@@ -166,7 +166,7 @@ export default function App() {
               </button>
 
               <a
-                href="/park-explorer.html"
+                href="./park-explorer.html"
                 download="park-explorer.html"
                 className="flex items-center justify-center gap-1.5 py-1.5 px-4 rounded-xl bg-stone-800/90 hover:bg-stone-700 text-amber-300 font-sans text-xs font-semibold border border-stone-700/60 transition cursor-pointer shadow"
                 title="Download self-contained offline HTML file"
