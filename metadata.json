@@ -1,0 +1,6 @@
+{
+  "name": "Park Explorer - Valley, River & Summit Trail",
+  "description": "An immersive 3D nature exploration game featuring winding river valleys, animated water shaders, wooden footbridges, hillside spiral trails, dynamic instanced grass, boulders, and a scenic summit overlook.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
