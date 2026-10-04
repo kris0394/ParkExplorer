@@ -43,7 +43,7 @@ import {
   createLitterGroup,
   createZoneMarkersGroup,
   pushOutOfClosedZones,
-} from '../entities/rangerRules.ts';
+} from '../entities/rangerRules';
 import { mulberry32, sstep, fbm, clamp } from '../utils/noise.ts';
 import { ParkDefinition, AVAILABLE_PARKS } from '../data/parks.ts';
 
