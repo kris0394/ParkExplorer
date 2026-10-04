@@ -33,5 +33,7 @@ html = html.replace(/<script[^>]+type="module"[^>]+src="(\.?\/)?assets\/([^">]+)
 
 const outPath = path.resolve('park-explorer.html');
 fs.writeFileSync(outPath, html, 'utf8');
+// Also place a copy in dist so the GitHub Pages site can offer it as a download
+fs.writeFileSync(path.join(distDir, 'park-explorer.html'), html, 'utf8');
 
 console.log(`Generated standalone ${outPath} (${(html.length / 1024 / 1024).toFixed(2)} MB)`);
