@@ -33,12 +33,14 @@ import { HUD } from './HUD.tsx';
 import { CameraViewfinder, PhotoResultCard, PhotoGalleryModal } from './PhotoUI.tsx';
 import { JournalModal, ProgressBadge, ActivityToastFeed } from './JournalUI.tsx';
 import { HandheldCompassUI } from './HandheldCompassUI.tsx';
+import { getSeasonDef } from '../data/seasons.ts';
 import { RangerNotices, RangerNoticeState, EMPTY_RANGER_NOTICE } from './RangerNotices.tsx';
 import {
   SAFE_DISTANCE_M,
   RangerZone,
   LitterSpot,
   getZonesForPark,
+  findClosedZoneAt,
   buildLitterSpots,
   createLitterGroup,
   createZoneMarkersGroup,
@@ -428,6 +430,11 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
     if (isLookingThroughTelescopeRef.current) {
       toggleTelescope();
     }
+    const closedHere = findClosedZoneAt(x, z, getZonesForPark(park.id));
+    if (closedHere) {
+      showToast(`${closedHere.name} is closed right now`);
+      return;
+    }
     playerRef.current.pos.set(x, y, z);
     playerRef.current.groundY = y;
     playerRef.current.yaw = targetYaw;
@@ -572,6 +579,8 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       const cRiverbank = new THREE.Color(tc.riverbank);
       const cRock = new THREE.Color(tc.summitRock);
       const cMulch = new THREE.Color(0x284724);
+      const seasonDef = getSeasonDef();
+      const cSeason = new THREE.Color(seasonDef.groundColor);
       const col = new THREE.Color();
 
       for (let i = 0; i < pos.count; i++) {
@@ -610,6 +619,18 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         if (y > 20.0) {
           const tSummit = sstep(20.0, park.terrain.mountain.height, y);
           col.lerp(cRock, tSummit * 0.75);
+        }
+
+        // Task 10: season tint (autumn warmth, spring freshness, winter snow)
+        if (seasonDef.groundAmount > 0) {
+          let amt = seasonDef.groundAmount;
+          if (seasonDef.groundIsSnow) {
+            // Snow settles on flatter ground and builds up with height; none in the river
+            amt *= 0.35 + 0.65 * sstep(0.7, 0.92, ny);
+            amt = Math.min(0.95, amt + Math.max(0, y) * 0.006);
+            if (park.water.hasRiver && rDist < park.water.halfWidth + 0.5) amt = 0;
+          }
+          col.lerp(cSeason, amt);
         }
 
         const mottling = 0.86 + n2 * 0.18 + n3 * 0.08;
