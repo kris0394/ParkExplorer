@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
-import { WORLD_SETTINGS } from '../types/nature.ts';
+import { WORLD_SETTINGS } from '../types/nature';
 import {
   heightAt,
   isPointOnBridge,
