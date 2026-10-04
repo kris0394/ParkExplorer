@@ -15,6 +15,7 @@ import {
 } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
 import { getActivePark } from '../data/parks.ts';
+import { getSeasonDef } from '../data/seasons.ts';
 
 const CELL = 8;
 const treeGrid = new Map<string, { x: number; z: number; r: number }[]>();
@@ -302,6 +303,9 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
   const treeCount = park.vegetation.treeCount;
   const shrubCount = park.vegetation.shrubCount;
   const weightsMultiplier = park.vegetation.speciesWeights;
+  const season = getSeasonDef();
+  const DECIDUOUS = ['broadleaf', 'oak', 'birch', 'poplar'];
+  const SNOW_WHITE = new THREE.Color(0xeef3f6);
 
   const SPECIES: Record<string, TreeSpeciesDef> = {
     conifer: {
@@ -451,13 +455,22 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
 
     let color: THREE.Color | null = null;
     if (sp.palette) {
+      const isDeciduous = DECIDUOUS.includes(kind);
       let hex: number;
-      if (sp.autumn && rand() < 0.07) {
-        hex = sp.autumn[Math.floor(rand() * sp.autumn.length)];
+      if (isDeciduous && rand() < season.accentChance) {
+        // Autumn colour or spring blossom
+        const accents = season.accentPalette ?? sp.autumn ?? [0xd9b83a, 0xc9a22e];
+        hex = accents[Math.floor(rand() * accents.length)];
+      } else if (isDeciduous && season.leafPalette) {
+        hex = season.leafPalette[Math.floor(rand() * season.leafPalette.length)];
       } else {
         hex = sp.palette[Math.floor(rand() * sp.palette.length)];
       }
       color = new THREE.Color(hex).multiplyScalar(between(sp.tint));
+      if (!isDeciduous && season.coniferSnow > 0) {
+        // Snow frosting on evergreens
+        color.lerp(SNOW_WHITE, season.coniferSnow * (0.75 + rand() * 0.25));
+      }
     }
 
     variant.list.push({ matrix: dummy.matrix.clone(), color });
@@ -472,7 +485,9 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
   for (const name in SPECIES) {
     for (const v of SPECIES[name].variants) {
       if (v.list.length === 0) continue;
-      if (v.canopy) {
+      // Winter: deciduous trees have dropped their leaves, so no canopy
+      const leafless = season.leaves === 'bare' && DECIDUOUS.includes(name);
+      if (v.canopy && !leafless) {
         const canopy = new THREE.InstancedMesh(
           v.canopy,
           new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
@@ -504,7 +519,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
   }
 
   // --- Place low bushes / shrubs ---
-  const shrubPalette = [0x3e6b3a, 0x557a35, 0x6f8a3a, 0x2f5a42, 0x7f9a3c];
+  const shrubPalette = season.shrubPalette;
   const shrubs: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
   let sPlaced = 0;
   let sTries = 0;
