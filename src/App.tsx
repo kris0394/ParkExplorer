@@ -147,12 +147,30 @@ export default function App() {
                 <span className="text-stone-300 text-[11px] truncate">Drink / Refill Canteen</span>
               </div>
               <div className="flex items-center gap-1.5">
+                <kbd className="font-mono text-[9px] bg-stone-800 text-amber-300 px-1.5 py-0.5 rounded border border-stone-700 shrink-0">Q</kbd>
+                <span className="text-stone-300 text-[11px] truncate">Pick up litter</span>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <kbd className="font-mono text-[9px] bg-stone-800 text-amber-300 px-1.5 py-0.5 rounded border border-stone-700 shrink-0">J / G</kbd>
                 <span className="text-stone-300 text-[11px] truncate">Journal & Shop / Photos</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="font-mono text-[9px] bg-stone-800 text-amber-300 px-1.5 py-0.5 rounded border border-stone-700 shrink-0">E / Tab</kbd>
                 <span className="text-stone-300 text-[11px] truncate">Telescope / Free Mouse</span>
+              </div>
+            </div>
+
+            {/* Park Rules (game version) */}
+            <div className="text-left text-[11px] mb-4 font-sans bg-emerald-950/40 p-3 rounded-2xl border border-emerald-800/50 text-stone-300 leading-relaxed">
+              <div className="font-semibold text-emerald-300 mb-1">Park Rules (game version)</div>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>Stay at least 23 m (25 yards) from wildlife. Zoom in, don&apos;t walk closer.</li>
+                <li>Move slowly near animals. Rushing them costs Stewardship.</li>
+                <li>Respect closed areas, and stay on the trail in fragile areas.</li>
+                <li>Pick up litter and pack it out. Leave no trace.</li>
+              </ul>
+              <div className="mt-1.5 text-[10px] text-stone-500">
+                These are game rules, not official NPS rules. Real parks differ, so always check each park&apos;s own rules.
               </div>
             </div>
 
