@@ -16,7 +16,8 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 5 | Camera, photography, scoring & gallery | Done | Rule of thirds, lighting, safe distance rewards |
 | 6 | Field journal, Park Credits, Stewardship rank & persistence | Done | LocalStorage + IndexedDB backup |
 | 7 | Equipment shop, water/hydration, equippable handheld compass & topo map | **Done** | Equippable compass [K], canteen hydration [X], potable stations [R], outfitter gear |
-| 8 | Responsible recreation rules & wildlife distance alerts | Next | Trail warnings, educational closures |
+| 8 | Responsible recreation rules: wildlife distance alerts, closed and fragile areas, litter | **Done** | Distance banner [23 m], closed-area rope and sign, fragile-area warning, litter pick-up [Q] |
+| 9 | Day/night cycle and weather | Next | Wind, birds, insects, seasons follow |
 
 ---
 
@@ -31,6 +32,7 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | **G** | View wildlife photo gallery |
 | **K** | Draw / stow handheld liquid-damped compass & topo map |
 | **X / R** | Drink from water canteen / Refill at treated potable water station |
+| **Q** | Pick up litter when prompted (pack it out) |
 | **J** | Field journal (Overview, Ranger Gear Shop, Wildlife, Places, Activity Log) |
 | **E** | Summit observation telescope (full 360° pan and pitch into valley) |
 | **C** | Crouch / low camera (stealth approach & camera stabilization) |
@@ -49,3 +51,21 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 1. **Explore Without Harming Nature:** Wildlife is never an adversary or target. Players are rewarded with credits and stewardship for keeping respectful distances (25 yards / 23 m) and watching quietly.
 2. **Real Backcountry Knowledge:** Untreated river water carries risk warnings; hydration must be maintained with clean canteen water or treated potable stations.
 3. **Equippable Gear with Real Capabilities:** Outfitter gear (ED glass, telephoto stabilization, electrolyte kits) provides tangible gameplay benefits.
+
+---
+
+## 5. Task 8: Responsible-Recreation Rules (how it works)
+All of this is GAME content, not official NPS rules, closures or alerts. Real parks differ.
+
+- **Wildlife distance:** within 23 m (25 yards) of an animal, a banner explains the rule and tells you to back away and zoom instead. If the animal is alert, the message changes to stay calm and back away. The banner starts 15 seconds after you enter a park.
+- **Startling wildlife:** rushing or crowding an animal until it flees costs 1 Stewardship (at most once per 20 seconds, never below zero) with an explanation.
+- **Closed areas:** a roped-off zone with a sign. You cannot enter it, and the reason is shown. No penalty.
+- **Fragile areas:** a roped zone you can enter. A warning shows on approach. Staying off-trail inside it for 6 seconds costs 1 Stewardship (at most once per 45 seconds) with an explanation.
+- **Litter:** 5 pieces of trash beside the trails in each park. Press Q within about 2.5 m to pack one out: +3 Credits and +1 Stewardship. Positions are fixed and each piece pays only once per save, so it cannot be farmed.
+- Zones and litter are defined in `src/entities/rangerRules.ts`. Numbers are in `REWARDS` in `src/entities/progress.ts`.
+
+## 6. Known limitations
+- Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
+- The deer spawn within 23 m of the start point, so the distance banner appears early on the first stretch of trail. This is intentional teaching, but may need tuning.
+- Trees and rocks do not block binocular or camera views.
+- Only one species (white-tailed deer). Desktop browsers only.
