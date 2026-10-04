@@ -33,6 +33,17 @@ import { HUD } from './HUD.tsx';
 import { CameraViewfinder, PhotoResultCard, PhotoGalleryModal } from './PhotoUI.tsx';
 import { JournalModal, ProgressBadge, ActivityToastFeed } from './JournalUI.tsx';
 import { HandheldCompassUI } from './HandheldCompassUI.tsx';
+import { RangerNotices, RangerNoticeState, EMPTY_RANGER_NOTICE } from './RangerNotices.tsx';
+import {
+  SAFE_DISTANCE_M,
+  RangerZone,
+  LitterSpot,
+  getZonesForPark,
+  buildLitterSpots,
+  createLitterGroup,
+  createZoneMarkersGroup,
+  pushOutOfClosedZones,
+} from '../entities/rangerRules.ts';
 import { mulberry32, sstep, fbm, clamp } from '../utils/noise.ts';
 import { ParkDefinition, AVAILABLE_PARKS } from '../data/parks.ts';
 
@@ -100,6 +111,9 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
   const [showHelp, setShowHelp] = useState(false);
   const [isCursorLocked, setIsCursorLocked] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [rangerNotice, setRangerNotice] = useState<RangerNoticeState>(EMPTY_RANGER_NOTICE);
+  const zoneNoticeRef = useRef<RangerNoticeState['zone']>(null);
+  const nearLitterRef = useRef<LitterSpot | null>(null);
 
   // Refs for animation loop
   const timeOfDayRef = useRef<'day' | 'sunset' | 'dawn' | 'twilight'>('day');
@@ -652,6 +666,23 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
     const wildlife = new WildlifeManager(scene);
     wildlifeRef.current = wildlife;
 
+    // 15b. Task 8: responsible-recreation rules (closed areas, fragile areas, litter)
+    const sceneStartMs = performance.now();
+    const zones: RangerZone[] = getZonesForPark(park.id);
+    scene.add(createZoneMarkersGroup(zones, park));
+    const litterSpots: LitterSpot[] = buildLitterSpots(park);
+    const litterGroup = createLitterGroup(
+      litterSpots,
+      progress.getSnapshot().data.litterCollected,
+      park.id
+    );
+    scene.add(litterGroup);
+    let sensitiveTimer = 0;
+    let sensitiveCooldownUntil = 0;
+    let lastStartleTotal = 0;
+    let lastStartlePenaltyMs = 0;
+    let rangerKey = '';
+
     // 16. Binoculars Logic
     const binocularSystem = new BinocularsSystem((sighting, isNewSpecies) => {
       setSightingsCount(prev => prev + 1);
@@ -848,6 +879,19 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       // Key K: Toggle Handheld Compass (Task 7)
       if (e.code === 'KeyK') {
         toggleCompass();
+        return;
+      }
+
+      // Key Q: Pick up litter (Task 8)
+      if (e.code === 'KeyQ') {
+        const spot = nearLitterRef.current;
+        if (spot) {
+          const entry = progress.collectLitter(park.id, spot.id, spot.label);
+          const obj = litterGroup.getObjectByName(`litter:${spot.id}`);
+          if (obj) litterGroup.remove(obj);
+          nearLitterRef.current = null;
+          if (!entry) showToast('Already picked up');
+        }
         return;
       }
 
@@ -1167,6 +1211,44 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       pushOutOfTrees(p.pos);
       pushOutOfRocks(p.pos);
 
+      // Task 8: closed areas (hard rule), fragile areas (soft rule), litter pick-up range
+      {
+        const closedHit = pushOutOfClosedZones(p.pos, zones);
+        let zoneNotice: RangerNoticeState['zone'] = null;
+        let sensitiveInside: RangerZone | null = null;
+        for (const z of zones) {
+          const zd = Math.hypot(p.pos.x - z.x, p.pos.z - z.z);
+          if (z.kind === 'sensitive' && zd < z.radius) sensitiveInside = z;
+          const near = zd < z.radius + (z.kind === 'closed' ? 7 : 5);
+          if (near || (closedHit && closedHit.id === z.id)) {
+            zoneNotice = { name: z.name, reason: z.reason, kind: z.kind, inside: zd < z.radius };
+          }
+        }
+        if (sensitiveInside) {
+          sensitiveTimer += dt;
+          if (sensitiveTimer >= 6 && performance.now() > sensitiveCooldownUntil) {
+            sensitiveCooldownUntil = performance.now() + 45000;
+            sensitiveTimer = 0;
+            progress.recordFragileAreaDamage(sensitiveInside.name, sensitiveInside.reason);
+          }
+        } else {
+          sensitiveTimer = 0;
+        }
+        zoneNoticeRef.current = zoneNotice;
+
+        let nearSpot: LitterSpot | null = null;
+        let bestD = 2.6;
+        for (const s of litterSpots) {
+          if (!litterGroup.getObjectByName(`litter:${s.id}`)) continue;
+          const ld = Math.hypot(p.pos.x - s.x, p.pos.z - s.z);
+          if (ld < bestD) {
+            bestD = ld;
+            nearSpot = s;
+          }
+        }
+        nearLitterRef.current = nearSpot;
+      }
+
       const targetGround = getWalkableHeight(p.pos.x, p.pos.z);
       p.groundY += (targetGround - p.groundY) * (1 - Math.exp(-14 * dt));
 
@@ -1371,6 +1453,42 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         isLookingThroughTelescopeRef.current,
         showToast
       );
+
+      // Task 8: startled wildlife penalty and on-screen notices
+      if (wildlife.totalStartles > lastStartleTotal) {
+        lastStartleTotal = wildlife.totalStartles;
+        const nowMs = performance.now();
+        if (nowMs - sceneStartMs > 5000 && nowMs - lastStartlePenaltyMs > 20000) {
+          lastStartlePenaltyMs = nowMs;
+          progress.recordStartle();
+        }
+      }
+      {
+        const ageMs = performance.now() - sceneStartMs;
+        const showWildlife =
+          !isLookingThroughTelescopeRef.current && wildlife.nearestDist < SAFE_DISTANCE_M && ageMs > 15000;
+        const lit = nearLitterRef.current;
+        const next: RangerNoticeState = {
+          wildlife: showWildlife
+            ? {
+                dist: wildlife.nearestDist,
+                alert: wildlife.nearestState === 'ALERT' || wildlife.nearestState === 'FLEE',
+              }
+            : null,
+          zone: zoneNoticeRef.current,
+          litter: lit ? { label: lit.label, tip: lit.tip } : null,
+        };
+        const zn = next.zone;
+        const key = [
+          next.wildlife ? `${Math.round(next.wildlife.dist)}${next.wildlife.alert ? 'a' : 'c'}` : '-',
+          zn ? `${zn.name}${zn.kind}${zn.inside}` : '-',
+          next.litter ? next.litter.label : '-',
+        ].join('|');
+        if (key !== rangerKey) {
+          rangerKey = key;
+          setRangerNotice(next);
+        }
+      }
 
       camera.updateMatrixWorld(true);
 
@@ -1594,6 +1712,9 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         />
       )}
 
+      {/* Task 8: wildlife distance, closed/fragile area and litter notices */}
+      {!photoMode && !isLookingThroughTelescope && <RangerNotices notice={rangerNotice} />}
+
       {/* Floating Center Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-stone-900/85 backdrop-blur-md text-amber-200 border border-stone-700/60 px-4 py-2 rounded-xl text-xs font-semibold shadow-2xl tracking-wide animate-fade-in">
@@ -1639,6 +1760,11 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
                 <span className="font-mono text-amber-300 font-semibold">R</span>
               </div>
               <div className="text-stone-300">Drink Water / Refill Canteen</div>
+
+              <div>
+                <span className="font-mono text-amber-300 font-semibold">Q</span>
+              </div>
+              <div className="text-stone-300">Pick Up Litter</div>
 
               <div>
                 <span className="font-mono text-amber-300 font-semibold">J</span>
