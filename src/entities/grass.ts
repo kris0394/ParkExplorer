@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getSeasonDef } from '../data/seasons.ts';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { mulberry32, sstep, fbm } from '../utils/noise.ts';
@@ -132,6 +133,9 @@ export class GrassSystem {
       side: THREE.DoubleSide,
       flatShading: true,
     });
+    // Season tint (spring lush, autumn golden, winter frosted)
+    const gt = getSeasonDef().grassTint;
+    mat.color.setRGB(gt[0], gt[1], gt[2]);
 
     this.mesh = new THREE.InstancedMesh(geo, mat, GRASS_COUNT);
     this.mesh.frustumCulled = false;
