@@ -456,14 +456,18 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
     playerRef.current.vel.set(0, 0);
 
     // 1. Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, WORLD_SETTINGS.maxPixelRatio));
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    container.appendChild(renderer.domElement);
+   const renderer = new THREE.WebGLRenderer({ 
+   antialias: true, 
+   powerPreference: 'high-performance',
+   preserveDrawingBuffer: true 
+   });
+   renderer.setPixelRatio(Math.min(window.devicePixelRatio, WORLD_SETTINGS.maxPixelRatio));
+   renderer.setSize(container.clientWidth, container.clientHeight);
+   renderer.toneMapping = THREE.ACESFilmicToneMapping;
+   renderer.toneMappingExposure = 1.1;
+   renderer.shadowMap.enabled = true;
+   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+   container.appendChild(renderer.domElement);
 
     // 2. Scene & Fog from ParkDefinition
     const FOG_COLOR = new THREE.Color(park.atmosphere.fogColor);
