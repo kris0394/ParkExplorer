@@ -3,7 +3,8 @@ name: Build and Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Runs automatically whenever you push or sync code to main
+      - main
+      - master  # Supports both main and master branches
 
 permissions:
   contents: read
@@ -24,11 +25,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build project
         run: npm run build
@@ -36,7 +36,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'  # Output folder from Vite
+          path: './dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
