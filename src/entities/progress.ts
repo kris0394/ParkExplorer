@@ -148,7 +148,11 @@ export interface SaveData {
     tooClose: number;
     bestPhotoScore: number;
     waterDrunk: number;
+    litterCollected: number;
+    startles: number;
+    fragileAreaDamage: number;
   };
+  litterCollected: Record<string, number>; // key: parkId:litterId (each piece pays once)
   activity: ActivityEntry[];
   nextActivityId: number;
 }
@@ -161,6 +165,10 @@ export const REWARDS = {
   photoCreditsDivisor: 4,
   goodPhotoScore: 70,
   tooClosePenalty: 2,
+  litterCredits: 3,
+  litterStewardship: 1,
+  startlePenalty: 1,
+  fragileAreaPenalty: 1,
 };
 
 export const STEWARDSHIP_RANKS = [
@@ -219,7 +227,11 @@ function defaultSaveData(): SaveData {
       tooClose: 0,
       bestPhotoScore: 0,
       waterDrunk: 0,
+      litterCollected: 0,
+      startles: 0,
+      fragileAreaDamage: 0,
     },
+    litterCollected: {},
     activity: [],
     nextActivityId: 1,
   };
@@ -260,6 +272,9 @@ function migrateSaveData(raw: unknown): SaveData {
       ...def.stats,
       ...((o.stats as Record<string, number>) ?? {}),
     },
+    litterCollected: (o.litterCollected && typeof o.litterCollected === 'object')
+      ? (o.litterCollected as Record<string, number>)
+      : {},
     activity: Array.isArray(o.activity) ? o.activity.slice(0, 50) : [],
     nextActivityId: Number(o.nextActivityId) || 1,
   };
@@ -535,6 +550,57 @@ class ProgressStore {
       this.scheduleSave();
       this.notify();
     }
+  }
+
+  /** Task 8: picking up litter pays once per piece (positions are fixed, so it cannot be farmed). */
+  public collectLitter(parkId: string, litterId: string, label: string): ActivityEntry | null {
+    const key = `${parkId}:${litterId}`;
+    if (this.snapshot.data.litterCollected[key]) return null;
+    const d = structuredClone(this.snapshot.data);
+    d.litterCollected[key] = Date.now();
+    d.stats.litterCollected = (d.stats.litterCollected || 0) + 1;
+    const toast = this.award(
+      d,
+      `Packed Out: ${label}`,
+      'Litter carried out of the park. Leave no trace.',
+      REWARDS.litterCredits,
+      REWARDS.litterStewardship,
+      true
+    );
+    this.commit(d, toast);
+    return toast;
+  }
+
+  /** Task 8: you startled wildlife by rushing or getting very close. Small penalty, teaches why. */
+  public recordStartle(): ActivityEntry {
+    const d = structuredClone(this.snapshot.data);
+    d.stats.startles = (d.stats.startles || 0) + 1;
+    const toast = this.award(
+      d,
+      'You startled the wildlife',
+      'Running or crowding animals makes them flee, which burns energy they need. Move slowly and keep your distance.',
+      0,
+      -REWARDS.startlePenalty,
+      false
+    );
+    this.commit(d, toast);
+    return toast;
+  }
+
+  /** Task 8: lingering off-trail in a fragile area. Small penalty, teaches why. */
+  public recordFragileAreaDamage(zoneName: string, lesson: string): ActivityEntry {
+    const d = structuredClone(this.snapshot.data);
+    d.stats.fragileAreaDamage = (d.stats.fragileAreaDamage || 0) + 1;
+    const toast = this.award(
+      d,
+      `Off-trail damage: ${zoneName}`,
+      lesson,
+      0,
+      -REWARDS.fragileAreaPenalty,
+      false
+    );
+    this.commit(d, toast);
+    return toast;
   }
 
   public visitPark(parkId: string, parkName: string): void {
