@@ -7,10 +7,12 @@ import React, { useState } from 'react';
 import { NatureWorld } from './components/NatureWorld.tsx';
 import { Mountain, Compass, Waves, Footprints, Trees, MapPin } from 'lucide-react';
 import { AVAILABLE_PARKS, setActivePark, getActivePark, ParkDefinition } from './data/parks.ts';
+import { SEASONS, SEASON_ORDER, Season, getActiveSeason, setActiveSeason } from './data/seasons.ts';
 
 export default function App() {
   const [isPaused, setIsPaused] = useState(true);
   const [currentPark, setCurrentPark] = useState<ParkDefinition>(getActivePark());
+  const [season, setSeason] = useState<Season>(getActiveSeason());
 
   const handleStartExploring = () => {
     const canvas = document.querySelector('canvas');
@@ -24,11 +26,19 @@ export default function App() {
     setCurrentPark({ ...updated });
   };
 
+  // Task 10: changing the season rebuilds the world (trees, snow, grass, trail closures)
+  const handleSelectSeason = (next: Season) => {
+    if (next === season) return;
+    setActiveSeason(next);
+    setSeason(next);
+  };
+  const seasonDef = SEASONS[season];
+
   return (
     <main className="relative w-screen h-screen overflow-hidden font-serif bg-[#cfd9c4]">
       {/* 3D Simulation Engine */}
       <NatureWorld
-        key={currentPark.id}
+        key={`${currentPark.id}-${season}`}
         park={currentPark}
         onSelectPark={handleSelectPark}
         onPauseChange={setIsPaused}
@@ -77,6 +87,33 @@ export default function App() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Season Selector (Task 10) */}
+            <div className="mb-3.5 bg-stone-950/70 p-1.5 rounded-2xl border border-stone-800 font-sans">
+              <div className="flex gap-1.5">
+                {SEASON_ORDER.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => handleSelectSeason(s)}
+                    className={`flex-1 py-1.5 rounded-xl text-xs transition cursor-pointer ${
+                      s === season
+                        ? 'bg-amber-600/80 text-amber-100 font-semibold shadow-md border border-amber-500/50'
+                        : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/60'
+                    }`}
+                  >
+                    {SEASONS[s].label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 px-1.5 pb-1 text-left text-[11px] leading-relaxed space-y-1">
+                <div className="text-stone-200">{seasonDef.worldChanges}</div>
+                <div className="text-emerald-300/90">Wildlife: {seasonDef.wildlifeNote}</div>
+                <div className="text-amber-300/90">Trails: {seasonDef.trailNote}</div>
+                <div className="text-[10px] text-stone-500">
+                  General natural history for learning, not official NPS information. Changing season reloads the park.
+                </div>
+              </div>
             </div>
 
             {/* Active Park Overview Card */}
