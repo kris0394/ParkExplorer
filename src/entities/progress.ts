@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getSeasonDef } from '../data/seasons.ts';
 import { SightingRecord } from './binoculars.ts';
 import { ScoredPhoto } from './photography.ts';
 import { getSpeciesIdFromName, SPECIES_CATALOGUE } from '../data/species.ts';
@@ -575,12 +576,15 @@ class ProgressStore {
   public recordStartle(): ActivityEntry {
     const d = structuredClone(this.snapshot.data);
     d.stats.startles = (d.stats.startles || 0) + 1;
+    const mult = getSeasonDef().deer.startlePenaltyMult;
     const toast = this.award(
       d,
       'You startled the wildlife',
-      'Running or crowding animals makes them flee, which burns energy they need. Move slowly and keep your distance.',
+      mult > 1
+        ? 'In winter, food is scarce. Every time a deer is startled into running it burns fat it needs to survive until spring.'
+        : 'Running or crowding animals makes them flee, which burns energy they need. Move slowly and keep your distance.',
       0,
-      -REWARDS.startlePenalty,
+      -REWARDS.startlePenalty * mult,
       false
     );
     this.commit(d, toast);
