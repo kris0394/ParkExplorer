@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { heightAt } from '../terrain/riverTerrain.ts';
 import { ParkDefinition } from '../data/parks.ts';
+import { Season, getActiveSeason } from '../data/seasons.ts';
 
 /** Game rule: stay at least ~25 yards (23 m) from most wildlife. */
 export const SAFE_DISTANCE_M = 23;
@@ -33,6 +34,8 @@ export interface RangerZone {
   radius: number;
   /** Short explanation shown to the player (mistakes teach). */
   reason: string;
+  /** If set, the zone only exists in these seasons (seasonal closures). */
+  seasons?: Season[];
 }
 
 const WHISPERING_VALLEY_ZONES: RangerZone[] = [
@@ -81,8 +84,31 @@ const GREAT_SMOKY_ZONES: RangerZone[] = [
   },
 ];
 
+/** Task 10: the summit trail closes in winter (hard rule, always explained). */
+const SUMMIT_WINTER_CLOSURE: RangerZone = {
+  id: 'summit-winter-closure',
+  kind: 'closed',
+  name: 'Summit Trail (Winter Closure)',
+  x: 82,
+  z: -70,
+  radius: 15,
+  seasons: ['winter'],
+  reason:
+    'Closed for winter. Ice and snow on the exposed upper steps make slips and falls likely. It reopens in spring.',
+};
+
 export function getZonesForPark(parkId: string): RangerZone[] {
-  return parkId === 'great-smoky-mountains' ? GREAT_SMOKY_ZONES : WHISPERING_VALLEY_ZONES;
+  const base = parkId === 'great-smoky-mountains' ? GREAT_SMOKY_ZONES : WHISPERING_VALLEY_ZONES;
+  const season = getActiveSeason();
+  return [...base, SUMMIT_WINTER_CLOSURE].filter(z => !z.seasons || z.seasons.includes(season));
+}
+
+/** Returns the closed zone containing this point, if any (used to stop fast travel into closures). */
+export function findClosedZoneAt(x: number, z: number, zones: RangerZone[]): RangerZone | null {
+  for (const zone of zones) {
+    if (zone.kind === 'closed' && Math.hypot(x - zone.x, z - zone.z) < zone.radius + 0.5) return zone;
+  }
+  return null;
 }
 
 /**
@@ -206,6 +232,17 @@ export function createZoneMarkersGroup(zones: RangerZone[], park: ParkDefinition
       if (d < best) {
         best = d;
         nearest = n;
+      }
+    }
+    if (best < zone.radius) {
+      // Trail runs into the zone (e.g. summit closure): put the sign where the trail meets the ring
+      best = Infinity;
+      for (const n of trailNodes) {
+        const d = Math.abs(Math.hypot(n.x - zone.x, n.z - zone.z) - zone.radius);
+        if (d < best) {
+          best = d;
+          nearest = n;
+        }
       }
     }
     const ang = Math.atan2(nearest.z - zone.z, nearest.x - zone.x);
