@@ -21,7 +21,8 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 10 | Season selector (spring, summer, autumn, winter) | **Done** | Start-screen selector; changes leaves, snow, grass, deer behaviour, summit trail closure |
 | 11 | Park content moved into data (ParkDefinition) | **Done** | Wildlife spawns, closed/fragile areas, litter and water stations now live in each park's data. Checker: `npm run check:parks`. Guide: `docs/ADDING_A_PARK.md` |
 | 12 | Real NPS information and alerts | **Done** (needs one-time key setup) | Downloaded at build time with a private GitHub secret. Start screen shows real park info and alerts. Guide: `docs/NPS_SETUP.md` |
-| 13 | First real park, then more | Next | Build the first fully real park as data |
+| 13 | First real park (Great Smoky Mountains) | **Done (first pass)** | Opens on the real park. Sourced NPS wildlife guidance and facts, Kuwohi naming, Whispering Valley kept as a labelled practice park. Checklist: `docs/REAL_PARK_CHECKLIST.md` |
+| 14 | More real parks | Next | Next easiest per the plan: Shenandoah, then Acadia, a desert park and so on |
 
 ---
 
@@ -99,11 +100,20 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - A real park gets its data by adding `npsParkCode: 'grsm'` (the 4-letter NPS code) to its entry in `src/data/parks.ts`.
 - Setup steps: `docs/NPS_SETUP.md`.
 
-## 9. Known limitations
+## 9. Task 13: The first real park (how it works)
+- The game opens on **Great Smoky Mountains**. **Whispering Valley** stays as a labelled fictional practice park (second in the list).
+- Each real park has an `about` block in `src/data/parks.ts`: a design note (the map is game-scale, not a survey), what the park says about wildlife (with source and caveat) and short sourced facts. It shows on the start screen (Park Rules card and the Official NPS information panel).
+- Names follow the real park: the summit is **Kuwohi** (formerly Clingmans Dome), as restored in 2024.
+- The validator refuses a real park without sourced facts. Checklist for future parks: `docs/REAL_PARK_CHECKLIST.md`.
+- Game rules stay game rules. The deer distance in the game is still 23 m (25 yards). The park's own guidance (50 yards from bears and elk, or any distance that changes behaviour) is shown next to it with a note that NPS pages have given different elk distances over time.
+
+## 10. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
 - The deer spawn within 23 m of the start point, so the distance banner appears early on the first stretch of trail. This is intentional teaching, but may need tuning.
 - Trees and rocks do not block binocular or camera views.
-- Only one species (white-tailed deer). Desktop browsers only.
+- Only one species (white-tailed deer). Desktop browsers only. Elk and bears are real Smokies animals but are not in the game yet, so the park's 50-yard guidance cannot be applied per species yet.
+- The Smokies map is still a generic game landscape with real names. The real park's terrain is not reproduced.
+- Facts in the `about` block are a snapshot (checked 2026-10-10). Re-check them from time to time.
 - NPS data is a snapshot from build time (up to about a day old) and is not shown inside the 3D world, only on the start screen. The standalone `park-explorer.html` carries the snapshot from when it was built.
 - The NPS download was tested against a simulated NPS server only. The first real run happens on GitHub after you add the secret.
 - Terrain shape and trail curves still use shared code; new parks reuse the same generated terrain with different numbers.

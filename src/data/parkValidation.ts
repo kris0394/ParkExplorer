@@ -41,6 +41,24 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
   if (!lmIds.includes('summit')) say('landmarks should include one with id "summit"');
   if (lm.length > 4) say('only the first 4 landmarks get a number hotkey (1-4)');
 
+  // Real-park information (Task 13)
+  if (park.npsParkCode && !park.about) say('real parks (with an npsParkCode) should have an "about" block with sourced facts');
+  if (park.isPracticePark && park.npsParkCode) say('a practice (fictional) park should not have an npsParkCode');
+  if (park.about) {
+    const a = park.about;
+    if (!a.designNote?.trim()) say('about.designNote is empty');
+    if (!a.wildlifeGuidance?.text?.trim() || !a.wildlifeGuidance.caveat?.trim()) say('about.wildlifeGuidance needs text and a caveat');
+    if (!/^https:\/\//.test(a.wildlifeGuidance?.sourceUrl ?? '')) say('about.wildlifeGuidance needs an https sourceUrl');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.checkedOn ?? '')) say('about.checkedOn must look like 2026-10-10');
+    if (!a.facts?.length) say('about.facts needs at least one fact');
+    const ids = (a.facts ?? []).map(f => f.id);
+    if (new Set(ids).size !== ids.length) say('about.facts ids must be unique');
+    for (const f of a.facts ?? []) {
+      if (!f.text?.trim() || !f.title?.trim()) say(`fact "${f.id}" needs a title and text`);
+      if (!/^https:\/\//.test(f.sourceUrl ?? '') || !f.sourceLabel?.trim()) say(`fact "${f.id}" needs an https sourceUrl and a sourceLabel (no unsourced facts)`);
+    }
+  }
+
   // Wildlife
   const spawns = park.wildlife?.spawns ?? [];
   if (spawns.length === 0) say('needs at least one wildlife spawn');

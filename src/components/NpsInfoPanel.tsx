@@ -53,6 +53,24 @@ export const NpsInfoPanel: React.FC<Props> = ({ park }) => {
 
       {open && (
         <div className="mt-2 space-y-2">
+          {park.about && (
+            <div className="space-y-1.5 pb-2 border-b border-stone-800">
+              <p className="text-stone-400 italic">{park.about.designNote}</p>
+              <div className="text-stone-200 font-semibold">Did you know?</div>
+              <ul className="space-y-1.5">
+                {park.about.facts.map(f => (
+                  <li key={f.id} className="text-stone-400">
+                    <span className="text-stone-200 font-semibold">{f.title}. </span>
+                    {f.text}{' '}
+                    <a href={f.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">
+                      {f.sourceLabel}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <div className="text-[10px] text-stone-500">Facts checked against these pages on {park.about.checkedOn}.</div>
+            </div>
+          )}
           {loading && <div className="text-stone-400">Loading…</div>}
 
           {!loading && !data && (
