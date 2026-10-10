@@ -172,7 +172,7 @@ export const HandheldCompassUI: React.FC<HandheldCompassUIProps> = ({
                 left: `${toMapX(currentPark.terrain.mountain.x)}%`,
                 top: `${toMapY(currentPark.terrain.mountain.z)}%`,
               }}
-              title="Eagle Crest Summit"
+              title={currentPark.terrain.mountain.name}
             >
               <div className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow" />
             </div>

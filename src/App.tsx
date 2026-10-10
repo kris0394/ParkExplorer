@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { NatureWorld } from './components/NatureWorld.tsx';
 import { Mountain, Compass, Waves, Footprints, Trees, MapPin } from 'lucide-react';
 import { AVAILABLE_PARKS, setActivePark, getActivePark, ParkDefinition } from './data/parks.ts';
+import { NpsInfoPanel } from './components/NpsInfoPanel.tsx';
 import { SEASONS, SEASON_ORDER, Season, getActiveSeason, setActiveSeason } from './data/seasons.ts';
 
 export default function App() {
@@ -152,6 +153,9 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* Official NPS information (Task 12) */}
+            <NpsInfoPanel park={currentPark} />
 
             {/* Streamlined Compact Shortcuts Grid (retains 100% of controls without crowding) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1.5 text-left text-xs mb-4 font-sans bg-stone-950/60 p-2.5 rounded-2xl border border-stone-800/80">
