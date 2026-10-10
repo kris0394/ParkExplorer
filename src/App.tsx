@@ -84,7 +84,9 @@ export default function App() {
                     }`}
                   >
                     <div className="font-semibold text-stone-100 truncate text-[11px]">{p.name}</div>
-                    <div className="text-[9px] opacity-80 truncate">{p.parkServiceUnit} • {p.region}</div>
+                    <div className="text-[9px] opacity-80 truncate">
+                      {p.isPracticePark ? 'Practice park • fictional' : `${p.parkServiceUnit} • ${p.region}`}
+                    </div>
                   </button>
                 );
               })}
@@ -213,6 +215,24 @@ export default function App() {
               <div className="mt-1.5 text-[10px] text-stone-500">
                 These are game rules, not official NPS rules. Real parks differ, so always check each park&apos;s own rules.
               </div>
+              {currentPark.about && (
+                <div className="mt-2 pt-2 border-t border-emerald-900/60">
+                  <div className="font-semibold text-sky-300 mb-0.5">What {currentPark.name} says about wildlife</div>
+                  <div>{currentPark.about.wildlifeGuidance.text}</div>
+                  <div className="mt-1 text-[10px] text-stone-500">
+                    {currentPark.about.wildlifeGuidance.caveat}{' '}
+                    <a
+                      href={currentPark.about.wildlifeGuidance.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sky-400 underline"
+                    >
+                      Source
+                    </a>
+                    , checked {currentPark.about.checkedOn}.
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Click to Explore Button & Download Standalone HTML Link */}

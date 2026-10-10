@@ -41,6 +41,27 @@ export interface ParkWildlifeSpawn {
   roamRadius: number;
 }
 
+/** A real fact about a real park, with where it came from. */
+export interface ParkFact {
+  id: string;
+  title: string;
+  text: string;
+  /** Page the fact was checked against. */
+  sourceUrl: string;
+  sourceLabel: string;
+}
+
+/** Task 13: honest, sourced information for REAL parks. Fictional parks leave this out. */
+export interface ParkAbout {
+  /** How the game models this park (so nobody mistakes it for a survey map). */
+  designNote: string;
+  /** What the park itself says about viewing wildlife. */
+  wildlifeGuidance: { text: string; caveat: string; sourceUrl: string; sourceLabel: string };
+  facts: ParkFact[];
+  /** Date the facts and guidance were last checked (YYYY-MM-DD). */
+  checkedOn: string;
+}
+
 /** Treated drinking-water stations where the canteen can be refilled. */
 export interface ParkWaterStation {
   id: string;
@@ -59,6 +80,10 @@ export interface ParkDefinition {
   region: string;
   /** Real NPS park code (e.g. 'grsm'). Leave out for fictional parks. Used to show live NPS info and alerts. */
   npsParkCode?: string;
+  /** True for fictional demo parks (shown as "Practice park"). */
+  isPracticePark?: boolean;
+  /** Task 13: sourced real-park information (real parks only). */
+  about?: ParkAbout;
   description: string;
   elevationRange: { min: number; max: number };
   spawn: {
@@ -201,6 +226,7 @@ const TRAILHEAD_AND_SUMMIT_WATER = (spawn: { x: number; z: number }, summit: { x
  */
 export const PROTOTYPE_PARK: ParkDefinition = {
   id: 'whispering-valley',
+  isPracticePark: true,
   name: 'Whispering Valley',
   subtitle: 'Alpine Forest & Valley River',
   parkServiceUnit: 'Research Reserve',
@@ -393,7 +419,7 @@ export const PROTOTYPE_PARK: ParkDefinition = {
 /**
  * FIRST REAL NATIONAL PARK: Great Smoky Mountains National Park
  * Characterized by ancient weathered ridges, characteristic blue mist/haze,
- * sugar maples, yellow birches, mountain streams, and the Clingmans Ridge Overlook.
+ * sugar maples, yellow birches, mountain streams, and the Kuwohi Ridge Overlook.
  */
 export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
   id: 'great-smoky-mountains',
@@ -420,7 +446,7 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
       height: 33.0,
       radius: 64.0,
       plateauRadius: 8.0,
-      name: 'Clingmans Ridge High Point',
+      name: 'Kuwohi Ridge High Point',
     },
     colors: {
       valley: 0x2b593f,     // deep Appalachian cove forest green
@@ -481,13 +507,13 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
     },
   },
   overlook: {
-    name: 'Clingmans Observation Overlook',
+    name: 'Kuwohi Observation Overlook',
     elevationLabel: 'Elev. 2,025m (6,643 ft)',
     deckRadius: 5.2,
     hasBench: true,
     hasTelescope: true,
-    signHeading: 'CLINGMANS DOME',
-    signSubheading: 'SMOKY MTNS OVERLOOK',
+    signHeading: 'KUWOHI',
+    signSubheading: 'FORMERLY CLINGMANS DOME',
   },
   vegetation: {
     treeCount: 1300,
@@ -545,7 +571,7 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
     },
     {
       id: 'summit',
-      name: 'Clingmans Ridge Overlook',
+      name: 'Kuwohi Ridge Overlook',
       description: 'High vantage point looking across endless waves of blue smoky ridges.',
       x: 82.0,
       y: 33.2,
@@ -585,15 +611,66 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
     ],
     litter: STANDARD_LITTER,
   },
+  about: {
+    designNote:
+      'A game-scale landscape inspired by the Smokies. Kuwohi, Roaring Fork and Alum Cave are real places, but this map is not a survey: real distances, trails and layouts differ.',
+    wildlifeGuidance: {
+      text:
+        'Great Smoky Mountains National Park says to stay at least 50 yards (150 feet) from bears and elk, or any distance that changes an animal\'s natural behavior. It is illegal to feed, touch, tease, frighten or intentionally disturb wildlife.',
+      caveat:
+        'NPS pages and news releases have given different distances for elk over time, so check the park\'s current page. In this game the deer rule is 23 m (25 yards), a game rule. The park\'s "any distance that changes behavior" idea is why startling deer costs Stewardship.',
+      sourceUrl: 'https://www.nps.gov/grsm/planyourvisit/wildlifeviewing.htm',
+      sourceLabel: 'nps.gov: Wildlife Viewing (Great Smoky Mountains)',
+    },
+    facts: [
+      {
+        id: 'kuwohi-height',
+        title: 'The highest point in the park',
+        text: 'At 6,643 feet (2,025 m), this summit is the highest point in the park, the highest point in Tennessee, and the third highest mountain east of the Mississippi. The Appalachian Trail crosses it.',
+        sourceUrl: 'https://www.nps.gov/grsm/planyourvisit/clingmansdome.htm',
+        sourceLabel: 'nps.gov: Clingmans Dome page',
+      },
+      {
+        id: 'kuwohi-name',
+        title: 'A restored name',
+        text: 'In September 2024 the U.S. Board on Geographic Names restored the Cherokee name Kuwohi ("mulberry place") for the peak long known as Clingmans Dome. Old maps and pages may still use the old name.',
+        sourceUrl: 'https://hellbenderpress.sustainably.org/news/cherokee-name-restored-to-sacred-crest-of-smokies-highest-point',
+        sourceLabel: 'Environmental Journal of Southern Appalachia (quotes park staff)',
+      },
+      {
+        id: 'spruce-fir-rainforest',
+        title: 'A coniferous rainforest',
+        text: 'The cool, wet summit supports a spruce-fir forest that the park describes as a coniferous rainforest. Temperatures there can be 10 to 20 degrees Fahrenheit cooler than in the lowlands.',
+        sourceUrl: 'https://www.nps.gov/grsm/planyourvisit/clingmansdome.htm',
+        sourceLabel: 'nps.gov: Clingmans Dome page',
+      },
+      {
+        id: 'elk-return',
+        title: 'Elk came back in 2001',
+        text: 'Elk were once common across the southern Appalachians. The park released the first 25 elk in 2001, and they can be seen from a safe distance on the North Carolina side, such as Cataloochee and Oconaluftee.',
+        sourceUrl: 'https://www.nps.gov/grsm/learn/nature/elk.htm',
+        sourceLabel: 'nps.gov: Elk (Great Smoky Mountains)',
+      },
+      {
+        id: 'roaring-fork-wildlife',
+        title: 'Roaring Fork wildlife',
+        text: 'The park lists the Roaring Fork Motor Nature Trail as a place where black bears, white-tailed deer and turkeys are often seen.',
+        sourceUrl: 'https://www.nps.gov/grsm/planyourvisit/wildlifeviewing.htm',
+        sourceLabel: 'nps.gov: Wildlife Viewing (Great Smoky Mountains)',
+      },
+    ],
+    checkedOn: '2026-10-10',
+  },
   waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: 0, z: 14 }, { x: 82, z: -70 }),
 };
 
+/** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
-  PROTOTYPE_PARK,
   GREAT_SMOKY_MOUNTAINS,
+  PROTOTYPE_PARK,
 ];
 
-let activePark: ParkDefinition = PROTOTYPE_PARK;
+let activePark: ParkDefinition = GREAT_SMOKY_MOUNTAINS;
 
 export function getActivePark(): ParkDefinition {
   return activePark;
