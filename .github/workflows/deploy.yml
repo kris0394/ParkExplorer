@@ -6,6 +6,9 @@ on:
       - main
       - master
   workflow_dispatch:
+  schedule:
+    # Rebuild every day so NPS alerts stay reasonably fresh (06:17 UTC)
+    - cron: '17 6 * * *'
 
 permissions:
   contents: read
@@ -33,6 +36,9 @@ jobs:
 
       - name: Build project
         run: npm run build
+        env:
+          # Private: stored as a GitHub repository secret, never written into the site
+          NPS_API_KEY: ${{ secrets.NPS_API_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
