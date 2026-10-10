@@ -3,6 +3,53 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { Season } from './seasons.ts';
+
+/** A roped-off area. 'closed' = cannot enter. 'sensitive' = can enter but staying off-trail costs Stewardship. */
+export interface ParkZone {
+  id: string;
+  kind: 'closed' | 'sensitive';
+  name: string;
+  x: number;
+  z: number;
+  radius: number;
+  /** Short explanation shown to the player (mistakes teach). */
+  reason: string;
+  /** If set, the zone only exists in these seasons (seasonal closures). */
+  seasons?: Season[];
+}
+
+/** One piece of litter, placed beside a trail. Positions are fixed so rewards cannot be farmed. */
+export interface ParkLitter {
+  id: string;
+  label: string;
+  tip: string;
+  kind: 'can' | 'bottle' | 'wrapper' | 'peel' | 'bag';
+  trail: 'west' | 'east';
+  /** 0 to 1 along that trail. */
+  at: number;
+  /** Which side of the trail (1 left, -1 right). */
+  side: 1 | -1;
+}
+
+export interface ParkWildlifeSpawn {
+  species: 'white-tailed-deer';
+  isBuck: boolean;
+  isFawn?: boolean;
+  x: number;
+  z: number;
+  roamRadius: number;
+}
+
+/** Treated drinking-water stations where the canteen can be refilled. */
+export interface ParkWaterStation {
+  id: string;
+  name: string;
+  x: number;
+  z: number;
+  radius: number;
+}
+
 export interface ParkDefinition {
   id: string;
   name: string;
@@ -10,6 +57,8 @@ export interface ParkDefinition {
   parkServiceUnit: string; // e.g. "National Park"
   state: string;
   region: string;
+  /** Real NPS park code (e.g. 'grsm'). Leave out for fictional parks. Used to show live NPS info and alerts. */
+  npsParkCode?: string;
   description: string;
   elevationRange: { min: number; max: number };
   spawn: {
@@ -108,7 +157,43 @@ export interface ParkDefinition {
     z: number;
     yaw: number;
   }[];
+  /** Task 11: everything below used to be hard-coded in game code. */
+  wildlife: {
+    spawns: ParkWildlifeSpawn[];
+  };
+  rules: {
+    zones: ParkZone[];
+    litter: ParkLitter[];
+  };
+  waterStations: ParkWaterStation[];
 }
+
+/**
+ * Shared, reusable pieces. A new park can reuse these or define its own.
+ */
+const STANDARD_LITTER: ParkLitter[] = [
+  { id: 'can-1', label: 'Crushed soda can', tip: 'Pack it out. Metal does not break down on the trail.', kind: 'can', trail: 'west', at: 0.55, side: 1 },
+  { id: 'bottle-1', label: 'Plastic water bottle', tip: 'Plastic lasts for centuries and can harm animals that nibble it.', kind: 'bottle', trail: 'east', at: 0.14, side: -1 },
+  { id: 'wrapper-1', label: 'Snack wrapper', tip: 'Wrappers blow away easily. Keep trash zipped in your pack.', kind: 'wrapper', trail: 'east', at: 0.34, side: 1 },
+  { id: 'peel-1', label: 'Banana peel', tip: 'Peels rot slowly and teach animals to look for human food. Pack them out too.', kind: 'peel', trail: 'east', at: 0.56, side: -1 },
+  { id: 'bag-1', label: 'Plastic bag', tip: 'Loose bags can trap or choke wildlife. Always carry them out.', kind: 'bag', trail: 'east', at: 0.78, side: 1 },
+];
+
+const SUMMIT_WINTER_CLOSURE: ParkZone = {
+  id: 'summit-winter-closure',
+  kind: 'closed',
+  name: 'Summit Trail (Winter Closure)',
+  x: 82,
+  z: -70,
+  radius: 15,
+  seasons: ['winter'],
+  reason: 'Closed for winter. Ice and snow on the exposed upper steps make slips and falls likely. It reopens in spring.',
+};
+
+const TRAILHEAD_AND_SUMMIT_WATER = (spawn: { x: number; z: number }, summit: { x: number; z: number }): ParkWaterStation[] => [
+  { id: 'trailhead', name: 'Trailhead Potable Water Station', x: spawn.x, z: spawn.z, radius: 8.5 },
+  { id: 'summit', name: 'Summit Overlook Potable Water Fountain', x: summit.x - 2.2, z: summit.z + 1.8, radius: 6.0 },
+];
 
 /**
  * PROTOTYPE PARK: Whispering Valley & Pine Ridge
@@ -270,6 +355,39 @@ export const PROTOTYPE_PARK: ParkDefinition = {
       yaw: Math.PI * 0.8,
     },
   ],
+  wildlife: {
+    spawns: [
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 6.0, z: 9.5, roamRadius: 16.0 },   // Doe on right
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -8.0, z: 8.5, roamRadius: 18.0 },   // Antlered buck on left
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 8.5, z: 7.0, roamRadius: 12.0 },    // Spotted fawn
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 13.5, z: 5.0, roamRadius: 15.0 }, // Second doe near trees
+    ],
+  },
+  rules: {
+    zones: [
+      {
+        id: 'streambank-restoration',
+        kind: 'closed',
+        name: 'Streambank Restoration Area',
+        x: -8,
+        z: -30,
+        radius: 9,
+        reason: 'Closed while newly planted vegetation takes hold. Roots keep the soil from washing into the river.',
+      },
+      {
+        id: 'wildflower-meadow',
+        kind: 'sensitive',
+        name: 'Fragile Wildflower Meadow',
+        x: 70,
+        z: 32,
+        radius: 11,
+        reason: 'Fragile plants. Walking off the trail crushes flowers and compacts soil, and plants can take years to recover.',
+      },
+      SUMMIT_WINTER_CLOSURE,
+    ],
+    litter: STANDARD_LITTER,
+  },
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: 0, z: 14 }, { x: 82, z: -70 }),
 };
 
 /**
@@ -279,6 +397,7 @@ export const PROTOTYPE_PARK: ParkDefinition = {
  */
 export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
   id: 'great-smoky-mountains',
+  npsParkCode: 'grsm',
   name: 'Great Smoky Mountains',
   subtitle: 'Blue Mist Ridges & Ancient Forest',
   parkServiceUnit: 'National Park',
@@ -434,6 +553,39 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
       yaw: Math.PI * 0.8,
     },
   ],
+  wildlife: {
+    spawns: [
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 5.5, z: 9.0, roamRadius: 16.0 },   // Doe on right
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -7.5, z: 8.0, roamRadius: 18.0 },   // Antlered buck on left
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 8.0, z: 6.5, roamRadius: 12.0 },    // Spotted fawn
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 14.0, z: 4.5, roamRadius: 15.0 }, // Second doe
+    ],
+  },
+  rules: {
+    zones: [
+      {
+        id: 'stream-habitat-closure',
+        kind: 'closed',
+        name: 'Stream Habitat Closure',
+        x: -8,
+        z: -30,
+        radius: 9,
+        reason: 'Closed to protect small stream life, such as salamanders, that live under rocks and leaf litter here.',
+      },
+      {
+        id: 'understory-wildflower-slope',
+        kind: 'sensitive',
+        name: 'Understory Wildflower Slope',
+        x: 70,
+        z: 32,
+        radius: 11,
+        reason: 'Fragile spring wildflowers. Stepping off the trail tramples them and the soil beneath.',
+      },
+      SUMMIT_WINTER_CLOSURE,
+    ],
+    litter: STANDARD_LITTER,
+  },
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: 0, z: 14 }, { x: 82, z: -70 }),
 };
 
 export const AVAILABLE_PARKS: ParkDefinition[] = [
@@ -453,4 +605,10 @@ export function setActivePark(parkId: string): ParkDefinition {
     activePark = found;
   }
   return activePark;
+}
+
+/** Id of the park after the given one (used by the [P] hotkey). */
+export function getNextParkId(currentId: string): string {
+  const i = AVAILABLE_PARKS.findIndex(p => p.id === currentId);
+  return AVAILABLE_PARKS[(i + 1) % AVAILABLE_PARKS.length].id;
 }

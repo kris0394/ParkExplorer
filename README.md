@@ -17,7 +17,11 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 6 | Field journal, Park Credits, Stewardship rank & persistence | Done | LocalStorage + IndexedDB backup |
 | 7 | Equipment shop, water/hydration, equippable handheld compass & topo map | **Done** | Equippable compass [K], canteen hydration [X], potable stations [R], outfitter gear |
 | 8 | Responsible recreation rules: wildlife distance alerts, closed and fragile areas, litter | **Done** | Distance banner [23 m], closed-area rope and sign, fragile-area warning, litter pick-up [Q] |
-| 9 | Day/night cycle and weather | Next | Wind, birds, insects, seasons follow |
+| 9 | Time of day (day, sunset, dawn, twilight) | **Done** | Toggle in the HUD. Weather (rain, wind, birds) not built yet |
+| 10 | Season selector (spring, summer, autumn, winter) | **Done** | Start-screen selector; changes leaves, snow, grass, deer behaviour, summit trail closure |
+| 11 | Park content moved into data (ParkDefinition) | **Done** | Wildlife spawns, closed/fragile areas, litter and water stations now live in each park's data. Checker: `npm run check:parks`. Guide: `docs/ADDING_A_PARK.md` |
+| 12 | Real NPS information and alerts | **Done** (needs one-time key setup) | Downloaded at build time with a private GitHub secret. Start screen shows real park info and alerts. Guide: `docs/NPS_SETUP.md` |
+| 13 | First real park, then more | Next | Build the first fully real park as data |
 
 ---
 
@@ -64,8 +68,45 @@ All of this is GAME content, not official NPS rules, closures or alerts. Real pa
 - **Litter:** 5 pieces of trash beside the trails in each park. Press Q within about 2.5 m to pack one out: +3 Credits and +1 Stewardship. Positions are fixed and each piece pays only once per save, so it cannot be farmed.
 - Zones and litter are defined in `src/entities/rangerRules.ts`. Numbers are in `REWARDS` in `src/entities/progress.ts`.
 
-## 6. Known limitations
+## 6. Task 10: Seasons (how it works)
+Pick a season on the start screen. Changing it reloads the park. Everything is driven by the table in `src/data/seasons.ts`. Wildlife notes are general natural history for learning, not official NPS information.
+
+| | Spring | Summer | Autumn | Winter |
+|---|---|---|---|---|
+| Trees | Pale-green leaves, a few blossoms | Full green | Gold, orange and red leaves | Deciduous trees bare, evergreens frosted with snow |
+| Ground and grass | Lush, fresh | Default look | Tan grass, warm ground | Snow cover (thicker on flat ground and with height), frosted grass |
+| Deer | Notice you a bit sooner (fawn season) | Default | Rut: restless, notice you much sooner | Move less to save energy |
+| Startling wildlife | -1 Stewardship | -1 | -1 | **-2** (fleeing burns scarce fat reserves) |
+| Trails | Open | Open | Open | **Summit trail closed** (ice and snow), explained on screen. Fast travel to the summit is blocked too |
+
+The last selected season is remembered in the browser. Summer matches the old default look.
+
+## 7. Task 11: Parks as data (how it works)
+A park is one object in `src/data/parks.ts`. The game code no longer mentions any specific park by name.
+- New in each park's data: `wildlife.spawns`, `rules.zones`, `rules.litter`, `waterStations`.
+- The [P] key cycles through every park in `AVAILABLE_PARKS`, so a third park appears automatically.
+- `npm run check:parks` validates every park (missing fields, duplicate ids, deer or water stations in the river, closed areas covering the spawn point, and more).
+- `docs/ADDING_A_PARK.md` is the step-by-step guide for adding a park.
+- Nothing visible changes for players. Both existing parks behave exactly as before.
+
+## 8. Task 12: Real NPS information (how it works)
+- The NPS API key is a **GitHub Actions secret** named `NPS_API_KEY`. It is used only while the site is being built, sent in a request header, and never written to any file or into the page.
+- `scripts/fetch-nps.ts` downloads each real park's info and alerts and saves clean JSON files (`public/nps/<code>.json`, not committed). The game reads those files. If the key is missing or NPS is down, the build still works and the game shows "not available".
+- The site is rebuilt every day (and on every push), so alerts are at most about a day old. The panel shows the download time and always points to nps.gov.
+- Start screen: **Official NPS information** panel (park summary, weather note, current alerts). Fictional parks say they have no NPS page.
+- Only links to nps.gov are kept, HTML is stripped, and everything is shown as plain text.
+- Real alerts are shown for information only. They do **not** change the game, and the game's own closures and rules remain examples, not NPS notices.
+- A real park gets its data by adding `npsParkCode: 'grsm'` (the 4-letter NPS code) to its entry in `src/data/parks.ts`.
+- Setup steps: `docs/NPS_SETUP.md`.
+
+## 9. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
 - The deer spawn within 23 m of the start point, so the distance banner appears early on the first stretch of trail. This is intentional teaching, but may need tuning.
 - Trees and rocks do not block binocular or camera views.
 - Only one species (white-tailed deer). Desktop browsers only.
+- NPS data is a snapshot from build time (up to about a day old) and is not shown inside the 3D world, only on the start screen. The standalone `park-explorer.html` carries the snapshot from when it was built.
+- The NPS download was tested against a simulated NPS server only. The first real run happens on GitHub after you add the secret.
+- Terrain shape and trail curves still use shared code; new parks reuse the same generated terrain with different numbers.
+- The Switchback landmark's stored height (16.5) is higher than the ground there, so fast travel drops you slightly. The checker flags it.
+- Seasons are visual and behavioural only: no rain, snowfall or wind yet. Winter trees are bare trunks, which may look sparse.
+- Photos do not record which season they were taken in yet.

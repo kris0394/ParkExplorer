@@ -13,8 +13,8 @@
 
 import * as THREE from 'three';
 import { heightAt } from '../terrain/riverTerrain.ts';
-import { ParkDefinition } from '../data/parks.ts';
-import { Season, getActiveSeason } from '../data/seasons.ts';
+import { ParkDefinition, ParkZone, ParkLitter, AVAILABLE_PARKS, getActivePark } from '../data/parks.ts';
+import { getActiveSeason } from '../data/seasons.ts';
 
 /** Game rule: stay at least ~25 yards (23 m) from most wildlife. */
 export const SAFE_DISTANCE_M = 23;
@@ -23,92 +23,14 @@ export const SAFE_DISTANCE_M = 23;
 /* Closed and fragile areas                                           */
 /* ------------------------------------------------------------------ */
 
-export type ZoneKind = 'closed' | 'sensitive';
+export type ZoneKind = ParkZone['kind'];
+export type RangerZone = ParkZone;
 
-export interface RangerZone {
-  id: string;
-  kind: ZoneKind;
-  name: string;
-  x: number;
-  z: number;
-  radius: number;
-  /** Short explanation shown to the player (mistakes teach). */
-  reason: string;
-  /** If set, the zone only exists in these seasons (seasonal closures). */
-  seasons?: Season[];
-}
-
-const WHISPERING_VALLEY_ZONES: RangerZone[] = [
-  {
-    id: 'streambank-restoration',
-    kind: 'closed',
-    name: 'Streambank Restoration Area',
-    x: -8,
-    z: -30,
-    radius: 9,
-    reason:
-      'Closed while newly planted vegetation takes hold. Roots keep the soil from washing into the river.',
-  },
-  {
-    id: 'wildflower-meadow',
-    kind: 'sensitive',
-    name: 'Fragile Wildflower Meadow',
-    x: 70,
-    z: 32,
-    radius: 11,
-    reason:
-      'Fragile plants. Walking off the trail crushes flowers and compacts soil, and plants can take years to recover.',
-  },
-];
-
-const GREAT_SMOKY_ZONES: RangerZone[] = [
-  {
-    id: 'stream-habitat-closure',
-    kind: 'closed',
-    name: 'Stream Habitat Closure',
-    x: -8,
-    z: -30,
-    radius: 9,
-    reason:
-      'Closed to protect small stream life, such as salamanders, that live under rocks and leaf litter here.',
-  },
-  {
-    id: 'understory-wildflower-slope',
-    kind: 'sensitive',
-    name: 'Understory Wildflower Slope',
-    x: 70,
-    z: 32,
-    radius: 11,
-    reason:
-      'Fragile spring wildflowers. Stepping off the trail tramples them and the soil beneath.',
-  },
-];
-
-/** Task 10: the summit trail closes in winter (hard rule, always explained). */
-const SUMMIT_WINTER_CLOSURE: RangerZone = {
-  id: 'summit-winter-closure',
-  kind: 'closed',
-  name: 'Summit Trail (Winter Closure)',
-  x: 82,
-  z: -70,
-  radius: 15,
-  seasons: ['winter'],
-  reason:
-    'Closed for winter. Ice and snow on the exposed upper steps make slips and falls likely. It reopens in spring.',
-};
-
+/** Zones that exist in the current season for this park (all content comes from the park's data). */
 export function getZonesForPark(parkId: string): RangerZone[] {
-  const base = parkId === 'great-smoky-mountains' ? GREAT_SMOKY_ZONES : WHISPERING_VALLEY_ZONES;
+  const park = AVAILABLE_PARKS.find(p => p.id === parkId) ?? getActivePark();
   const season = getActiveSeason();
-  return [...base, SUMMIT_WINTER_CLOSURE].filter(z => !z.seasons || z.seasons.includes(season));
-}
-
-/** Returns the closed zone containing this point, if any (used to stop fast travel into closures). */
-export function findClosedZoneAt(x: number, z: number, zones: RangerZone[]): RangerZone | null {
-  for (const zone of zones) {
-    if (zone.kind === 'closed' && Math.hypot(x - zone.x, z - zone.z) < zone.radius + 0.5) return zone;
-  }
-  return null;
+  return park.rules.zones.filter(z => !z.seasons || z.seasons.includes(season));
 }
 
 /**
@@ -135,6 +57,15 @@ export function pushOutOfClosedZones(
   }
   return hit;
 }
+
+/** Returns the closed zone containing this point, if any (used to stop fast travel into closures). */
+export function findClosedZoneAt(x: number, z: number, zones: RangerZone[]): RangerZone | null {
+  for (const zone of zones) {
+    if (zone.kind === 'closed' && Math.hypot(x - zone.x, z - zone.z) < zone.radius + 0.5) return zone;
+  }
+  return null;
+}
+
 
 function makeSignTexture(title: string, line1: string, accent: string): THREE.CanvasTexture {
   const c = document.createElement('canvas');
@@ -286,64 +217,6 @@ export interface LitterSpot {
   kind: 'can' | 'bottle' | 'wrapper' | 'peel' | 'bag';
 }
 
-interface LitterTemplate {
-  id: string;
-  label: string;
-  tip: string;
-  kind: LitterSpot['kind'];
-  trail: 'west' | 'east';
-  at: number; // 0..1 along that trail
-  side: 1 | -1;
-}
-
-const LITTER_TEMPLATES: LitterTemplate[] = [
-  {
-    id: 'can-1',
-    label: 'Crushed soda can',
-    tip: 'Pack it out. Metal does not break down on the trail.',
-    kind: 'can',
-    trail: 'west',
-    at: 0.55,
-    side: 1,
-  },
-  {
-    id: 'bottle-1',
-    label: 'Plastic water bottle',
-    tip: 'Plastic lasts for centuries and can harm animals that nibble it.',
-    kind: 'bottle',
-    trail: 'east',
-    at: 0.14,
-    side: -1,
-  },
-  {
-    id: 'wrapper-1',
-    label: 'Snack wrapper',
-    tip: 'Wrappers blow away easily. Keep trash zipped in your pack.',
-    kind: 'wrapper',
-    trail: 'east',
-    at: 0.34,
-    side: 1,
-  },
-  {
-    id: 'peel-1',
-    label: 'Banana peel',
-    tip: 'Peels rot slowly and teach animals to look for human food. Pack them out too.',
-    kind: 'peel',
-    trail: 'east',
-    at: 0.56,
-    side: -1,
-  },
-  {
-    id: 'bag-1',
-    label: 'Plastic bag',
-    tip: 'Loose bags can trap or choke wildlife. Always carry them out.',
-    kind: 'bag',
-    trail: 'east',
-    at: 0.78,
-    side: 1,
-  },
-];
-
 function pointAlong(nodes: { x: number; z: number }[], f: number) {
   // Walk along the straight-line polyline between nodes
   const segLens: number[] = [];
@@ -378,7 +251,7 @@ function pointAlong(nodes: { x: number; z: number }[], f: number) {
 
 /** Fixed litter positions beside the trails (same every visit, so rewards cannot be farmed). */
 export function buildLitterSpots(park: ParkDefinition): LitterSpot[] {
-  return LITTER_TEMPLATES.map(t => {
+  return park.rules.litter.map((t: ParkLitter) => {
     const nodes = t.trail === 'west' ? park.trail.westNodes : park.trail.eastNodes;
     const p = pointAlong(nodes, t.at);
     const offset = 2.1 * t.side;

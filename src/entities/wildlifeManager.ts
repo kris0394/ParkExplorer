@@ -34,25 +34,8 @@ export class WildlifeManager {
 
     const park = getActivePark();
 
-    // Spawns placed directly in the sunlit trailhead meadow in FRONT of player's starting view (Spawn: 0, 14 facing -Z)
-    let configs: { isBuck: boolean; isFawn?: boolean; x: number; z: number; roamRadius: number }[] = [];
-
-    if (park.id === 'great-smoky-mountains') {
-      configs = [
-        { isBuck: false, isFawn: false, x: 5.5, z: 9.0, roamRadius: 16.0 },   // Doe on right
-        { isBuck: true, isFawn: false, x: -7.5, z: 8.0, roamRadius: 18.0 },   // Antlered Buck on left
-        { isBuck: false, isFawn: true, x: 8.0, z: 6.5, roamRadius: 12.0 },    // Spotted Fawn
-        { isBuck: false, isFawn: false, x: 14.0, z: 4.5, roamRadius: 15.0 },  // Second Doe
-      ];
-    } else {
-      // Whispering Valley Meadow Glade
-      configs = [
-        { isBuck: false, isFawn: false, x: 6.0, z: 9.5, roamRadius: 16.0 },   // Doe on right
-        { isBuck: true, isFawn: false, x: -8.0, z: 8.5, roamRadius: 18.0 },   // Antlered Buck on left
-        { isBuck: false, isFawn: true, x: 8.5, z: 7.0, roamRadius: 12.0 },    // Spotted Fawn
-        { isBuck: false, isFawn: false, x: 13.5, z: 5.0, roamRadius: 15.0 },  // Second Doe near trees
-      ];
-    }
+    // Spawn positions come from the park's data (park.wildlife.spawns)
+    const configs = park.wildlife.spawns.filter(sp => sp.species === 'white-tailed-deer');
 
     configs.forEach((cfg, idx) => {
       const deer = new DeerEntity({

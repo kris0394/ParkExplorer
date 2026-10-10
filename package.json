@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && node bundle-singlefile.js",
+    "build": "tsx scripts/fetch-nps.ts && vite build && node bundle-singlefile.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "check:parks": "tsx scripts/check-parks.ts",
+    "fetch:nps": "tsx scripts/fetch-nps.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

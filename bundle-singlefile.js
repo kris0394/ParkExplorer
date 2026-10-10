@@ -31,6 +31,26 @@ html = html.replace(/<script[^>]+type="module"[^>]+src="(\.?\/)?assets\/([^">]+)
   return match;
 });
 
+// Task 12: copy any downloaded NPS data into the standalone file (no key is involved, it is plain public data)
+const npsDir = path.join(distDir, 'nps');
+if (fs.existsSync(npsDir)) {
+  const all = {};
+  for (const f of fs.readdirSync(npsDir)) {
+    if (!f.endsWith('.json')) continue;
+    try {
+      all[f.replace(/\.json$/, '')] = JSON.parse(fs.readFileSync(path.join(npsDir, f), 'utf8'));
+    } catch {
+      /* skip unreadable file */
+    }
+  }
+  if (Object.keys(all).length > 0) {
+    // '<' is escaped so the data can never close the script tag early
+    const safe = JSON.stringify(all).replace(/</g, '\\u003c');
+    const tag = '<script>window.__NPS_DATA__ = ' + safe + ';</script>\n<script type="module">';
+    html = html.replace('<script type="module">', () => tag);
+  }
+}
+
 const outPath = path.resolve('park-explorer.html');
 fs.writeFileSync(outPath, html, 'utf8');
 // Also place a copy in dist so the GitHub Pages site can offer it as a download

@@ -47,7 +47,7 @@ import {
   pushOutOfClosedZones,
 } from '../entities/rangerRules';
 import { mulberry32, sstep, fbm, clamp } from '../utils/noise.ts';
-import { ParkDefinition, AVAILABLE_PARKS } from '../data/parks.ts';
+import { ParkDefinition, AVAILABLE_PARKS, getNextParkId } from '../data/parks.ts';
 
 interface NatureWorldProps {
   park: ParkDefinition;
@@ -124,6 +124,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
   const isNearTelescopeRef = useRef(false);
   const isNearWaterStationRef = useRef(false);
   const lowWaterWarnedRef = useRef(false);
+  const waterStationNameRef = useRef('Water Station');
   const isBinocularsActiveRef = useRef(false);
   const binocularsFovRef = useRef(17.5);
   const isCameraActiveRef = useRef(false);
@@ -329,9 +330,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
   };
 
   const handleRefillWater = () => {
-    const res = progress.refillWater(
-      isOnSummit ? 'Summit Overlook Potable Water Fountain' : 'Trailhead Potable Water Station'
-    );
+    const res = progress.refillWater(waterStationNameRef.current);
     showToast(res.message);
   };
 
@@ -1013,8 +1012,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
 
       // Hotkey P: Cycle Park
       if (e.code === 'KeyP') {
-        const nextParkId = park.id === 'whispering-valley' ? 'great-smoky-mountains' : 'whispering-valley';
-        onSelectPark(nextParkId);
+        onSelectPark(getNextParkId(park.id));
       }
 
       // Telescope Zoom in/out via + / - keys
@@ -1154,8 +1152,14 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       isNearTelescopeRef.current = nearTele;
 
       // Potable Water Station check (Task 7): Trailhead or Summit deck
-      const distToSpawn = Math.hypot(p.pos.x - park.spawn.x, p.pos.z - park.spawn.z);
-      const nearWaterStation = distToSpawn < 8.5 || (onSummitNow && distToTelescope < 6.0);
+      let nearWaterStation = false;
+      for (const st of park.waterStations) {
+        if (Math.hypot(p.pos.x - st.x, p.pos.z - st.z) < st.radius) {
+          nearWaterStation = true;
+          waterStationNameRef.current = st.name;
+          break;
+        }
+      }
       isNearWaterStationRef.current = nearWaterStation;
 
       const sprintHeld = keys.has('ShiftLeft') || keys.has('ShiftRight');
