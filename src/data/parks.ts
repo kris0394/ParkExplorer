@@ -33,7 +33,7 @@ export interface ParkLitter {
 }
 
 export interface ParkWildlifeSpawn {
-  species: 'white-tailed-deer';
+  species: 'white-tailed-deer' | 'elk';
   isBuck: boolean;
   isFawn?: boolean;
   x: number;
@@ -185,6 +185,8 @@ export interface ParkDefinition {
   /** Task 11: everything below used to be hard-coded in game code. */
   wildlife: {
     spawns: ParkWildlifeSpawn[];
+    /** Safe viewing distance per species (metres). Species defaults apply when a species is not listed. */
+    safeDistanceOverrides?: Record<string, number>;
   };
   rules: {
     zones: ParkZone[];
@@ -585,6 +587,11 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
       { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -7.5, z: 8.0, roamRadius: 18.0 },   // Antlered buck on left
       { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 8.0, z: 6.5, roamRadius: 12.0 },    // Spotted fawn
       { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 14.0, z: 4.5, roamRadius: 15.0 }, // Second doe
+      // Elk herd grazing in a meadow to the west, well beyond the 50-yard (46 m) guidance from the start point
+      { species: 'elk', isBuck: true, isFawn: false, x: -47.0, z: 60.0, roamRadius: 9.0 },   // Bull elk
+      { species: 'elk', isBuck: false, isFawn: false, x: -52.0, z: 56.0, roamRadius: 10.0 }, // Cow elk
+      { species: 'elk', isBuck: false, isFawn: false, x: -43.0, z: 65.0, roamRadius: 10.0 }, // Cow elk
+      { species: 'elk', isBuck: false, isFawn: false, x: -55.0, z: 63.0, roamRadius: 8.0 },  // Cow elk
     ],
   },
   rules: {

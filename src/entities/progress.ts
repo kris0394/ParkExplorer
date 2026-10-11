@@ -6,7 +6,7 @@
 import { getSeasonDef } from '../data/seasons.ts';
 import { SightingRecord } from './binoculars.ts';
 import { ScoredPhoto } from './photography.ts';
-import { getSpeciesIdFromName, SPECIES_CATALOGUE } from '../data/species.ts';
+import { getSpeciesIdFromName, getSpeciesForPark, SPECIES_CATALOGUE } from '../data/species.ts';
 
 export interface ActivityEntry {
   id: number;
@@ -700,8 +700,8 @@ class ProgressStore {
       sp.disturbedCount += 1;
       d.stats.tooClose += 1;
       const warning =
-        sighting.distance < 23
-          ? `Within ${roundedDist} m. Respect wildlife space by keeping 25 yards (23 m) clearance.`
+        sighting.distance < (sighting.safeDistance ?? 23)
+          ? `Within ${roundedDist} m. Respect wildlife space by keeping at least ${Math.round(sighting.safeDistance ?? 23)} m (${Math.round((sighting.safeDistance ?? 23) / 0.9144)} yards) clearance.`
           : 'Animal was alert. Stand quietly or back away to allow it to graze peacefully.';
 
       toast = this.award(
@@ -746,8 +746,8 @@ class ProgressStore {
       good = false;
       title = 'Disturbed Wildlife Photography';
       detail =
-        photo.distance < 23
-          ? `Taken at ${Math.round(photo.distance)} m. Back away to safe distance (23 m+) and use zoom.`
+        photo.distance < (photo.safeDistance ?? 23)
+          ? `Taken at ${Math.round(photo.distance)} m. Back away to safe distance (${Math.round(photo.safeDistance ?? 23)} m+) and use zoom.`
           : 'Animal was fleeing or alert. Wait patiently for calm grazing.';
     } else {
       d.stats.responsiblePhotos += 1;
@@ -847,7 +847,7 @@ export function computeParkStats(
   percent: number;
 } {
   const p = save.parks[parkId];
-  const speciesList = ['white-tailed-deer'];
+  const speciesList = getSpeciesForPark(parkId);
   const lTotal = landmarks.length;
   const lFound = landmarks.filter(lm => p?.landmarks[lm.id]?.discovered).length;
 

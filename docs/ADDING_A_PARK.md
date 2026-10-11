@@ -21,7 +21,8 @@ All the game systems (deer, trails, closed areas, litter, water stations, hotkey
 | `vegetation` | Tree and shrub counts and the mix of species |
 | `atmosphere` | Fog and sky look |
 | `landmarks` | Fast-travel points. Keep ids `spawn` and `summit`. Only the first 4 get hotkeys 1 to 4 |
-| `wildlife.spawns` | Where each animal starts and how far it roams |
+| `wildlife.spawns` | Where each animal starts and how far it roams. Species can be `white-tailed-deer` or `elk` |
+| `wildlife.safeDistanceOverrides` | Optional. Safe viewing distance in metres per species for this park (for example `{ elk: 46 }`). Defaults come from `src/data/species.ts` |
 | `rules.zones` | Closed areas and fragile areas (each needs a short `reason`). Add `seasons: ['winter']` to make one seasonal |
 | `rules.litter` | Pieces of litter along the trails. Positions are fixed so rewards cannot be farmed |
 | `waterStations` | Treated drinking-water points where the canteen refills |

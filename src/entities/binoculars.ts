@@ -12,6 +12,8 @@ export interface SightingRecord {
   species: string;
   detail: string;
   distance: number;
+  /** Safe viewing distance for this animal (m). */
+  safeDistance: number;
   responsible: boolean;
   time: number;
 }
@@ -26,12 +28,14 @@ export interface BinocularTarget {
   identified: boolean;
   tooFar: boolean;
   tooClose: boolean;
+  /** Safe viewing distance for this animal (m). */
+  safeDistance: number;
 }
 
 export const BINOCULAR_RULES = {
   maxRange: 110,
   searchRange: 220,
-  comfortRange: 23,
+  comfortRange: 23, // default only; each animal has its own safeDistanceM
   identifySeconds: 2.8,
   baseZoom: 4,
   reticleRadius: 0.18,
@@ -86,7 +90,7 @@ export class BinocularsSystem {
     let bestDist = 0;
 
     for (const a of animals) {
-      const visualH = a.pos.y + (a.isFawn ? 0.75 : 1.1);
+      const visualH = a.pos.y + (a.isElk ? 1.6 : a.isFawn ? 0.75 : 1.1);
       this.toAnimal.set(a.pos.x - this.camPos.x, visualH - this.camPos.y, a.pos.z - this.camPos.z);
       const dist = this.toAnimal.length();
       if (dist > BINOCULAR_RULES.searchRange || dist < 0.5) continue;
@@ -122,7 +126,7 @@ export class BinocularsSystem {
       bestAnimal.state === 'FLEE' ? 'fleeing' : bestAnimal.state === 'ALERT' ? 'alert' : 'calm';
 
     const isTooFar = bestDist > BINOCULAR_RULES.maxRange;
-    const isTooClose = bestDist < BINOCULAR_RULES.comfortRange;
+    const isTooClose = bestDist < bestAnimal.safeDistanceM;
     let isIdentified = this.known.has(bestAnimal.id);
 
     if (cond !== 'calm') {
@@ -148,6 +152,7 @@ export class BinocularsSystem {
           species: bestAnimal.speciesName,
           detail: bestAnimal.detailLabel,
           distance: bestDist,
+          safeDistance: bestAnimal.safeDistanceM,
           responsible: !this.disturbed && !isTooClose,
           time: this.clock,
         };
@@ -168,6 +173,7 @@ export class BinocularsSystem {
       identified: isIdentified,
       tooFar: isTooFar,
       tooClose: isTooClose,
+      safeDistance: bestAnimal.safeDistanceM,
     };
   }
 }

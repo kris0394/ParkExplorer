@@ -36,7 +36,6 @@ import { HandheldCompassUI } from './HandheldCompassUI.tsx';
 import { getSeasonDef } from '../data/seasons.ts';
 import { RangerNotices, RangerNoticeState, EMPTY_RANGER_NOTICE } from './RangerNotices.tsx';
 import {
-  SAFE_DISTANCE_M,
   RangerZone,
   LitterSpot,
   getZonesForPark,
@@ -1390,6 +1389,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         subject: scoreResult.subject,
         detail: scoreResult.detail,
         distance: scoreResult.distance,
+        safeDistance: scoreResult.safeDistance,
         score: finalScore,
         grade: finalScore >= 85 ? 'Exceptional' : finalScore >= 70 ? 'Great' : finalScore >= 50 ? 'Good' : 'Fair',
         tags,
@@ -1495,13 +1495,15 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       {
         const ageMs = performance.now() - sceneStartMs;
         const showWildlife =
-          !isLookingThroughTelescopeRef.current && wildlife.nearestDist < SAFE_DISTANCE_M && ageMs > 15000;
+          !isLookingThroughTelescopeRef.current && wildlife.nearestViolation !== null && ageMs > 15000;
         const lit = nearLitterRef.current;
         const next: RangerNoticeState = {
-          wildlife: showWildlife
+          wildlife: showWildlife && wildlife.nearestViolation
             ? {
-                dist: wildlife.nearestDist,
-                alert: wildlife.nearestState === 'ALERT' || wildlife.nearestState === 'FLEE',
+                dist: wildlife.nearestViolation.dist,
+                safeDist: wildlife.nearestViolation.safeDist,
+                alert: wildlife.nearestViolation.alert,
+                species: wildlife.nearestViolation.species,
               }
             : null,
           zone: zoneNoticeRef.current,
@@ -1509,7 +1511,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         };
         const zn = next.zone;
         const key = [
-          next.wildlife ? `${Math.round(next.wildlife.dist)}${next.wildlife.alert ? 'a' : 'c'}` : '-',
+          next.wildlife ? `${next.wildlife.species}${Math.round(next.wildlife.dist)}${next.wildlife.alert ? 'a' : 'c'}` : '-',
           zn ? `${zn.name}${zn.kind}${zn.inside}` : '-',
           next.litter ? next.litter.label : '-',
         ].join('|');

@@ -21,6 +21,8 @@ export interface PhotoScore {
   subject: string;
   detail: string;
   distance: number;
+  /** Safe viewing distance for the animal in the photo (m), wildlife only. */
+  safeDistance?: number;
   u: number | null;
   v: number | null;
   condition: AnimalCondition | null;
@@ -39,6 +41,8 @@ export interface ScoredPhoto {
   subject: string;
   detail: string;
   distance: number;
+  /** Safe viewing distance of the animal photographed (m), wildlife only. */
+  safeDistance?: number;
   score: number;
   grade: string;
   tags: FramingTag[];
@@ -134,7 +138,7 @@ function projectToFrame(
 }
 
 function getAnimalVisualHeight(deer: DeerEntity): number {
-  return deer.isFawn ? 0.8 : deer.isBuck ? 1.55 : 1.35;
+  return deer.visualHeight;
 }
 
 export function evaluateCurrentFraming(opts: {
@@ -202,8 +206,9 @@ export function evaluateCurrentFraming(opts: {
     const cond: AnimalCondition = a.state === 'FLEE' ? 'fleeing' : a.state === 'ALERT' ? 'alert' : 'calm';
     const condMul = cond === 'calm' ? 1.0 : cond === 'alert' ? 0.5 : 0.15;
 
-    const isResponsible = dist >= PHOTO_RULES.safeDistance;
-    const distMul = isResponsible ? 1.0 : 0.3 + (dist / PHOTO_RULES.safeDistance) * 0.4;
+    const safeDist = a.safeDistanceM;
+    const isResponsible = dist >= safeDist;
+    const distMul = isResponsible ? 1.0 : 0.3 + (dist / safeDist) * 0.4;
 
     let finalScore = Math.round(100 * raw * cutoffMul * condMul * distMul);
     if (!isResponsible) {
@@ -217,8 +222,8 @@ export function evaluateCurrentFraming(opts: {
     if (isResponsible) {
       tags.push({ text: `Responsible distance (${Math.round(dist)} m)`, good: true });
     } else {
-      tags.push({ text: `Too close (${Math.round(dist)} m). Back away to at least 23 m`, good: false });
-      hints.push({ text: `Too close! Back away to safe distance (23m+), then zoom in`, good: false });
+      tags.push({ text: `Too close (${Math.round(dist)} m). Back away to at least ${Math.round(safeDist)} m`, good: false });
+      hints.push({ text: `Too close! Back away to safe distance (${Math.round(safeDist)} m+), then zoom in`, good: false });
     }
 
     if (cond === 'calm') {
@@ -273,6 +278,7 @@ export function evaluateCurrentFraming(opts: {
       subject: a.speciesName,
       detail: a.detailLabel,
       distance: dist,
+      safeDistance: safeDist,
       u,
       v,
       condition: cond,

@@ -12,8 +12,14 @@ import { pushOutOfRocks } from './rocks.ts';
 
 export type DeerState = 'IDLE' | 'WANDER' | 'FEED' | 'ALERT' | 'FLEE';
 
+export type AnimalSpecies = 'white-tailed-deer' | 'elk';
+
 export interface DeerConfig {
   id: string;
+  /** Defaults to white-tailed deer. */
+  species?: AnimalSpecies;
+  /** Safe viewing distance in metres (set by the wildlife manager from species and park data). */
+  safeDistanceM?: number;
   isBuck: boolean;
   isFawn?: boolean;
   spawnX: number;
@@ -34,6 +40,9 @@ export class DeerEntity {
   public state: DeerState = 'FEED';
   public isBuck: boolean;
   public isFawn: boolean;
+  public species: AnimalSpecies;
+  /** Game safe-viewing distance (m): deer 23, elk 46 (park data can override). */
+  public safeDistanceM: number;
 
   private stateTimer = 0;
   private targetPos: THREE.Vector2;
@@ -60,20 +69,33 @@ export class DeerEntity {
   private earTwitchPhase = 0;
   private tailFlickPhase = 0;
 
+  get isElk(): boolean {
+    return this.species === 'elk';
+  }
+
   get speciesName(): string {
-    return 'White-tailed Deer';
+    return this.isElk ? 'Elk' : 'White-tailed Deer';
   }
 
   get detailLabel(): string {
+    if (this.isElk) return this.isBuck ? 'Bull elk (antlered)' : 'Cow elk';
     if (this.isFawn) return 'Spotted fawn';
     if (this.isBuck) return 'Adult buck (antlered)';
     return 'Adult doe';
   }
 
+  /** Approximate shoulder-to-antler height in metres, used for binocular and photo framing. */
+  get visualHeight(): number {
+    if (this.isElk) return this.isBuck ? 2.7 : 2.1;
+    return this.isFawn ? 0.8 : this.isBuck ? 1.55 : 1.35;
+  }
+
   constructor(config: DeerConfig) {
     this.id = config.id;
+    this.species = config.species ?? 'white-tailed-deer';
+    this.safeDistanceM = config.safeDistanceM ?? (config.species === 'elk' ? 46 : 23);
     this.isBuck = config.isBuck;
-    this.isFawn = Boolean(config.isFawn);
+    this.isFawn = this.species === 'elk' ? false : Boolean(config.isFawn);
     this.pos = new THREE.Vector3(config.spawnX, heightAt(config.spawnX, config.spawnZ), config.spawnZ);
     this.homePos = new THREE.Vector2(config.spawnX, config.spawnZ);
     this.targetPos = new THREE.Vector2(config.spawnX, config.spawnZ);
@@ -92,7 +114,12 @@ export class DeerEntity {
 
   private buildMesh(): void {
     // Distinct palettes for Buck vs Doe vs Fawn
-    const furColor = this.isFawn
+    const isElk = this.isElk;
+    const furColor = isElk
+      ? this.isBuck
+        ? 0x8d6b47 // tan-brown bull
+        : 0x9c7c58 // lighter cow
+      : this.isFawn
       ? 0xc2864c // bright golden fawn
       : this.isBuck
       ? 0x854e2c // deep rich chestnut buck
@@ -105,7 +132,10 @@ export class DeerEntity {
     const noseMat = new THREE.MeshLambertMaterial({ color: 0x161311 });
     const eyeMat = new THREE.MeshStandardMaterial({ color: 0x060504, roughness: 0.15 });
 
-    const scale = this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
+    const scale = isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
+    // Elk: darker neck and mane, cream rump patch, short tail
+    const maneMat = new THREE.MeshLambertMaterial({ color: 0x4a3524 });
+    const neckFurMat = isElk ? maneMat : furMat;
     const root = new THREE.Group();
     root.scale.set(scale, scale, scale);
 
@@ -138,6 +168,14 @@ export class DeerEntity {
       }
     }
 
+    if (isElk) {
+      // Cream rump patch
+      const rumpGeo = new THREE.BoxGeometry(0.34, 0.30, 0.10);
+      const rump = new THREE.Mesh(rumpGeo, new THREE.MeshLambertMaterial({ color: 0xe6d3a8 }));
+      rump.position.set(0, 0.04, -0.62);
+      this.bodyMesh.add(rump);
+    }
+
     // 2. Neck Pivot (at shoulders: x: 0, y: 0.16, z: 0.48)
     this.neckPivot = new THREE.Group();
     this.neckPivot.position.set(0, 0.16, 0.48);
@@ -146,7 +184,7 @@ export class DeerEntity {
     const neckLen = 0.62;
     const neckGeo = new THREE.CylinderGeometry(0.14, 0.21, neckLen, 8);
     neckGeo.translate(0, neckLen / 2, 0);
-    const neckMesh = new THREE.Mesh(neckGeo, furMat);
+    const neckMesh = new THREE.Mesh(neckGeo, neckFurMat);
     neckMesh.castShadow = true;
     this.neckPivot.add(neckMesh);
 
@@ -224,6 +262,7 @@ export class DeerEntity {
       for (const side of [-1, 1]) {
         const antlerGroup = new THREE.Group();
         antlerGroup.position.set(side * 0.065, 0.15, 0.01);
+        if (isElk) antlerGroup.scale.set(1.3, 1.45, 1.3);
 
         // Main sweeping beam
         const mainBeam = new THREE.CylinderGeometry(0.020, 0.030, 0.46, 5);
@@ -250,6 +289,18 @@ export class DeerEntity {
         fTineMesh.position.set(side * 0.11, 0.34, 0.03);
         antlerGroup.add(fTineMesh);
 
+        if (isElk) {
+          // Extra tines for a bigger, branching elk rack
+          for (const [yy, rot] of [[0.2, 0.7], [0.3, 0.45]] as [number, number][]) {
+            const tine = new THREE.CylinderGeometry(0.010, 0.016, 0.20, 5);
+            tine.translate(0, 0.10, 0);
+            tine.rotateZ(side * -rot);
+            const tm = new THREE.Mesh(tine, antlerMat);
+            tm.position.set(side * (0.05 + yy * 0.18), yy, 0.02);
+            antlerGroup.add(tm);
+          }
+        }
+
         this.headPivot.add(antlerGroup);
       }
     }
@@ -261,6 +312,7 @@ export class DeerEntity {
     this.tailPivot = new THREE.Group();
     this.tailPivot.position.set(0, 0.12, -0.60);
     this.tailPivot.rotation.x = -1.2;
+    if (isElk) this.tailPivot.scale.set(0.5, 0.5, 0.5);
 
     const tailGeo = new THREE.BoxGeometry(0.11, 0.30, 0.08);
     tailGeo.translate(0, -0.13, 0);
@@ -359,15 +411,21 @@ export class DeerEntity {
     // Realistic National Park tolerance:
     // When visitors are on trails or walking quietly, deer tolerate people down to 3.8m (2.2m if crouching!)
     // Only if the player sprints / rushes right at them do they get startled.
-    const fleeDistance = isPlayerSprinting ? 10.0 : isPlayerCrouching ? 2.2 : 3.8;
-    const alertDistance = (isPlayerSprinting ? 18.0 : isPlayerCrouching ? 4.5 : 7.5) * getSeasonDef().deer.alertMult;
+    // Elk are bigger and tougher: they notice you from farther away and only bolt when really crowded.
+    const fleeDistance = this.isElk
+      ? (isPlayerSprinting ? 14.0 : isPlayerCrouching ? 5.0 : 8.0)
+      : (isPlayerSprinting ? 10.0 : isPlayerCrouching ? 2.2 : 3.8);
+    const baseAlert = this.isElk
+      ? (isPlayerSprinting ? 32.0 : isPlayerCrouching ? 14.0 : 22.0)
+      : (isPlayerSprinting ? 18.0 : isPlayerCrouching ? 4.5 : 7.5);
+    const alertDistance = baseAlert * getSeasonDef().deer.alertMult;
 
     if (distToPlayer < fleeDistance) {
       if (this.state !== 'FLEE') {
         this.state = 'FLEE';
         this.stateTimer = 3.8;
         const fleeAngle = Math.atan2(this.pos.z - playerPos.z, this.pos.x - playerPos.x) + (Math.random() - 0.5) * 0.4;
-        const fleeDist = 16.0 + Math.random() * 8.0;
+        const fleeDist = (this.isElk ? 24.0 : 16.0) + Math.random() * 8.0;
         this.targetPos.set(this.pos.x + Math.cos(fleeAngle) * fleeDist, this.pos.z + Math.sin(fleeAngle) * fleeDist);
       }
     } else if (distToPlayer < alertDistance && this.state !== 'FLEE') {
@@ -388,9 +446,9 @@ export class DeerEntity {
     // Movement
     let moveSpeed = 0;
     if (this.state === 'WANDER') {
-      moveSpeed = 1.1;
+      moveSpeed = this.isElk ? 1.0 : 1.1;
     } else if (this.state === 'FLEE') {
-      moveSpeed = 6.5;
+      moveSpeed = this.isElk ? 7.5 : 6.5;
     }
 
     if (moveSpeed > 0) {

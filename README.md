@@ -22,7 +22,9 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 11 | Park content moved into data (ParkDefinition) | **Done** | Wildlife spawns, closed/fragile areas, litter and water stations now live in each park's data. Checker: `npm run check:parks`. Guide: `docs/ADDING_A_PARK.md` |
 | 12 | Real NPS information and alerts | **Done** (needs one-time key setup) | Downloaded at build time with a private GitHub secret. Start screen shows real park info and alerts. Guide: `docs/NPS_SETUP.md` |
 | 13 | First real park (Great Smoky Mountains) | **Done (first pass)** | Opens on the real park. Sourced NPS wildlife guidance and facts, Kuwohi naming, Whispering Valley kept as a labelled practice park. Checklist: `docs/REAL_PARK_CHECKLIST.md` |
-| 14 | More real parks | Next | Next easiest per the plan: Shenandoah, then Acadia, a desert park and so on |
+| 14 | Elk and per-species safe distances | **Done (first pass)** | Elk herd in the Smokies. Deer keep 23 m, elk use the park's 50 yards (46 m). Bears still to do |
+| 15 | Real terrain pilot from elevation data | Next | See `docs/ELEVATION_DATA.md` (free USGS 3DEP and AWS Terrain Tiles) |
+| 16 | More real parks, and bears | Planned | Shenandoah, Acadia, a desert park and so on |
 
 ---
 
@@ -107,12 +109,21 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - The validator refuses a real park without sourced facts. Checklist for future parks: `docs/REAL_PARK_CHECKLIST.md`.
 - Game rules stay game rules. The deer distance in the game is still 23 m (25 yards). The park's own guidance (50 yards from bears and elk, or any distance that changes behaviour) is shown next to it with a note that NPS pages have given different elk distances over time.
 
-## 10. Known limitations
+## 10. Task 14: Elk and per-species distances (how it works)
+- **Elk** live in the Great Smoky Mountains park only (a herd of 1 bull and 3 cows in a meadow to the west of the start, about 65 m away). The practice park has deer only.
+- Each animal now carries its own **safe distance**. Defaults are in `src/data/species.ts`: deer 23 m, elk 46 m (50 yards, the park's guidance for elk). A park can override a species with `wildlife.safeDistanceOverrides` in its data.
+- The warning banner, binocular "too close" check, photo scoring cap and reward messages all use the distance of the animal you are near.
+- Elk behave differently: they notice you from about 22 m (32 m if you run) and only bolt when crowded (about 8 m), so you can get dangerously close without them running. That is the point: the banner and Stewardship penalty teach why you should not.
+- The Field Journal now lists only the species that live in the current park. Elk have their own entry with 5 facts, and the Smokies show 5 animal variants in total (3 deer, 2 elk).
+- Elk geometry is the deer model enlarged, with a dark neck, cream rump and branching antlers. It is a stand-in and may look rough.
+
+## 11. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
 - The deer spawn within 23 m of the start point, so the distance banner appears early on the first stretch of trail. This is intentional teaching, but may need tuning.
 - Trees and rocks do not block binocular or camera views.
-- Only one species (white-tailed deer). Desktop browsers only. Elk and bears are real Smokies animals but are not in the game yet, so the park's 50-yard guidance cannot be applied per species yet.
-- The Smokies map is still a generic game landscape with real names. The real park's terrain is not reproduced.
+- Only one species (white-tailed deer). Desktop browsers only. Bears are real Smokies animals but are not in the game yet. They need careful, calm-and-back-away design and will use the same per-species distance.
+- The Smokies map is still a generic game landscape with real names. The real park's terrain is not reproduced (see `docs/ELEVATION_DATA.md` for the plan).
+- Elk have no calves, and their rut behaviour is simplified (they are only more alert in autumn).
 - Facts in the `about` block are a snapshot (checked 2026-10-10). Re-check them from time to time.
 - NPS data is a snapshot from build time (up to about a day old) and is not shown inside the 3D world, only on the start screen. The standalone `park-explorer.html` carries the snapshot from when it was built.
 - The NPS download was tested against a simulated NPS server only. The first real run happens on GitHub after you add the secret.

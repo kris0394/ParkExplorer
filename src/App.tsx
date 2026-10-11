@@ -207,7 +207,7 @@ export default function App() {
             <div className="text-left text-[11px] mb-4 font-sans bg-emerald-950/40 p-3 rounded-2xl border border-emerald-800/50 text-stone-300 leading-relaxed">
               <div className="font-semibold text-emerald-300 mb-1">Park Rules (game version)</div>
               <ul className="list-disc pl-4 space-y-0.5">
-                <li>Stay at least 23 m (25 yards) from wildlife. Zoom in, don&apos;t walk closer.</li>
+                <li>Stay at least 23 m (25 yards) from deer and 46 m (50 yards) from elk. Zoom in, don&apos;t walk closer.</li>
                 <li>Move slowly near animals. Rushing them costs Stewardship.</li>
                 <li>Respect closed areas, and stay on the trail in fragile areas.</li>
                 <li>Pick up litter and pack it out. Leave no trace.</li>

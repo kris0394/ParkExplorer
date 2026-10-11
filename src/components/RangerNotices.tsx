@@ -5,10 +5,9 @@
 
 import React from 'react';
 import { AlertTriangle, Ban, Leaf, Recycle } from 'lucide-react';
-import { SAFE_DISTANCE_M } from '../entities/rangerRules.ts';
 
 export interface RangerNoticeState {
-  wildlife: { dist: number; alert: boolean } | null;
+  wildlife: { dist: number; safeDist: number; alert: boolean; species: string } | null;
   zone: { name: string; reason: string; kind: 'closed' | 'sensitive'; inside: boolean } | null;
   litter: { label: string; tip: string } | null;
 }
@@ -45,11 +44,11 @@ export const RangerNotices: React.FC<Props> = ({ notice }) => {
             <div className="flex items-center gap-2 font-bold mb-0.5">
               <AlertTriangle size={14} className={wildlife.alert ? 'text-rose-300' : 'text-amber-300'} />
               {wildlife.alert
-                ? 'The animal has noticed you'
-                : `Wildlife within ${SAFE_DISTANCE_M} m (25 yards)`}
+                ? `The ${wildlife.species.toLowerCase()} has noticed you`
+                : `${wildlife.species} within ${Math.round(wildlife.safeDist)} m (${Math.round(wildlife.safeDist / 0.9144)} yards)`}
             </div>
             <div>
-              You are about {Math.round(wildlife.dist)} m away.{' '}
+              You are about {Math.round(wildlife.dist)} m away. Keep at least {Math.round(wildlife.safeDist)} m from this animal.{' '}
               {wildlife.alert
                 ? 'Stay calm and back away slowly. Do not run toward it.'
                 : 'Back away slowly and use binoculars or camera zoom instead of walking closer.'}{' '}

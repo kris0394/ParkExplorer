@@ -248,7 +248,7 @@ export const PhotoGalleryModal: React.FC<{
             No photos yet. Press <strong className="text-amber-300">[V]</strong> to raise the camera, then click or press{' '}
             <strong className="text-amber-300">Space</strong> to shoot.
             <div className="mt-2 text-xs text-stone-500">
-              Responsible wildlife photos score best from a respectful distance (25 yards / 23m+) with optical zoom.
+              Responsible wildlife photos score best from each animal's safe distance (deer 23 m, elk 46 m) with optical zoom.
             </div>
           </div>
         ) : (
