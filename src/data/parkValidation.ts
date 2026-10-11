@@ -4,6 +4,7 @@
  */
 
 import { ParkDefinition } from './parks.ts';
+import { SPECIES_CATALOGUE } from './species.ts';
 
 /**
  * TASK 11: checks a park's data for mistakes that do not need the 3D world
@@ -57,6 +58,15 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
       if (!f.text?.trim() || !f.title?.trim()) say(`fact "${f.id}" needs a title and text`);
       if (!/^https:\/\//.test(f.sourceUrl ?? '') || !f.sourceLabel?.trim()) say(`fact "${f.id}" needs an https sourceUrl and a sourceLabel (no unsourced facts)`);
     }
+  }
+
+  // Wildlife species and distances (Task 14)
+  for (const sp of park.wildlife?.spawns ?? []) {
+    if (!SPECIES_CATALOGUE[sp.species]) say(`wildlife spawn uses unknown species "${sp.species}" (add it to src/data/species.ts)`);
+  }
+  for (const [id, m] of Object.entries(park.wildlife?.safeDistanceOverrides ?? {})) {
+    if (!SPECIES_CATALOGUE[id]) say(`safeDistanceOverrides lists unknown species "${id}"`);
+    if (!(m >= 5 && m <= 200)) say(`safeDistanceOverrides "${id}" should be between 5 and 200 metres`);
   }
 
   // Wildlife

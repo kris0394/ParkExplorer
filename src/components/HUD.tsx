@@ -371,7 +371,7 @@ export const HUD: React.FC<HUDProps> = ({
             )}
             {target.tooClose && target.condition === 'calm' && (
               <div className="bg-amber-950/85 border border-amber-500/50 text-amber-200 text-[11px] px-3 py-1.5 rounded-xl text-center shadow-xl">
-                Close encounter ({Math.round(target.distance)} m). Maintain safe 25 yards (23 m) clearance.
+                Close encounter ({Math.round(target.distance)} m). Keep at least {Math.round(target.safeDistance)} m ({Math.round(target.safeDistance / 0.9144)} yards) clearance.
               </div>
             )}
           </div>

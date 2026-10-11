@@ -554,7 +554,7 @@ export const JournalModal: React.FC<{
             <div className="flex flex-col md:flex-row gap-4">
               {/* Species Selector */}
               <div className="md:w-48 space-y-1.5 shrink-0">
-                {Object.values(SPECIES_CATALOGUE).map(sp => {
+                {Object.values(SPECIES_CATALOGUE).filter(sp => parkSpecies.includes(sp.id)).map(sp => {
                   const isSeen = (data.species[sp.id]?.variantsIdentified.length ?? 0) > 0;
                   return (
                     <button
