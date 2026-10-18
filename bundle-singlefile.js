@@ -51,6 +51,25 @@ if (fs.existsSync(npsDir)) {
   }
 }
 
+// Task 15: copy any real-terrain files into the standalone file too
+const terrainDir = path.join(distDir, 'terrain');
+if (fs.existsSync(terrainDir)) {
+  const all = {};
+  for (const f of fs.readdirSync(terrainDir)) {
+    if (!f.endsWith('.json')) continue;
+    try {
+      all[f.replace(/\.json$/, '')] = JSON.parse(fs.readFileSync(path.join(terrainDir, f), 'utf8'));
+    } catch {
+      /* skip unreadable file */
+    }
+  }
+  if (Object.keys(all).length > 0) {
+    const safe = JSON.stringify(all).replace(/</g, '\\u003c');
+    const tag = '<script>window.__TERRAIN_DATA__ = ' + safe + ';</script>\n<script type="module">';
+    html = html.replace('<script type="module">', () => tag);
+  }
+}
+
 const outPath = path.resolve('park-explorer.html');
 fs.writeFileSync(outPath, html, 'utf8');
 // Also place a copy in dist so the GitHub Pages site can offer it as a download

@@ -60,6 +60,21 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
     }
   }
 
+  // Real terrain (Task 15)
+  const rt = park.realTerrain;
+  if (rt) {
+    if (!/^[a-z0-9-]+$/.test(rt.id)) say('realTerrain.id must be lowercase letters, numbers and hyphens');
+    if (!(rt.centerLat >= -90 && rt.centerLat <= 90 && rt.centerLon >= -180 && rt.centerLon <= 180)) say('realTerrain centre latitude or longitude is out of range');
+    if (!(rt.zoom >= 10 && rt.zoom <= 15)) say('realTerrain.zoom should be between 10 and 15 (13 is about 15 m per pixel)');
+    if (!(rt.sizeM >= 300 && rt.sizeM <= 3000)) say('realTerrain.sizeM should be between 300 and 3000 metres');
+    if (!(rt.stepM >= 2 && rt.stepM <= 20)) say('realTerrain.stepM should be between 2 and 20 metres');
+    if (!(rt.mix >= 0 && rt.mix <= 1)) say('realTerrain.mix must be between 0 and 1');
+    if (!(rt.detrendSigmaM >= 30)) say('realTerrain.detrendSigmaM should be at least 30 metres');
+    if (Math.abs(rt.sizeM / rt.stepM - Math.round(rt.sizeM / rt.stepM)) > 1e-9) say('realTerrain.sizeM must be a whole multiple of stepM');
+    if (park.isPracticePark) say('a fictional practice park cannot use real terrain');
+    if (!park.npsParkCode) say('a park with real terrain should be a real park (needs npsParkCode)');
+  }
+
   // Wildlife species and distances (Task 14)
   for (const sp of park.wildlife?.spawns ?? []) {
     if (!SPECIES_CATALOGUE[sp.species]) say(`wildlife spawn uses unknown species "${sp.species}" (add it to src/data/species.ts)`);

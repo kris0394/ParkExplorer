@@ -5,6 +5,7 @@
 
 import { fbm, sstep, clamp } from '../utils/noise.ts';
 import { getActivePark } from '../data/parks.ts';
+import { rollingHills } from './realRelief.ts';
 
 /**
  * Calculates the X coordinate of the river centerline for any Z.
@@ -58,7 +59,7 @@ export function heightAt(x: number, z: number): number {
   const park = getActivePark();
 
   // 1. Base rolling hills and natural micro-topography from park definition
-  let baseH = fbm(x * park.terrain.baseScale + 105, z * park.terrain.baseScale + 95, 4) * park.terrain.heightScale +
+  let baseH = rollingHills(x, z, park) +
               fbm(x * 0.022, z * 0.022, 3) * 2.4 +
               fbm(x * 0.055 + 13, z * 0.055 - 71, 3) * 1.05 + // natural micro hummocks and knolls
               fbm(x * 0.12, z * 0.12, 2) * 0.32;

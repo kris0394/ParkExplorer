@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+# Downloaded at build time by scripts/fetch-terrain.ts
+public/terrain/
+# Downloaded at build time by scripts/fetch-nps.ts
+public/nps/
