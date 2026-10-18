@@ -1,7 +1,7 @@
 # Free elevation data for real park terrain (research notes)
 
 Goal: build a real section of each park from real ground heights instead of the invented landscape.
-Checked 2026-10-10. These are notes, nothing here is used by the game yet.
+Checked 2026-10-10. Update: Task 15 now uses AWS Terrain Tiles for a pilot (see `docs/REAL_TERRAIN.md`).
 
 ## Best sources (all free, no account needed)
 

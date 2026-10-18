@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "tsx scripts/fetch-nps.ts && vite build && node bundle-singlefile.js",
+    "build": "tsx scripts/fetch-nps.ts && tsx scripts/fetch-terrain.ts && vite build && node bundle-singlefile.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "check:parks": "tsx scripts/check-parks.ts",
-    "fetch:nps": "tsx scripts/fetch-nps.ts"
+    "fetch:nps": "tsx scripts/fetch-nps.ts",
+    "fetch:terrain": "tsx scripts/fetch-terrain.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -25,10 +26,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/pngjs": "^6.0.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
+    "pngjs": "^7.0.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2"

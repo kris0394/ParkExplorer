@@ -3,17 +3,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NatureWorld } from './components/NatureWorld.tsx';
 import { Mountain, Compass, Waves, Footprints, Trees, MapPin } from 'lucide-react';
 import { AVAILABLE_PARKS, setActivePark, getActivePark, ParkDefinition } from './data/parks.ts';
 import { NpsInfoPanel } from './components/NpsInfoPanel.tsx';
+import { loadRelief, applyCachedRelief, needsReliefLoad } from './utils/terrainData.ts';
+import { getActiveReliefData } from './terrain/realRelief.ts';
 import { SEASONS, SEASON_ORDER, Season, getActiveSeason, setActiveSeason } from './data/seasons.ts';
 
 export default function App() {
   const [isPaused, setIsPaused] = useState(true);
   const [currentPark, setCurrentPark] = useState<ParkDefinition>(getActivePark());
   const [season, setSeason] = useState<Season>(getActiveSeason());
+  // Task 15: real elevation relief must be loaded BEFORE the world is built
+  const [reliefTriedFor, setReliefTriedFor] = useState<string | null>(null);
+  const waitingForTerrain = needsReliefLoad(currentPark) && reliefTriedFor !== currentPark.id;
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!currentPark.realTerrain) {
+      applyCachedRelief(currentPark);
+      return;
+    }
+    loadRelief(currentPark).then(() => {
+      if (cancelled) return;
+      applyCachedRelief(currentPark);
+      setReliefTriedFor(currentPark.id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPark.id]);
 
   const handleStartExploring = () => {
     const canvas = document.querySelector('canvas');
@@ -24,6 +45,7 @@ export default function App() {
 
   const handleSelectPark = (parkId: string) => {
     const updated = setActivePark(parkId);
+    applyCachedRelief(updated); // use already-loaded real terrain right away (or clear it)
     setCurrentPark({ ...updated });
   };
 
@@ -37,13 +59,19 @@ export default function App() {
 
   return (
     <main className="relative w-screen h-screen overflow-hidden font-serif bg-[#cfd9c4]">
-      {/* 3D Simulation Engine */}
-      <NatureWorld
-        key={`${currentPark.id}-${season}`}
-        park={currentPark}
-        onSelectPark={handleSelectPark}
-        onPauseChange={setIsPaused}
-      />
+      {/* 3D Simulation Engine (built only after the terrain data is ready) */}
+      {waitingForTerrain ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950 text-stone-300 font-sans text-sm">
+          Loading terrain…
+        </div>
+      ) : (
+        <NatureWorld
+          key={`${currentPark.id}-${season}`}
+          park={currentPark}
+          onSelectPark={handleSelectPark}
+          onPauseChange={setIsPaused}
+        />
+      )}
 
       {/* Start / Pause Screen Overlay */}
       {isPaused && (
@@ -158,6 +186,34 @@ export default function App() {
 
             {/* Official NPS information (Task 12) */}
             <NpsInfoPanel park={currentPark} />
+
+            {/* Terrain source (Task 15) */}
+            {(() => {
+              const relief = getActiveReliefData(currentPark.id);
+              if (relief) {
+                return (
+                  <div className="mb-3.5 p-2.5 rounded-2xl border border-stone-800 bg-stone-950/40 text-left text-[11px] text-stone-400 font-sans leading-relaxed">
+                    <span className="font-semibold text-stone-300">Terrain: </span>
+                    real elevation relief from the {relief.featureName} (a {Math.round(relief.sizeM / 100) / 10} km window, real
+                    elevation {relief.stats.realMinM.toLocaleString()} to {relief.stats.realMaxM.toLocaleString()} m), shown at{' '}
+                    {Math.round(relief.stats.scale * 100)}% of its real height and blended into the hills away from the
+                    hand-placed trail, river and summit. {relief.attribution.text}{' '}
+                    <a href={relief.attribution.url} target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">
+                      Details
+                    </a>
+                  </div>
+                );
+              }
+              if (currentPark.realTerrain) {
+                return (
+                  <div className="mb-3.5 p-2.5 rounded-2xl border border-stone-800 bg-stone-950/40 text-left text-[11px] text-stone-500 font-sans leading-relaxed">
+                    <span className="font-semibold text-stone-400">Terrain: </span>
+                    the game&apos;s built-in landscape (real elevation data is not available in this copy of the game).
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Streamlined Compact Shortcuts Grid (retains 100% of controls without crowding) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1.5 text-left text-xs mb-4 font-sans bg-stone-950/60 p-2.5 rounded-2xl border border-stone-800/80">

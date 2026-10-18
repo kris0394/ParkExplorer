@@ -80,6 +80,29 @@ export interface ParkDefinition {
   region: string;
   /** Real NPS park code (e.g. 'grsm'). Leave out for fictional parks. Used to show live NPS info and alerts. */
   npsParkCode?: string;
+  /**
+   * Task 15: optional real elevation relief for part of the terrain (made at build time from free elevation data).
+   * Leave out for parks that use only the procedural landscape.
+   */
+  realTerrain?: {
+    /** File name stem: public/terrain/<id>.json */
+    id: string;
+    featureName: string;
+    centerLat: number;
+    centerLon: number;
+    /** Tile zoom level (13 is about 15 m per pixel). */
+    zoom: number;
+    /** Width of the real window in metres, and grid spacing. */
+    sizeM: number;
+    stepM: number;
+    /** World position where the centre of the window is placed (the real feature lines up with this). */
+    originX: number;
+    originZ: number;
+    /** How strongly real relief replaces the procedural hills away from the trail (0 to 1). */
+    mix: number;
+    /** Overall slopes larger than this (metres) are removed. */
+    detrendSigmaM: number;
+  };
   /** True for fictional demo parks (shown as "Practice park"). */
   isPracticePark?: boolean;
   /** Task 13: sourced real-park information (real parks only). */
@@ -426,6 +449,20 @@ export const PROTOTYPE_PARK: ParkDefinition = {
 export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
   id: 'great-smoky-mountains',
   npsParkCode: 'grsm',
+  // Task 15 pilot: real elevation relief from the Kuwohi (Clingmans Dome) area, placed so the real summit lines up with the game's summit
+  realTerrain: {
+    id: 'grsm',
+    featureName: 'Kuwohi area',
+    centerLat: 35.5628,
+    centerLon: -83.4986,
+    zoom: 13,
+    sizeM: 1000,
+    stepM: 5,
+    originX: 82,
+    originZ: -70,
+    mix: 0.6,
+    detrendSigmaM: 120,
+  },
   name: 'Great Smoky Mountains',
   subtitle: 'Blue Mist Ridges & Ancient Forest',
   parkServiceUnit: 'National Park',

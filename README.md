@@ -23,8 +23,9 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 12 | Real NPS information and alerts | **Done** (needs one-time key setup) | Downloaded at build time with a private GitHub secret. Start screen shows real park info and alerts. Guide: `docs/NPS_SETUP.md` |
 | 13 | First real park (Great Smoky Mountains) | **Done (first pass)** | Opens on the real park. Sourced NPS wildlife guidance and facts, Kuwohi naming, Whispering Valley kept as a labelled practice park. Checklist: `docs/REAL_PARK_CHECKLIST.md` |
 | 14 | Elk and per-species safe distances | **Done (first pass)** | Elk herd in the Smokies. Deer keep 23 m, elk use the park's 50 yards (46 m). Bears still to do |
-| 15 | Real terrain pilot from elevation data | Next | See `docs/ELEVATION_DATA.md` (free USGS 3DEP and AWS Terrain Tiles) |
-| 16 | More real parks, and bears | Planned | Shenandoah, Acadia, a desert park and so on |
+| 15 | Real terrain pilot from elevation data | **Done (first pass, needs first real download)** | Real Kuwohi-area relief blended into the Smokies hills, away from the trail. Guide: `docs/REAL_TERRAIN.md` |
+| 16 | More real parks, and bears | Next | Shenandoah, Acadia, a desert park and so on |
+| 17 | Full real level (trail and landmarks on real ground) | Planned | Needs NPS trail data and a layout step |
 
 ---
 
@@ -117,12 +118,20 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - The Field Journal now lists only the species that live in the current park. Elk have their own entry with 5 facts, and the Smokies show 5 animal variants in total (3 deer, 2 elk).
 - Elk geometry is the deer model enlarged, with a dark neck, cream rump and branching antlers. It is a stand-in and may look rough.
 
-## 11. Known limitations
+## 11. Task 15: Real terrain pilot (how it works)
+- On GitHub the build downloads free elevation tiles (AWS Terrain Tiles) for a 1 km window around Kuwohi and saves a small relief file. Full guide: `docs/REAL_TERRAIN.md`.
+- The game blends that real relief into 60% of the rolling hills, but never near the trail, the spawn clearing, the summit plateau or the river valley.
+- The start screen shows a Terrain note (source, real elevation range, share of real height shown, attribution). If the download fails, the game uses the built-in landscape and says so.
+- The world is built only after the terrain data has loaded (a brief "Loading terrain..." screen).
+- The standalone `park-explorer.html` carries the data inside it.
+
+## 12. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
 - The deer spawn within 23 m of the start point, so the distance banner appears early on the first stretch of trail. This is intentional teaching, but may need tuning.
 - Trees and rocks do not block binocular or camera views.
 - Only one species (white-tailed deer). Desktop browsers only. Bears are real Smokies animals but are not in the game yet. They need careful, calm-and-back-away design and will use the same per-species distance.
-- The Smokies map is still a generic game landscape with real names. The real park's terrain is not reproduced (see `docs/ELEVATION_DATA.md` for the plan).
+- The Smokies map is still a game landscape with real names. Real relief from the Kuwohi area is blended into the hills (Task 15), but the trail, river and landmarks are hand-placed, so it is not a map of the real park.
+- The terrain download has only been tested with made-up tiles. The first real download happens on GitHub, so check the build log line starting with `[terrain]`.
 - Elk have no calves, and their rut behaviour is simplified (they are only more alert in autumn).
 - Facts in the `about` block are a snapshot (checked 2026-10-10). Re-check them from time to time.
 - NPS data is a snapshot from build time (up to about a day old) and is not shown inside the 3D world, only on the start screen. The standalone `park-explorer.html` carries the snapshot from when it was built.
