@@ -703,6 +703,8 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
     let sensitiveTimer = 0;
     let sensitiveCooldownUntil = 0;
     let lastStartleTotal = 0;
+    let lastBearRetreats = 0;
+    let lastBearRuns = 0;
     let lastStartlePenaltyMs = 0;
     let rangerKey = '';
 
@@ -1492,10 +1494,20 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
           progress.recordStartle();
         }
       }
+      // Task 16: bears. Backing away slowly is rewarded, running is a lesson (a small penalty)
+      if (wildlife.bearRetreats > lastBearRetreats) {
+        lastBearRetreats = wildlife.bearRetreats;
+        progress.recordBearRetreat();
+      }
+      if (wildlife.bearRuns > lastBearRuns) {
+        lastBearRuns = wildlife.bearRuns;
+        progress.recordBearRun();
+      }
       {
         const ageMs = performance.now() - sceneStartMs;
+        const bearComing = !isLookingThroughTelescopeRef.current ? wildlife.bearApproach : null;
         const showWildlife =
-          !isLookingThroughTelescopeRef.current && wildlife.nearestViolation !== null && ageMs > 15000;
+          !isLookingThroughTelescopeRef.current && wildlife.nearestViolation !== null && ageMs > 15000 && !bearComing;
         const lit = nearLitterRef.current;
         const next: RangerNoticeState = {
           wildlife: showWildlife && wildlife.nearestViolation
@@ -1508,12 +1520,14 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
             : null,
           zone: zoneNoticeRef.current,
           litter: lit ? { label: lit.label, tip: lit.tip } : null,
+          bear: bearComing ? { dist: bearComing.dist } : null,
         };
         const zn = next.zone;
         const key = [
           next.wildlife ? `${next.wildlife.species}${Math.round(next.wildlife.dist)}${next.wildlife.alert ? 'a' : 'c'}` : '-',
           zn ? `${zn.name}${zn.kind}${zn.inside}` : '-',
           next.litter ? next.litter.label : '-',
+          next.bear ? `bear${Math.round(next.bear.dist / 3)}` : '-',
         ].join('|');
         if (key !== rangerKey) {
           rangerKey = key;

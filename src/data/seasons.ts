@@ -45,6 +45,16 @@ export interface SeasonDef {
   /** Snow settles on flat ground and builds up with height. */
   groundIsSnow: boolean;
 
+  /** Black bears (Task 16). */
+  bear: {
+    /** False = no bears are shown this season (they are far less active in winter). */
+    active: boolean;
+    /** Multiplier on how often a curious bear walks toward you. */
+    approachMult: number;
+    /** Short note shown on the start screen for parks with bears. */
+    note: string;
+  };
+
   deer: {
     /** Multiplier on the distance at which a deer notices you. */
     alertMult: number;
@@ -73,6 +83,7 @@ export const SEASONS: Record<Season, SeasonDef> = {
     groundColor: 0x7aa844,
     groundAmount: 0.14,
     groundIsSnow: false,
+    bear: { active: true, approachMult: 1, note: 'Bears are active and hungry in spring and search for spring foods.' },
     deer: { alertMult: 1.15, wanderChance: 0.12, startlePenaltyMult: 1 },
   },
   summer: {
@@ -92,6 +103,7 @@ export const SEASONS: Record<Season, SeasonDef> = {
     groundColor: 0x000000,
     groundAmount: 0,
     groundIsSnow: false,
+    bear: { active: true, approachMult: 1, note: 'A black bear\'s diet changes with the seasons and with what food is available.' },
     deer: { alertMult: 1, wanderChance: 0.12, startlePenaltyMult: 1 },
   },
   autumn: {
@@ -111,6 +123,7 @@ export const SEASONS: Record<Season, SeasonDef> = {
     groundColor: 0xa07a3a,
     groundAmount: 0.32,
     groundIsSnow: false,
+    bear: { active: true, approachMult: 1.6, note: 'As fall approaches, bears can nearly double their weight before winter, so they roam and feed a lot.' },
     deer: { alertMult: 1.3, wanderChance: 0.18, startlePenaltyMult: 1 },
   },
   winter: {
@@ -130,6 +143,7 @@ export const SEASONS: Record<Season, SeasonDef> = {
     groundColor: 0xf2f6fa,
     groundAmount: 0.78,
     groundIsSnow: true,
+    bear: { active: false, approachMult: 0, note: 'Bears are far less active in winter, so the game shows none this season (a game simplification).' },
     deer: { alertMult: 1.1, wanderChance: 0.05, startlePenaltyMult: 2 },
   },
 };

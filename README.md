@@ -24,8 +24,9 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 13 | First real park (Great Smoky Mountains) | **Done (first pass)** | Opens on the real park. Sourced NPS wildlife guidance and facts, Kuwohi naming, Whispering Valley kept as a labelled practice park. Checklist: `docs/REAL_PARK_CHECKLIST.md` |
 | 14 | Elk and per-species safe distances | **Done (first pass)** | Elk herd in the Smokies. Deer keep 23 m, elk use the park's 50 yards (46 m). Bears still to do |
 | 15 | Real terrain pilot from elevation data | **Done (first pass, needs first real download)** | Real Kuwohi-area relief blended into the Smokies hills, away from the trail. Guide: `docs/REAL_TERRAIN.md` |
-| 16 | More real parks, and bears | Next | Shenandoah, Acadia, a desert park and so on |
-| 17 | Full real level (trail and landmarks on real ground) | Planned | Needs NPS trail data and a layout step |
+| 16 | Black bears (calm-and-back-away lesson) | **Done (first pass)** | One bear in the Smokies; approach, back away, never run. Winter: no bears |
+| 17 | Shenandoah (next real park) | Next | Follow `docs/REAL_PARK_CHECKLIST.md` |
+| 18 | Full real level (trail and landmarks on real ground), more parks | Planned | Needs NPS trail data and a layout step |
 
 ---
 
@@ -125,11 +126,26 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - The world is built only after the terrain data has loaded (a brief "Loading terrain..." screen).
 - The standalone `park-explorer.html` carries the data inside it.
 
-## 12. Known limitations
+## 12. Task 16: Black bears (how it works)
+- One adult black bear forages on the forested ridge below the summit in the Great Smoky Mountains (about 30 m off the trail and 160 m from the start). The practice park has none.
+- **Bears are never an enemy.** They never chase or attack. The lesson comes from the park's own bear guidance: stay 50 yards (46 m) away, and if a bear approaches or follows you, change direction, slowly back away facing it, never run and never turn your back.
+- A curious bear sometimes starts walking toward you when you are 25 to 70 m away and not sprinting. A banner tells you what to do.
+  - **Back away slowly** (10 m of distance gained): the bear loses interest, you get **+5 Credits and +2 Stewardship** ("Bear Aware"). At most once per 90 s.
+  - **Stand still:** the bear comes to about 12 m, stops and looks, then carries on. No reward, no penalty.
+  - **Run (sprint):** one "Never run from a bear" lesson and -1 Stewardship. The bear does not chase.
+  - **Walk up to it** (inside about 10 m): it walks away and counts as startling it.
+- A bear may rise onto its hind legs when alert. That is curiosity, not aggression.
+- Seasons: bears approach more often in autumn (they feed heavily before winter) and are not shown in winter (a game simplification: they are far less active then).
+- The Field Journal has a Black Bear entry with 5 facts, each checked against the park's black bear and bear-safety pages. Smokies now show 6 animal variants (3 deer, 2 elk, 1 bear).
+- Settings: `src/data/species.ts` (distance and facts), `src/data/seasons.ts` (`bear`), behaviour in `src/entities/deer.ts` (`updateBearBehavior`), rewards in `REWARDS` in `src/entities/progress.ts`.
+
+## 13. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
 - The deer spawn within 23 m of the start point, so the distance banner appears early on the first stretch of trail. This is intentional teaching, but may need tuning.
 - Trees and rocks do not block binocular or camera views.
-- Only one species (white-tailed deer). Desktop browsers only. Bears are real Smokies animals but are not in the game yet. They need careful, calm-and-back-away design and will use the same per-species distance.
+- Three species (deer, elk, black bear). Desktop browsers only.
+- Bears: one bear only, no cubs (a mother with cubs would need extra rules), no food or campsite mechanics yet, and the model is the deer body reshaped, so it may look rough. The "rise onto hind legs" pose is simple.
+- Bear approach is simplified: a bear that is approached by a standing player just stops at about 12 m and carries on.
 - The Smokies map is still a game landscape with real names. Real relief from the Kuwohi area is blended into the hills (Task 15), but the trail, river and landmarks are hand-placed, so it is not a map of the real park.
 - The terrain download has only been tested with made-up tiles. The first real download happens on GitHub, so check the build log line starting with `[terrain]`.
 - Elk have no calves, and their rut behaviour is simplified (they are only more alert in autumn).

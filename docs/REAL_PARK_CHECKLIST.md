@@ -11,7 +11,7 @@ A real park must be honest. Work through this list before it ships.
    - `facts`: 3 to 6 short facts. Each needs a `sourceUrl` and `sourceLabel`. Prefer nps.gov pages.
    - `checkedOn`: the date you checked them.
 5. **Do not invent rules, closures or alerts.** The game's own zones are examples. Real alerts come only from the NPS download.
-6. **Species.** Only add an animal to `wildlife.spawns` if it really lives in that park. Dangerous animals (bears, wolves) are never enemies. They need larger distances and calm, educational handling.
+6. **Species.** Only add an animal to `wildlife.spawns` if it really lives in that park (`elk`, `white-tailed-deer` and `black-bear` exist so far). Dangerous animals (bears, wolves) are never enemies: they use larger distances and calm, educational handling. Check each park's own bear guidance before using the bear lesson there.
 7. **Run `npm run check:parks`** and fix every error. Look at every warning.
 8. **Play it** in the browser and write down anything odd.
 

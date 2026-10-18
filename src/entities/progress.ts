@@ -170,6 +170,9 @@ export const REWARDS = {
   litterStewardship: 1,
   startlePenalty: 1,
   fragileAreaPenalty: 1,
+  bearRetreatCredits: 5,
+  bearRetreatStewardship: 2,
+  bearRunPenalty: 1,
 };
 
 export const STEWARDSHIP_RANKS = [
@@ -585,6 +588,36 @@ class ProgressStore {
         : 'Running or crowding animals makes them flee, which burns energy they need. Move slowly and keep your distance.',
       0,
       -REWARDS.startlePenalty * mult,
+      false
+    );
+    this.commit(d, toast);
+    return toast;
+  }
+
+  /** Task 16: you calmly backed away from an approaching bear. */
+  public recordBearRetreat(): ActivityEntry {
+    const d = structuredClone(this.snapshot.data);
+    const toast = this.award(
+      d,
+      'Bear Aware: you backed away',
+      'You faced the bear, backed away slowly and gave it space. That is what the park recommends: change direction, never run, and never turn your back.',
+      REWARDS.bearRetreatCredits,
+      REWARDS.bearRetreatStewardship,
+      true
+    );
+    this.commit(d, toast);
+    return toast;
+  }
+
+  /** Task 16: you ran when a bear approached. Small penalty, teaches why. */
+  public recordBearRun(): ActivityEntry {
+    const d = structuredClone(this.snapshot.data);
+    const toast = this.award(
+      d,
+      'Never run from a bear',
+      'Running can trigger a chase response. Face the bear, back away slowly, change direction and never turn your back.',
+      0,
+      -REWARDS.bearRunPenalty,
       false
     );
     this.commit(d, toast);
