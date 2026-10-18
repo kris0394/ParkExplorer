@@ -10,12 +10,15 @@ export interface RangerNoticeState {
   wildlife: { dist: number; safeDist: number; alert: boolean; species: string } | null;
   zone: { name: string; reason: string; kind: 'closed' | 'sensitive'; inside: boolean } | null;
   litter: { label: string; tip: string } | null;
+  /** Task 16: a curious bear is walking toward you. */
+  bear: { dist: number } | null;
 }
 
 export const EMPTY_RANGER_NOTICE: RangerNoticeState = {
   wildlife: null,
   zone: null,
   litter: null,
+  bear: null,
 };
 
 interface Props {
@@ -27,12 +30,26 @@ interface Props {
  * fragile areas, litter). Mistakes teach; nothing here ends the game.
  */
 export const RangerNotices: React.FC<Props> = ({ notice }) => {
-  const { wildlife, zone, litter } = notice;
-  if (!wildlife && !zone && !litter) return null;
+  const { wildlife, zone, litter, bear } = notice;
+  if (!wildlife && !zone && !litter && !bear) return null;
 
   return (
     <>
       <div className="fixed top-[7.5rem] left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center gap-2 w-[min(92vw,30rem)] font-sans">
+        {bear && (
+          <div className="w-full backdrop-blur-md px-4 py-2.5 rounded-xl border shadow-2xl text-xs leading-relaxed bg-amber-950/90 border-amber-400/70 text-amber-50">
+            <div className="flex items-center gap-2 font-bold mb-0.5">
+              <AlertTriangle size={14} className="text-amber-300" />
+              A black bear is walking toward you ({Math.round(bear.dist)} m)
+            </div>
+            <div>
+              Stay calm. Face the bear, back away slowly and change direction, so it has room to pass. Do not run and
+              do not turn your back. The bear is not attacking, it is just curious or passing by.
+            </div>
+            <div className="mt-1 text-[10px] opacity-70">Based on the park&apos;s bear guidance. Game example.</div>
+          </div>
+        )}
+
         {wildlife && (
           <div
             className={`w-full backdrop-blur-md px-4 py-2.5 rounded-xl border shadow-2xl text-xs leading-relaxed ${

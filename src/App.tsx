@@ -140,6 +140,9 @@ export default function App() {
               <div className="mt-2 px-1.5 pb-1 text-left text-[11px] leading-relaxed space-y-1">
                 <div className="text-stone-200">{seasonDef.worldChanges}</div>
                 <div className="text-emerald-300/90">Wildlife: {seasonDef.wildlifeNote}</div>
+                {currentPark.wildlife.spawns.some(s => s.species === 'black-bear') && (
+                  <div className="text-emerald-300/90">Bears: {seasonDef.bear.note}</div>
+                )}
                 <div className="text-amber-300/90">Trails: {seasonDef.trailNote}</div>
                 <div className="text-[10px] text-stone-500">
                   General natural history for learning, not official NPS information. Changing season reloads the park.
@@ -263,8 +266,11 @@ export default function App() {
             <div className="text-left text-[11px] mb-4 font-sans bg-emerald-950/40 p-3 rounded-2xl border border-emerald-800/50 text-stone-300 leading-relaxed">
               <div className="font-semibold text-emerald-300 mb-1">Park Rules (game version)</div>
               <ul className="list-disc pl-4 space-y-0.5">
-                <li>Stay at least 23 m (25 yards) from deer and 46 m (50 yards) from elk. Zoom in, don&apos;t walk closer.</li>
+                <li>Stay at least 23 m (25 yards) from deer and 46 m (50 yards) from elk and bears. Zoom in, don&apos;t walk closer.</li>
                 <li>Move slowly near animals. Rushing them costs Stewardship.</li>
+                {currentPark.wildlife.spawns.some(s => s.species === 'black-bear') && (
+                  <li>If a bear walks toward you, face it and back away slowly. Never run.</li>
+                )}
                 <li>Respect closed areas, and stay on the trail in fragile areas.</li>
                 <li>Pick up litter and pack it out. Leave no trace.</li>
               </ul>

@@ -111,6 +111,43 @@ SPECIES_CATALOGUE['elk'] = {
   ],
 };
 
+SPECIES_CATALOGUE['black-bear'] = {
+  id: 'black-bear',
+  name: 'Black Bear',
+  scientific: 'Ursus americanus',
+  safeDistanceM: 46,
+  blurb:
+    'The most famous resident of the Smokies. Black bears are normally shy and are watched from far away. They are never an enemy, but they deserve a lot of room.',
+  variants: ['Adult black bear'],
+  facts: [
+    {
+      id: 'fifty-yards',
+      unlock: 'responsible',
+      text: 'In the park, willfully approaching within 50 yards (150 feet) of a bear, or any distance that disturbs or displaces it, is illegal. The game uses 46 m.',
+    },
+    {
+      id: 'back-away',
+      unlock: 'identified',
+      text: 'If a bear approaches or follows you, change your direction and slowly back away while facing it. Never run and never turn your back.',
+    },
+    {
+      id: 'fall-weight',
+      unlock: 'identified',
+      text: 'As fall approaches, black bears can nearly double their weight in preparation for winter.',
+    },
+    {
+      id: 'food-conditioned',
+      unlock: 'photographed',
+      text: 'Bears that learn to eat human food often damage property and threaten safety, and sadly some have to be euthanized. That is why rangers enforce rules on littering, feeding and food storage.',
+    },
+    {
+      id: 'habitat',
+      unlock: 'allVariants',
+      text: 'The Smokies are one of the largest protected areas in the eastern United States where black bears live in wild, natural surroundings, and they use all elevations of the park.',
+    },
+  ],
+};
+
 export function getSpeciesIdFromName(name: string): string {
   for (const sp of Object.values(SPECIES_CATALOGUE)) {
     if (sp.name === name) return sp.id;

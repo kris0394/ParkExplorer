@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { DeerEntity } from './deer.ts';
 import { getActivePark } from '../data/parks.ts';
 import { getSafeDistanceM } from '../data/species.ts';
+import { getSeasonDef } from '../data/seasons.ts';
 
 export class WildlifeManager {
   public group: THREE.Group;
@@ -18,6 +19,10 @@ export class WildlifeManager {
   /** The animal you are most inside the safe distance of (null when you are far enough from all). */
   public nearestViolation: { dist: number; safeDist: number; alert: boolean; species: string } | null = null;
   public totalStartles = 0;
+  /** Bears (Task 16): total calm retreats and total times the player ran, and the nearest approaching bear. */
+  public bearRetreats = 0;
+  public bearRuns = 0;
+  public bearApproach: { dist: number } | null = null;
   private prevStates = new Map<string, string>();
 
   private observationTimer = 0;
@@ -39,9 +44,11 @@ export class WildlifeManager {
 
     // Spawn positions and species come from the park's data (park.wildlife.spawns)
     park.wildlife.spawns.forEach((cfg, idx) => {
-      const isElk = cfg.species === 'elk';
+      // Bears are far less active in winter, so none are shown then
+      if (cfg.species === 'black-bear' && !getSeasonDef().bear.active) return;
+      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : 'deer';
       const deer = new DeerEntity({
-        id: `${isElk ? 'elk' : 'deer'}_${idx}`,
+        id: `${prefix}_${idx}`,
         species: cfg.species,
         safeDistanceM: getSafeDistanceM(cfg.species, park),
         isBuck: cfg.isBuck,
@@ -70,6 +77,9 @@ export class WildlifeManager {
     let nearestSpeciesName = 'White-tailed Deer';
     let violation: { dist: number; safeDist: number; alert: boolean; species: string } | null = null;
     let worstRatio = Infinity;
+    let retreats = 0;
+    let runs = 0;
+    let approach: { dist: number } | null = null;
 
     for (const deer of this.deerList) {
       deer.update(dt, playerPos, isSprinting, isCrouching);
@@ -86,7 +96,12 @@ export class WildlifeManager {
         nearestSafe = deer.safeDistanceM;
         nearestSpeciesName = deer.speciesName;
       }
-      // Each animal has its own safe distance (deer 23 m, elk 46 m)
+      if (deer.isBear) {
+        retreats += deer.retreatEvents;
+        runs += deer.runEvents;
+        if (deer.isApproaching && (!approach || d < approach.dist)) approach = { dist: d };
+      }
+      // Each animal has its own safe distance (deer 23 m, elk 46 m, bear 46 m)
       const ratio = d / deer.safeDistanceM;
       if (ratio < 1 && ratio < worstRatio) {
         worstRatio = ratio;
@@ -102,6 +117,9 @@ export class WildlifeManager {
     this.nearestDist = nearestDist;
     this.nearestState = nearestState;
     this.nearestViolation = violation;
+    this.bearRetreats = retreats;
+    this.bearRuns = runs;
+    this.bearApproach = approach;
 
     // Responsible Observation Reward
     const isObservingCalmly =
@@ -112,7 +130,9 @@ export class WildlifeManager {
       if (this.observationTimer > 3.0 && !this.hasRewardedObservation) {
         this.hasRewardedObservation = true;
         const animalType =
-          nearestSpeciesName === 'Elk'
+          nearestSpeciesName === 'Black Bear'
+            ? 'Black Bear'
+            : nearestSpeciesName === 'Elk'
             ? nearestIsDoe ? 'Cow Elk' : 'Bull Elk'
             : nearestIsDoe ? 'White-Tailed Doe' : 'White-Tailed Buck';
         onObservationToast(

@@ -33,7 +33,7 @@ export interface ParkLitter {
 }
 
 export interface ParkWildlifeSpawn {
-  species: 'white-tailed-deer' | 'elk';
+  species: 'white-tailed-deer' | 'elk' | 'black-bear';
   isBuck: boolean;
   isFawn?: boolean;
   x: number;
@@ -629,6 +629,8 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
       { species: 'elk', isBuck: false, isFawn: false, x: -52.0, z: 56.0, roamRadius: 10.0 }, // Cow elk
       { species: 'elk', isBuck: false, isFawn: false, x: -43.0, z: 65.0, roamRadius: 10.0 }, // Cow elk
       { species: 'elk', isBuck: false, isFawn: false, x: -55.0, z: 63.0, roamRadius: 8.0 },  // Cow elk
+      // Black bear foraging on the forested ridge below the summit, about 30 m off the trail
+      { species: 'black-bear', isBuck: false, isFawn: false, x: 130.0, z: -86.0, roamRadius: 12.0 },
     ],
   },
   rules: {
