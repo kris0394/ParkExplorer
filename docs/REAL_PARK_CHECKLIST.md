@@ -18,3 +18,7 @@ A real park must be honest. Work through this list before it ships.
 ## Decision log
 - **Great Smoky Mountains** is the first real park (Task 13): the engine already had it, it has an NPS code, and white-tailed deer are real Smokies wildlife.
 - **Whispering Valley** is kept as a clearly labelled fictional **practice park** (fallback and testing baseline). Revisit removing it, or hiding it from the park list, once there are three or more real parks.
+
+## Parks done so far
+- Great Smoky Mountains (first real park, Task 13)
+- Shenandoah (Task 17): wildlife guidance matched the game's distances, facts from the NPS park statistics, wildlife viewing and bear safety pages

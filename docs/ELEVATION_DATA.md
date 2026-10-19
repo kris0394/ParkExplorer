@@ -33,7 +33,7 @@ Checked 2026-10-10. Update: Task 15 now uses AWS Terrain Tiles for a pilot (see 
 | Park | Section |
 |---|---|
 | Great Smoky Mountains | Kuwohi summit and ridge (the summit is at about 35.56 N, 83.50 W, to be verified) |
-| Shenandoah | Hawksbill summit area |
+| Shenandoah | Hawksbill summit area (in use since Task 17: 38.5553 N, 78.3950 W, from Wikipedia and SummitPost) |
 | Acadia | Cadillac Mountain summit |
 | Saguaro or Joshua Tree | A desert wash and rock outcrop near a visitor trailhead |
 | Badlands or Theodore Roosevelt | Door Trail / Painted Canyon style badlands section |

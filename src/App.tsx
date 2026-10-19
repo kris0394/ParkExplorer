@@ -143,7 +143,12 @@ export default function App() {
                 {currentPark.wildlife.spawns.some(s => s.species === 'black-bear') && (
                   <div className="text-emerald-300/90">Bears: {seasonDef.bear.note}</div>
                 )}
-                <div className="text-amber-300/90">Trails: {seasonDef.trailNote}</div>
+                <div className="text-amber-300/90">
+                  Trails:{' '}
+                  {season === 'winter' && !currentPark.rules.zones.some(z => z.seasons?.includes('winter'))
+                    ? 'Open in the game. Real trails and roads can close in winter, so check nps.gov for current alerts.'
+                    : seasonDef.trailNote}
+                </div>
                 <div className="text-[10px] text-stone-500">
                   General natural history for learning, not official NPS information. Changing season reloads the park.
                 </div>

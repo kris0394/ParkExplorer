@@ -25,8 +25,8 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 14 | Elk and per-species safe distances | **Done (first pass)** | Elk herd in the Smokies. Deer keep 23 m, elk use the park's 50 yards (46 m). Bears still to do |
 | 15 | Real terrain pilot from elevation data | **Done (first pass, needs first real download)** | Real Kuwohi-area relief blended into the Smokies hills, away from the trail. Guide: `docs/REAL_TERRAIN.md` |
 | 16 | Black bears (calm-and-back-away lesson) | **Done (first pass)** | One bear in the Smokies; approach, back away, never run. Winter: no bears |
-| 17 | Shenandoah (next real park) | Next | Follow `docs/REAL_PARK_CHECKLIST.md` |
-| 18 | Full real level (trail and landmarks on real ground), more parks | Planned | Needs NPS trail data and a layout step |
+| 17 | Shenandoah (second real park) | **Done (first pass)** | Hawksbill area, NPS code `shen`, six sourced facts, real wildlife guidance (75 ft / 150 ft), Hawksbill real relief, deer and one bear |
+| 18 | More real parks (Acadia next) and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; a full real level needs NPS trail data and a layout step |
 
 ---
 
@@ -139,12 +139,23 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - The Field Journal has a Black Bear entry with 5 facts, each checked against the park's black bear and bear-safety pages. Smokies now show 6 animal variants (3 deer, 2 elk, 1 bear).
 - Settings: `src/data/species.ts` (distance and facts), `src/data/seasons.ts` (`bear`), behaviour in `src/entities/deer.ts` (`updateBearBehavior`), rewards in `REWARDS` in `src/entities/progress.ts`.
 
-## 13. Known limitations
+## 13. Task 17: Shenandoah (how it works)
+- Second real park, listed second in the park tabs ([P] cycles Smokies, Shenandoah, practice park). The game still opens on the Smokies.
+- Data: NPS code `shen` (live NPS info and alerts, once the build has downloaded them), a Hawksbill real-relief window (`realTerrain`, id `shen`, centre 38.5553 N, 78.3950 W from Wikipedia and SummitPost) and a sourced `about` block (six facts, each with an nps.gov link, checked 2026-10-19).
+- **The park's own distances are the game's distances:** Shenandoah asks for 75 feet (23 m) from all wildlife and 150 feet (46 m) from black bears. Those are exactly the game's deer and bear numbers, so there is no caveat.
+- Wildlife: four deer (doe, buck, fawn, second doe) and one black bear. No elk (they do not live in the park). The bear lesson is the same: if a bear comes closer, move away slowly without turning your back, never run. The park's page adds that a bear may stand on its hind legs for a better look or smell, which is curiosity.
+- Names: Hawksbill (4,051 ft / 1,235 m, highest peak), Hawksbill Gap trailhead, Lower Hawksbill Trail, Hawksbill Summit observation platform. Elevation range 535 ft (163 m) to 4,051 ft is from the NPS park statistics page.
+- No winter summit closure: Hawksbill is a year-round hike, so the game does not invent a closure there. The start-screen trail line says real trails and roads can close and to check nps.gov.
+- The map uses the same trail and bridge layout as the Smokies, with different ground shape, colours, haze, forest mix (oak-hickory) and names. It is a game-scale landscape, not a survey.
+- Add-a-park steps and honesty rules: `docs/ADDING_A_PARK.md`, `docs/REAL_PARK_CHECKLIST.md`.
+
+## 14. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
 - The deer spawn within 23 m of the start point, so the distance banner appears early on the first stretch of trail. This is intentional teaching, but may need tuning.
 - Trees and rocks do not block binocular or camera views.
 - Three species (deer, elk, black bear). Desktop browsers only.
 - Bears: one bear only, no cubs (a mother with cubs would need extra rules), no food or campsite mechanics yet, and the model is the deer body reshaped, so it may look rough. The "rise onto hind legs" pose is simple.
+- Shenandoah reuses the Smokies trail and bridge layout, so the two parks feel similar until real terrain is loaded.
 - Bear approach is simplified: a bear that is approached by a standing player just stops at about 12 m and carries on.
 - The Smokies map is still a game landscape with real names. Real relief from the Kuwohi area is blended into the hills (Task 15), but the trail, river and landmarks are hand-placed, so it is not a map of the real park.
 - The terrain download has only been tested with made-up tiles. The first real download happens on GitHub, so check the build log line starting with `[terrain]`.
