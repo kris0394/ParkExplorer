@@ -123,12 +123,12 @@ SPECIES_CATALOGUE['black-bear'] = {
     {
       id: 'fifty-yards',
       unlock: 'responsible',
-      text: 'In the park, willfully approaching within 50 yards (150 feet) of a bear, or any distance that disturbs or displaces it, is illegal. The game uses 46 m.',
+      text: 'Great Smoky Mountains and Shenandoah both ask visitors to stay at least 50 yards (150 feet) from black bears, and in the Smokies approaching any distance that disturbs or displaces a bear is illegal. The game uses 46 m.',
     },
     {
       id: 'back-away',
       unlock: 'identified',
-      text: 'If a bear approaches or follows you, change your direction and slowly back away while facing it. Never run and never turn your back.',
+      text: 'If a bear approaches or follows you, slowly back away while facing it. Never run or turn your back: running can trigger a bear\'s pursuit response.',
     },
     {
       id: 'fall-weight',

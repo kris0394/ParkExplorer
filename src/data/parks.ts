@@ -710,9 +710,272 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
   waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: 0, z: 14 }, { x: 82, z: -70 }),
 };
 
+/**
+ * REAL PARK: Shenandoah National Park (Virginia)
+ * Task 17. A game-scale landscape inspired by the Hawksbill area. Names are real, the layout is not a survey.
+ */
+export const SHENANDOAH: ParkDefinition = {
+  id: 'shenandoah',
+  npsParkCode: 'shen',
+  // Real elevation relief from the Hawksbill area, placed so the real summit lines up with the game's summit
+  realTerrain: {
+    id: 'shen',
+    featureName: 'Hawksbill area',
+    centerLat: 38.5553,
+    centerLon: -78.395,
+    zoom: 13,
+    sizeM: 1000,
+    stepM: 5,
+    originX: 82,
+    originZ: -70,
+    mix: 0.6,
+    detrendSigmaM: 120,
+  },
+  name: 'Shenandoah',
+  subtitle: 'Skyline Drive & Blue Ridge Views',
+  parkServiceUnit: 'National Park',
+  state: 'Virginia',
+  region: 'Mid-Atlantic / Blue Ridge Mountains',
+  description: 'A long, narrow park along the crest of the Blue Ridge Mountains, with hardwood forest, rocky greenstone summits and far views over the Shenandoah Valley and the Virginia Piedmont.',
+  elevationRange: { min: 163, max: 1235 },
+  spawn: { x: 0.0, y: 2.4, z: 14.0, yaw: 0 },
+  terrain: {
+    baseScale: 0.0052,
+    heightScale: 16.5, // rounder, older ridges than the Smokies
+    mountain: {
+      x: 82.0,
+      z: -70.0,
+      height: 30.0,
+      radius: 66.0,
+      plateauRadius: 8.0,
+      name: 'Hawksbill',
+    },
+    colors: {
+      valley: 0x35653a,     // hardwood hollow green
+      meadow: 0x6a9444,     // meadow grass
+      dryGrass: 0xb2a95a,
+      steepSlope: 0x76593d, // forest loam
+      summitRock: 0x66705e, // greenstone, grey-green
+      riverbed: 0x3a332b,
+      riverbank: 0x4e5a3d,
+    },
+  },
+  water: {
+    hasRiver: true,
+    name: 'Mountain Stream',
+    surfaceY: -1.0,
+    halfWidth: 6.0,
+    bankWidth: 7.0,
+    valleyWidth: 34.0,
+    gradient: 0.0028,
+    deepColor: 0x17434a,
+    shallowColor: 0x336f68,
+    skyReflectColor: 0x94b6c9,
+  },
+  trail: {
+    name: 'Lower Hawksbill Trail',
+    width: 2.4,
+    westNodes: [
+      { x: 0.0, z: 14.0 },
+      { x: 5.5, z: 12.0 },
+      { x: 10.0, z: 9.5 },
+      { x: 13.5, z: 6.8 },
+      { x: 16.5, z: 4.0 },
+    ],
+    eastNodes: [
+      { x: 41.5, z: 4.0 },
+      { x: 46.5, z: 2.5 },
+      { x: 51.5, z: -1.5 },
+      { x: 56.5, z: -6.5 },
+      { x: 62.5, z: -13.0 },
+      { x: 70.0, z: -22.0 },
+      { x: 79.5, z: -31.5 },
+      { x: 91.0, z: -39.5 },
+      { x: 99.5, z: -52.0 },
+      { x: 102.5, z: -65.0 },
+      { x: 98.0, z: -78.5 },
+      { x: 88.5, z: -86.5 },
+      { x: 76.5, z: -84.0 },
+      { x: 73.0, z: -75.5 },
+      { x: 79.5, z: -70.5 },
+    ],
+    bridge: {
+      name: 'Stream Footbridge',
+      westX: 16.5,
+      eastX: 41.5,
+      centerZ: 4.0,
+      deckY: 1.25,
+      width: 3.6,
+    },
+  },
+  overlook: {
+    name: 'Hawksbill Summit Observation Platform',
+    elevationLabel: 'Elev. 1,235m (4,051 ft)',
+    deckRadius: 5.2,
+    hasBench: true,
+    hasTelescope: true,
+    signHeading: 'HAWKSBILL',
+    signSubheading: 'HIGHEST POINT IN SHENANDOAH',
+  },
+  vegetation: {
+    treeCount: 1250,
+    shrubCount: 1500,
+    speciesWeights: {
+      conifer: 1.2,   // scattered hemlock and fir
+      pine: 1.5,
+      broadleaf: 5.0, // mixed hardwoods
+      oak: 5.0,       // oak-dominated forest
+      birch: 1.2,
+      poplar: 2.2,    // tulip poplar in the hollows
+      snag: 0.4,
+    },
+  },
+  atmosphere: {
+    fogColor: 0xa7bccb,
+    fogDensity: 0.011, // soft Blue Ridge haze
+    hemiSky: 0xb9d6ea,
+    hemiGround: 0x5e7d4c,
+    sunColor: 0xffe8c2,
+    sunIntensity: 2.5,
+    skyHorizon: 0xa7bccb,
+    skyMid: 0x80a8c2,
+    skyZenith: 0x417599,
+    skySun: 0xffe2a8,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Hawksbill Gap Trailhead',
+      description: 'Trailhead beside Skyline Drive where the Lower Hawksbill Trail begins.',
+      x: 0,
+      y: 2.4,
+      z: 14,
+      yaw: 0,
+    },
+    {
+      id: 'bridge',
+      name: 'Stream Footbridge',
+      description: 'A timber footbridge over a clear mountain stream.',
+      x: 18.0,
+      y: 1.35,
+      z: 4.0,
+      yaw: -Math.PI / 2,
+    },
+    {
+      id: 'switchback',
+      name: 'Lower Hawksbill Trail Switchback',
+      description: 'The trail climbs through oak woods with rocky outcrops and filtered views of the ridges.',
+      x: 95.0,
+      y: 16.5,
+      z: -55.0,
+      yaw: -Math.PI * 0.8,
+    },
+    {
+      id: 'summit',
+      name: 'Hawksbill Summit',
+      description: 'A rocky summit with a stone observation platform and long views of the Blue Ridge.',
+      x: 82.0,
+      y: 30.2,
+      z: -70.0,
+      yaw: Math.PI * 0.8,
+    },
+  ],
+  wildlife: {
+    spawns: [
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 5.5, z: 9.0, roamRadius: 16.0 },   // Doe
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -7.5, z: 8.0, roamRadius: 18.0 },   // Antlered buck
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 8.0, z: 6.5, roamRadius: 12.0 },    // Fawn
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 14.0, z: 4.5, roamRadius: 15.0 }, // Second doe
+      { species: 'black-bear', isBuck: false, isFawn: false, x: 130.0, z: -86.0, roamRadius: 12.0 },
+    ],
+  },
+  rules: {
+    zones: [
+      {
+        id: 'stream-habitat-closure',
+        kind: 'closed',
+        name: 'Stream Habitat Closure',
+        x: -8,
+        z: -30,
+        radius: 9,
+        reason: 'Closed to protect small stream life, such as salamanders, that live under rocks and leaf litter here.',
+      },
+      {
+        id: 'understory-wildflower-slope',
+        kind: 'sensitive',
+        name: 'Understory Wildflower Slope',
+        x: 70,
+        z: 32,
+        radius: 11,
+        reason: 'Fragile woodland wildflowers. Stepping off the trail tramples them and the soil beneath.',
+      },
+    ],
+    litter: STANDARD_LITTER,
+  },
+  about: {
+    designNote:
+      'A game-scale landscape inspired by the Hawksbill area. Hawksbill, Skyline Drive and the Lower Hawksbill Trail are real, but this map is not a survey: real distances, trails and layouts differ. Elevation relief near Hawksbill is real.',
+    wildlifeGuidance: {
+      text:
+        'Shenandoah National Park asks visitors to stay at least 75 feet (23 m), about two bus-lengths, from all wildlife, and at least 150 feet (46 m), about four bus-lengths, from black bears. If wildlife approaches you, it is your responsibility to back away and keep that distance.',
+      caveat:
+        'These are the same distances the game uses (deer 23 m, bears 46 m). Other parks use different numbers, so always check each park\'s current page.',
+      sourceUrl: 'https://www.nps.gov/shen/planyourvisit/wildlife-viewing.htm',
+      sourceLabel: 'nps.gov: Viewing & Photographing Wildlife (Shenandoah)',
+    },
+    facts: [
+      {
+        id: 'hawksbill-height',
+        title: 'The highest peak',
+        text: 'Hawksbill, at 4,051 feet (1,235 m), is the highest peak in the park. The lowest point is 535 feet (163 m) near the north end.',
+        sourceUrl: 'https://www.nps.gov/shen/learn/management/statistics.htm',
+        sourceLabel: 'nps.gov: Park Statistics (Shenandoah)',
+      },
+      {
+        id: 'skyline-trails',
+        title: 'Skyline Drive and the trails',
+        text: 'Skyline Drive is 105 miles long with 70 overlooks. The park has 516 miles of hiking trails, including 101 miles of the Appalachian Trail.',
+        sourceUrl: 'https://www.nps.gov/shen/learn/management/statistics.htm',
+        sourceLabel: 'nps.gov: Park Statistics (Shenandoah)',
+      },
+      {
+        id: 'park-dates',
+        title: 'How the park began',
+        text: 'Congress authorized the park on May 22, 1926. It was established on December 26, 1935 and dedicated by President Franklin D. Roosevelt on July 3, 1936.',
+        sourceUrl: 'https://www.nps.gov/shen/learn/management/statistics.htm',
+        sourceLabel: 'nps.gov: Park Statistics (Shenandoah)',
+      },
+      {
+        id: 'wilderness',
+        title: 'Protected wilderness',
+        text: 'About 79,579 acres of the park are designated wilderness.',
+        sourceUrl: 'https://www.nps.gov/shen/learn/management/statistics.htm',
+        sourceLabel: 'nps.gov: Park Statistics (Shenandoah)',
+      },
+      {
+        id: 'no-calling',
+        title: 'Do not call wildlife',
+        text: 'Calling, whistling or making noises of any kind to attract wildlife is illegal in the park. The park also suggests lining an animal up with one of the rule-of-thirds points in your photo for better shots from a distance.',
+        sourceUrl: 'https://www.nps.gov/shen/planyourvisit/wildlife-viewing.htm',
+        sourceLabel: 'nps.gov: Viewing & Photographing Wildlife (Shenandoah)',
+      },
+      {
+        id: 'bear-curious',
+        title: 'A curious bear',
+        text: 'If a bear cannot tell what you are, it may come closer or stand on its hind legs to get a better look or smell. The park advises making noise so the bear knows you are there, and moving away slowly without turning your back if it comes closer.',
+        sourceUrl: 'https://www.nps.gov/shen/planyourvisit/bear-safety.htm',
+        sourceLabel: 'nps.gov: Bear Safety (Shenandoah)',
+      },
+    ],
+    checkedOn: '2026-10-19',
+  },
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: 0, z: 14 }, { x: 82, z: -70 }),
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
+  SHENANDOAH,
   PROTOTYPE_PARK,
 ];
 
