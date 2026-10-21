@@ -85,7 +85,9 @@ export function createBridgeGroup(): THREE.Group {
 
   // 3. Timber Pile Columns & Cross-beams in the river channel
   const pileGeos: THREE.BufferGeometry[] = [];
-  const pierXs = [24.0, 29.0, 34.0];
+  // Three piers spaced evenly around the middle (24, 29, 34 for the original 25 m bridge)
+  const pierGap = clamp(length * 0.2, 2.5, 5.0);
+  const pierXs = [centerX - pierGap, centerX, centerX + pierGap];
 
   for (const pierX of pierXs) {
     for (const sz of [-halfW + 0.3, halfW - 0.3]) {

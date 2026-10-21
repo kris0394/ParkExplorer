@@ -73,6 +73,21 @@ interface HUDProps {
   photoCount: number;
 }
 
+/**
+ * Short, unique button label for the "Jump to" bar.
+ * The four standard landmark ids get plain words, so two landmarks of one park can never both read
+ * "Hawksbill" (the old label was just the first word of the name). Other ids fall back to the name's first word.
+ */
+const JUMP_LABELS: Record<string, string> = {
+  spawn: 'Trailhead',
+  bridge: 'Bridge',
+  switchback: 'Switchback',
+  summit: 'Summit',
+};
+function shortLandmarkLabel(id: string, name: string): string {
+  return JUMP_LABELS[id] ?? name.split(' ')[0];
+}
+
 export const HUD: React.FC<HUDProps> = ({
   currentPark,
   availableParks,
@@ -709,7 +724,7 @@ export const HUD: React.FC<HUDProps> = ({
               <span className="font-mono text-[10px] bg-stone-800/90 text-amber-300 px-1 py-0.2 rounded border border-stone-700">
                 {idx + 1}
               </span>
-              <span>{lm.name.split(' ')[0]}</span>
+              <span>{shortLandmarkLabel(lm.id, lm.name)}</span>
             </button>
           ))}
         </div>

@@ -135,7 +135,7 @@ export function createRocksSystem(): THREE.Group {
 
   const rockList: RockInstance[] = [];
   const foamGeos: THREE.BufferGeometry[] = [];
-  const rand = mulberry32(98765);
+  const rand = mulberry32(98765 + (getActivePark().layoutSeed ?? 0));
 
   const park = getActivePark();
 

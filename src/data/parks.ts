@@ -103,6 +103,8 @@ export interface ParkDefinition {
     /** Overall slopes larger than this (metres) are removed. */
     detrendSigmaM: number;
   };
+  /** Optional: changes where trees, rocks and logs are scattered, so each park's forest is its own. Leave out for the original pattern. */
+  layoutSeed?: number;
   /** True for fictional demo parks (shown as "Practice park"). */
   isPracticePark?: boolean;
   /** Task 13: sourced real-park information (real parks only). */
@@ -118,6 +120,9 @@ export interface ParkDefinition {
   terrain: {
     baseScale: number;
     heightScale: number;
+    /** Optional: shifts the hill pattern so this park's hills differ from other parks. */
+    noiseX?: number;
+    noiseZ?: number;
     mountain: {
       x: number;
       z: number;
@@ -147,6 +152,8 @@ export interface ParkDefinition {
     deepColor: number;
     shallowColor: number;
     skyReflectColor: number;
+    /** Optional: the winding shape of the river (defaults to the original wide river). */
+    course?: { baseX?: number; amp1?: number; freq1?: number; amp2?: number; freq2?: number; phase2?: number };
   };
   trail: {
     name: string;
@@ -726,11 +733,13 @@ export const SHENANDOAH: ParkDefinition = {
     zoom: 13,
     sizeM: 1000,
     stepM: 5,
-    originX: 82,
-    originZ: -70,
+    originX: 115,
+    originZ: -50,
     mix: 0.6,
     detrendSigmaM: 120,
   },
+  // Task 18: this park has its own layout (own trail, brook, summit spot, hills and forest pattern), not a copy of the Smokies
+  layoutSeed: 7,
   name: 'Shenandoah',
   subtitle: 'Skyline Drive & Blue Ridge Views',
   parkServiceUnit: 'National Park',
@@ -738,15 +747,17 @@ export const SHENANDOAH: ParkDefinition = {
   region: 'Mid-Atlantic / Blue Ridge Mountains',
   description: 'A long, narrow park along the crest of the Blue Ridge Mountains, with hardwood forest, rocky greenstone summits and far views over the Shenandoah Valley and the Virginia Piedmont.',
   elevationRange: { min: 163, max: 1235 },
-  spawn: { x: 0.0, y: 2.4, z: 14.0, yaw: 0 },
+  spawn: { x: -18.0, y: 2.4, z: 46.0, yaw: -0.855 }, // faces the footbridge
   terrain: {
     baseScale: 0.0052,
     heightScale: 16.5, // rounder, older ridges than the Smokies
+    noiseX: 39.0,      // different hill pattern from the Smokies
+    noiseZ: -3.0,
     mountain: {
-      x: 82.0,
-      z: -70.0,
+      x: 115.0,
+      z: -50.0,
       height: 30.0,
-      radius: 66.0,
+      radius: 60.0,
       plateauRadius: 8.0,
       name: 'Hawksbill',
     },
@@ -764,10 +775,11 @@ export const SHENANDOAH: ParkDefinition = {
     hasRiver: true,
     name: 'Mountain Stream',
     surfaceY: -1.0,
-    halfWidth: 6.0,
-    bankWidth: 7.0,
-    valleyWidth: 34.0,
-    gradient: 0.0028,
+    halfWidth: 2.4,    // a narrow mountain brook, not a wide river
+    bankWidth: 5.0,
+    valleyWidth: 30.0,
+    gradient: 0.0035,
+    course: { baseX: 20.0, amp1: 5.0, freq1: 0.026, amp2: 2.0, freq2: 0.06 },
     deepColor: 0x17434a,
     shallowColor: 0x336f68,
     skyReflectColor: 0x94b6c9,
@@ -776,36 +788,40 @@ export const SHENANDOAH: ParkDefinition = {
     name: 'Lower Hawksbill Trail',
     width: 2.4,
     westNodes: [
-      { x: 0.0, z: 14.0 },
-      { x: 5.5, z: 12.0 },
-      { x: 10.0, z: 9.5 },
-      { x: 13.5, z: 6.8 },
-      { x: 16.5, z: 4.0 },
+      { x: -18.0, z: 46.0 },
+      { x: -12.0, z: 41.0 },
+      { x: -5.0, z: 35.0 },
+      { x: 2.0, z: 29.0 },
+      { x: 7.0, z: 24.0 },
+      { x: 12.0, z: 20.0 },
     ],
+    // A long, steady climb with two hairpins near the top (the real Lower Hawksbill Trail is a steady, rocky climb)
     eastNodes: [
-      { x: 41.5, z: 4.0 },
-      { x: 46.5, z: 2.5 },
-      { x: 51.5, z: -1.5 },
-      { x: 56.5, z: -6.5 },
-      { x: 62.5, z: -13.0 },
-      { x: 70.0, z: -22.0 },
-      { x: 79.5, z: -31.5 },
-      { x: 91.0, z: -39.5 },
-      { x: 99.5, z: -52.0 },
-      { x: 102.5, z: -65.0 },
-      { x: 98.0, z: -78.5 },
-      { x: 88.5, z: -86.5 },
-      { x: 76.5, z: -84.0 },
-      { x: 73.0, z: -75.5 },
-      { x: 79.5, z: -70.5 },
+      { x: 27.0, z: 20.0 },
+      { x: 38.0, z: 19.0 },
+      { x: 50.0, z: 15.0 },
+      { x: 62.0, z: 9.0 },
+      { x: 74.0, z: 3.0 },
+      { x: 86.0, z: -3.0 },
+      { x: 97.0, z: -6.0 },
+      { x: 107.0, z: -10.0 },
+      { x: 116.0, z: -14.0 },
+      { x: 122.0, z: -20.0 },
+      { x: 118.0, z: -27.0 },
+      { x: 108.0, z: -29.0 },
+      { x: 100.0, z: -33.0 },
+      { x: 98.0, z: -40.0 },
+      { x: 104.0, z: -44.0 },
+      { x: 110.0, z: -47.0 },
+      { x: 113.0, z: -47.5 },
     ],
     bridge: {
       name: 'Stream Footbridge',
-      westX: 16.5,
-      eastX: 41.5,
-      centerZ: 4.0,
+      westX: 12.0,
+      eastX: 27.0,
+      centerZ: 20.0,
       deckY: 1.25,
-      width: 3.6,
+      width: 3.4,
     },
   },
   overlook: {
@@ -847,46 +863,50 @@ export const SHENANDOAH: ParkDefinition = {
       id: 'spawn',
       name: 'Hawksbill Gap Trailhead',
       description: 'Trailhead beside Skyline Drive where the Lower Hawksbill Trail begins.',
-      x: 0,
+      x: -18,
       y: 2.4,
-      z: 14,
-      yaw: 0,
+      z: 46,
+      yaw: -0.855,
     },
     {
       id: 'bridge',
       name: 'Stream Footbridge',
-      description: 'A timber footbridge over a clear mountain stream.',
-      x: 18.0,
-      y: 1.35,
-      z: 4.0,
+      description: 'A short timber footbridge over a clear mountain brook.',
+      x: 14.0,
+      y: 1.3,
+      z: 20.0,
       yaw: -Math.PI / 2,
     },
     {
       id: 'switchback',
-      name: 'Lower Hawksbill Trail Switchback',
-      description: 'The trail climbs through oak woods with rocky outcrops and filtered views of the ridges.',
-      x: 95.0,
-      y: 16.5,
-      z: -55.0,
-      yaw: -Math.PI * 0.8,
+      name: 'Oak Woods Hairpin',
+      description: 'The trail doubles back on itself as it climbs through oak woods with filtered views of the ridges.',
+      x: 122.0,
+      y: 13.9,
+      z: -20.0,
+      yaw: Math.PI * 0.9,
     },
     {
       id: 'summit',
       name: 'Hawksbill Summit',
       description: 'A rocky summit with a stone observation platform and long views of the Blue Ridge.',
-      x: 82.0,
+      x: 115.0,
       y: 30.2,
-      z: -70.0,
+      z: -50.0,
       yaw: Math.PI * 0.8,
     },
   ],
   wildlife: {
     spawns: [
-      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 5.5, z: 9.0, roamRadius: 16.0 },   // Doe
-      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -7.5, z: 8.0, roamRadius: 18.0 },   // Antlered buck
-      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 8.0, z: 6.5, roamRadius: 12.0 },    // Fawn
-      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 14.0, z: 4.5, roamRadius: 15.0 }, // Second doe
-      { species: 'black-bear', isBuck: false, isFawn: false, x: 130.0, z: -86.0, roamRadius: 12.0 },
+      // Deer around the trailhead meadow
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: -9.0, z: 41.5, roamRadius: 16.0 },   // Doe
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -32.0, z: 40.0, roamRadius: 18.0 },   // Antlered buck
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: -6.0, z: 46.5, roamRadius: 12.0 },    // Fawn
+      // A second doe and fawn grazing in the brook meadow, a good distance from the trail
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 46.0, z: 38.0, roamRadius: 12.0 },
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 49.0, z: 41.0, roamRadius: 10.0 },
+      // Black bear foraging on the slope south of the trail, well beyond the 46 m guidance from the start
+      { species: 'black-bear', isBuck: false, isFawn: false, x: 78.0, z: 40.0, roamRadius: 12.0 },
     ],
   },
   rules: {
@@ -895,19 +915,28 @@ export const SHENANDOAH: ParkDefinition = {
         id: 'stream-habitat-closure',
         kind: 'closed',
         name: 'Stream Habitat Closure',
-        x: -8,
-        z: -30,
-        radius: 9,
+        x: 40,
+        z: 54,
+        radius: 8,
         reason: 'Closed to protect small stream life, such as salamanders, that live under rocks and leaf litter here.',
       },
       {
         id: 'understory-wildflower-slope',
         kind: 'sensitive',
         name: 'Understory Wildflower Slope',
-        x: 70,
-        z: 32,
-        radius: 11,
+        x: 74,
+        z: -14,
+        radius: 8,
         reason: 'Fragile woodland wildflowers. Stepping off the trail tramples them and the soil beneath.',
+      },
+      {
+        id: 'summit-lichen-rocks',
+        kind: 'sensitive',
+        name: 'Fragile Summit Rocks',
+        x: 127,
+        z: -58,
+        radius: 7,
+        reason: 'Lichens and moss grow very slowly on the bare summit rocks. One footstep can destroy decades of growth.',
       },
     ],
     litter: STANDARD_LITTER,
@@ -969,7 +998,7 @@ export const SHENANDOAH: ParkDefinition = {
     ],
     checkedOn: '2026-10-19',
   },
-  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: 0, z: 14 }, { x: 82, z: -70 }),
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -18, z: 46 }, { x: 115, z: -50 }),
 };
 
 /** Real parks first. Practice (fictional) parks come last. */
