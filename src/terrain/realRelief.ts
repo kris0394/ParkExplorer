@@ -7,7 +7,7 @@
  * so they still override it.
  */
 import { sstep } from '../utils/noise.ts';
-import { hillStats, proceduralHills } from './hillStats.ts';
+import { hillStats, proceduralHills, type HillParams } from './hillStats.ts';
 import type { ReliefData } from '../utils/terrainBuild.ts';
 
 interface ActiveRelief {
@@ -23,7 +23,7 @@ let active: ActiveRelief | null = null;
 type NodeList = { x: number; z: number }[];
 
 export function setReliefForPark(
-  park: { id: string; terrain: { baseScale: number; heightScale: number }; trail: { westNodes: NodeList; eastNodes: NodeList } },
+  park: { id: string; terrain: HillParams; trail: { westNodes: NodeList; eastNodes: NodeList } },
   data: ReliefData | null
 ): void {
   if (!data || data.parkId !== park.id || data.reliefCm.length !== data.n * data.n) {
@@ -85,7 +85,7 @@ function sampleRelief(a: ActiveRelief, x: number, z: number): number {
 export function rollingHills(
   x: number,
   z: number,
-  park: { id: string; terrain: { baseScale: number; heightScale: number } }
+  park: { id: string; terrain: HillParams }
 ): number {
   const proc = proceduralHills(x, z, park.terrain);
   const a = active;

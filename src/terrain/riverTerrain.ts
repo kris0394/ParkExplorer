@@ -11,10 +11,19 @@ import { rollingHills } from './realRelief.ts';
  * Calculates the X coordinate of the river centerline for any Z.
  * Tuned so at the bridge center, X_river aligns with the bridge crossing.
  */
+/** The original river shape. A park can override it with water.course (a narrow brook winds less than a river). */
+const DEFAULT_COURSE = { baseX: 29.0, amp1: 14.5, freq1: 0.017, amp2: 7.2, freq2: 0.041, phase2: -0.2 };
+
+function getCourse() {
+  const c = getActivePark().water.course;
+  return c ? { ...DEFAULT_COURSE, ...c } : DEFAULT_COURSE;
+}
+
 export function getRiverCenterX(z: number): number {
   const park = getActivePark();
+  const c = getCourse();
   const dz = z - park.trail.bridge.centerZ;
-  return 29.0 + 14.5 * Math.sin(dz * 0.017) + 7.2 * Math.sin(dz * 0.041 - 0.2);
+  return c.baseX + c.amp1 * Math.sin(dz * c.freq1) + c.amp2 * Math.sin(dz * c.freq2 + c.phase2);
 }
 
 /**
@@ -22,8 +31,9 @@ export function getRiverCenterX(z: number): number {
  */
 export function getRiverTangentAngle(z: number): number {
   const park = getActivePark();
+  const c = getCourse();
   const dz = z - park.trail.bridge.centerZ;
-  const dx_dz = 14.5 * 0.017 * Math.cos(dz * 0.017) + 7.2 * 0.041 * Math.cos(dz * 0.041 - 0.2);
+  const dx_dz = c.amp1 * c.freq1 * Math.cos(dz * c.freq1) + c.amp2 * c.freq2 * Math.cos(dz * c.freq2 + c.phase2);
   return Math.atan2(1.0, dx_dz);
 }
 

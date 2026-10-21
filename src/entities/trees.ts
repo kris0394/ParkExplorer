@@ -401,7 +401,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     return 'broadleaf';
   }
 
-  const rand = mulberry32(12345);
+  const rand = mulberry32(12345 + (park.layoutSeed ?? 0));
   const dummy = new THREE.Object3D();
   const between = (range: [number, number]) => range[0] + rand() * (range[1] - range[0]);
 

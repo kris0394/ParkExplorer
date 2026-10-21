@@ -26,7 +26,7 @@ export function createForestFloorSystem(): THREE.Group {
   group.name = 'forestFloor';
 
   const park = getActivePark();
-  const rand = mulberry32(441199);
+  const rand = mulberry32(441199 + (park.layoutSeed ?? 0));
 
   const barkMat = new THREE.MeshLambertMaterial({
     color: 0x463525,

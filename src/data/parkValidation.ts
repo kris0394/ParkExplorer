@@ -29,6 +29,13 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
   if (!park.trail || park.trail.westNodes.length < 2) say('trail needs at least 2 west nodes');
   if (!park.trail || park.trail.eastNodes.length < 2) say('trail needs at least 2 east nodes');
 
+  // Task 18: every real park needs its own layout. Copying another park's trail and summit position makes parks feel like clones.
+  if (!park.isPracticePark && park.trail) {
+    const mine = JSON.stringify([park.trail.westNodes, park.trail.eastNodes]);
+    const twin = allParks.find(p => p.id !== park.id && !p.isPracticePark && p.trail && JSON.stringify([p.trail.westNodes, p.trail.eastNodes]) === mine);
+    if (twin) say(`has exactly the same trail layout as "${twin.name}". Give it its own trail, bridge and summit position (see docs/ADDING_A_PARK.md, "Making a park feel different")`);
+  }
+
   for (const [k, v] of Object.entries(park.vegetation?.speciesWeights ?? {})) {
     if (!finite(v) || (v as number) < 0) say(`tree weight "${k}" must be 0 or more`);
   }

@@ -7,10 +7,13 @@ import { fbm } from '../utils/noise.ts';
 export interface HillParams {
   baseScale: number;
   heightScale: number;
+  /** Optional: shifts the hill pattern so two parks do not share the same hills. Leave out for the original pattern. */
+  noiseX?: number;
+  noiseZ?: number;
 }
 
 export function proceduralHills(x: number, z: number, p: HillParams): number {
-  return fbm(x * p.baseScale + 105, z * p.baseScale + 95, 4) * p.heightScale;
+  return fbm(x * p.baseScale + 105 + (p.noiseX ?? 0), z * p.baseScale + 95 + (p.noiseZ ?? 0), 4) * p.heightScale;
 }
 
 /** Mean and standard deviation of the hill term over the playable area (sampled on a coarse grid). */
