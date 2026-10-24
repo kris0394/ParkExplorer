@@ -1,6 +1,6 @@
 # Adding a new park to Park Explorer
 
-A park is data, not code. Everything for one park lives in one object in `src/data/parks.ts`.
+The long-term goal is every U.S. national park (64 now that Chiricahua in Arizona became the 64th on 20 October 2026). A park is data, not code. Everything for one park lives in one object in `src/data/parks.ts`.
 All the game systems (deer, trails, closed areas, litter, water stations, hotkeys, seasons) read from it.
 
 ## Steps

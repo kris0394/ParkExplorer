@@ -12,6 +12,7 @@ import { validateAllParks } from '../src/data/parkValidation.ts';
 import { SEASON_ORDER, setActiveSeason } from '../src/data/seasons.ts';
 import { getRiverDistance, heightAt } from '../src/terrain/riverTerrain.ts';
 import { getDistanceToTrail, initializeTrailPoints } from '../src/entities/trailMesh.ts';
+import { getRoadPaths } from '../src/terrain/roadTerrain.ts';
 import { buildLitterSpots, getZonesForPark, findClosedZoneAt } from '../src/entities/rangerRules.ts';
 
 let errors = 0;
@@ -31,6 +32,14 @@ for (const park of AVAILABLE_PARKS) {
 
   const sp = park.spawn;
   if (river(sp.x, sp.z) < hw + 1) fail('spawn is in the river');
+
+  // Roads (Task 19): must stay out of the river and away from the spawn point
+  for (const rp of getRoadPaths()) {
+    for (const pt of rp.pts) {
+      if (river(pt.x, pt.z) < hw + rp.road.width / 2 + 2) { fail(`road "${rp.road.id}" runs into the river near (${pt.x.toFixed(0)}, ${pt.z.toFixed(0)})`); break; }
+    }
+    if (Math.hypot(sp.x - rp.pts[0].x, sp.z - rp.pts[0].z) < 1 && rp.road.kind === 'road') warn(`road "${rp.road.id}" starts at the spawn point`);
+  }
 
   for (const s of buildLitterSpots(park)) {
     if (river(s.x, s.z) < hw + 1) fail(`litter "${s.id}" is in the river`);

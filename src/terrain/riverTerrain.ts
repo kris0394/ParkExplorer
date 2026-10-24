@@ -6,6 +6,7 @@
 import { fbm, sstep, clamp } from '../utils/noise.ts';
 import { getActivePark } from '../data/parks.ts';
 import { rollingHills } from './realRelief.ts';
+import { applyRoads } from './roadTerrain.ts';
 
 /**
  * Calculates the X coordinate of the river centerline for any Z.
@@ -65,7 +66,11 @@ export function getRiverDistance(x: number, z: number): number {
  * Comprehensive terrain elevation function.
  * Driven directly by the active ParkDefinition data block.
  */
-export function heightAt(x: number, z: number): number {
+/**
+ * Natural ground height: rolling hills, the mountain and the spawn clearing, before roads and the river are carved in.
+ * (Roads use this to work out how high to build themselves.)
+ */
+export function proceduralBaseHeight(x: number, z: number): number {
   const park = getActivePark();
 
   // 1. Base rolling hills and natural micro-topography from park definition
@@ -99,6 +104,14 @@ export function heightAt(x: number, z: number): number {
     const spawnWeight = 1.0 - sstep(12.0, 42.0, distSpawn);
     baseH = baseH * (1.0 - spawnWeight) + park.spawn.y * spawnWeight;
   }
+
+  return baseH;
+}
+
+export function heightAt(x: number, z: number): number {
+  const park = getActivePark();
+  // Steps 1 to 3: natural ground. Then roads (Task 19) level the ground under them.
+  let baseH = applyRoads(x, z, proceduralBaseHeight(x, z));
 
   // 4. River Valley carving and bank shaping from park definition
   if (park.water.hasRiver) {

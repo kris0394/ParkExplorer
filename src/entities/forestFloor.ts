@@ -14,6 +14,7 @@ import {
   isPointOnSummitDeck,
 } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
+import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { getActivePark } from '../data/parks.ts';
 
 /**
@@ -51,6 +52,7 @@ export function createForestFloorSystem(): THREE.Group {
     // Exclusions
     if (Math.hypot(x - park.spawn.x, z - park.spawn.z) < 14.0) continue;
     if (getDistanceToTrail(x, z) < 3.2) continue;
+    if (isNearRoad(x, z, 2.5)) continue;
     if (getRiverDistance(x, z) < (park.water.halfWidth + 1.8)) continue;
     if (isPointOnBridge(x, z) || isPointOnSummitDeck(x, z)) continue;
     if (slopeAt(x, z) > 0.75) continue;

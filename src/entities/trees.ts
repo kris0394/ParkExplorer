@@ -14,6 +14,7 @@ import {
   isPointOnSummitDeck,
 } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
+import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { getActivePark } from '../data/parks.ts';
 import { getSeasonDef } from '../data/seasons.ts';
 
@@ -422,6 +423,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
 
     // 3. Trail corridor exclusion: keep trail unobstructed
     if (getDistanceToTrail(x, z) < 3.2) continue;
+    if (isNearRoad(x, z, 3.0)) continue;
 
     // 4. Bridge exclusion zone
     const b = park.trail.bridge;
@@ -532,6 +534,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     if (Math.hypot(x - park.spawn.x, z - park.spawn.z) < 6.0) continue;
     if (getRiverDistance(x, z) < (park.water.halfWidth + 1.2)) continue;
     if (getDistanceToTrail(x, z) < 1.6) continue;
+    if (isNearRoad(x, z, 2.0)) continue;
     if (isPointOnBridge(x, z) || isPointOnSummitDeck(x, z)) continue;
     if (slopeAt(x, z) > 0.95) continue;
 

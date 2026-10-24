@@ -58,7 +58,12 @@ export function getDistanceToTrail(x: number, z: number): number {
 /**
  * Builds a draped polygonal ribbon mesh for a set of trail nodes.
  */
-function createRibbonGeometry(nodes: Vec2D[], stepsPerSegment = 16, trailWidth = 2.4): THREE.BufferGeometry {
+function createRibbonGeometry(
+  nodes: Vec2D[],
+  stepsPerSegment = 16,
+  trailWidth = 2.4,
+  surface?: { center: number; mid: number; edge: number }
+): THREE.BufferGeometry {
   const curve = new THREE.CatmullRomCurve3(
     nodes.map(n => new THREE.Vector3(n.x, 0, n.z)),
     false,
@@ -75,9 +80,9 @@ function createRibbonGeometry(nodes: Vec2D[], stepsPerSegment = 16, trailWidth =
   const colors: number[] = [];
   const indices: number[] = [];
 
-  const cCenter = new THREE.Color(0x8a7153); // packed gravel/dirt
-  const cMid = new THREE.Color(0x766649);    // worn loam
-  const cEdge = new THREE.Color(0x566042);   // mossy transition into grass
+  const cCenter = new THREE.Color(surface?.center ?? 0x8a7153); // packed gravel/dirt
+  const cMid = new THREE.Color(surface?.mid ?? 0x766649);       // worn loam
+  const cEdge = new THREE.Color(surface?.edge ?? 0x566042);     // mossy transition into grass
 
   for (let s = 0; s <= sampleCount; s++) {
     const t = s / sampleCount;
@@ -142,12 +147,12 @@ export function createTrailMeshGroup(): THREE.Group {
     polygonOffsetUnits: -2.0,
   });
 
-  const westGeo = createRibbonGeometry(park.trail.westNodes, 14, park.trail.width);
+  const westGeo = createRibbonGeometry(park.trail.westNodes, 14, park.trail.width, park.trail.surface);
   const westMesh = new THREE.Mesh(westGeo, material);
   westMesh.receiveShadow = true;
   group.add(westMesh);
 
-  const eastGeo = createRibbonGeometry(park.trail.eastNodes, 16, park.trail.width);
+  const eastGeo = createRibbonGeometry(park.trail.eastNodes, 16, park.trail.width, park.trail.surface);
   const eastMesh = new THREE.Mesh(eastGeo, material);
   eastMesh.receiveShadow = true;
   group.add(eastMesh);

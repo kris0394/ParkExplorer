@@ -71,6 +71,33 @@ export interface ParkWaterStation {
   radius: number;
 }
 
+/** Task 19: a road, parking area or driveway. Terrain is levelled under it and trees/rocks keep off it. */
+export interface ParkRoad {
+  id: string;
+  name: string;
+  kind: 'road' | 'lot' | 'drive';
+  /** Take this level from another road (by id), so a parking area and its entrance sit level with the road they join. */
+  levelFrom?: string;
+  /** Width of the paved surface in metres. */
+  width: number;
+  nodes: { x: number; z: number }[];
+  /** Low stone walls along the road edge. from/to are 0 to 1 along the road; side 1 or -1 picks the edge. */
+  walls?: { side: 1 | -1; from: number; to: number }[];
+}
+
+/** Optional scenery that makes one park look like itself (everything here is optional). */
+export interface ParkFeatures {
+  roads?: ParkRoad[];
+  /** Parked cars (colour is a hex number). */
+  cars?: { x: number; z: number; yaw: number; color: number }[];
+  /** Fields of angular boulders, for example greenstone scree. */
+  talusFields?: { x: number; z: number; radius: number; innerRadius?: number; count: number }[];
+  /** A low stone wall around the summit deck, with a gap (in degrees) where the trail arrives. */
+  summitWall?: { gapDeg: number };
+  /** Layered blue ridgelines on the horizon. */
+  distantRidges?: boolean;
+}
+
 export interface ParkDefinition {
   id: string;
   name: string;
@@ -103,6 +130,8 @@ export interface ParkDefinition {
     /** Overall slopes larger than this (metres) are removed. */
     detrendSigmaM: number;
   };
+  /** Task 19: park-specific scenery (roads, cars, boulder fields, summit wall, distant ridges). */
+  features?: ParkFeatures;
   /** Optional: changes where trees, rocks and logs are scattered, so each park's forest is its own. Leave out for the original pattern. */
   layoutSeed?: number;
   /** True for fictional demo parks (shown as "Practice park"). */
@@ -158,6 +187,8 @@ export interface ParkDefinition {
   trail: {
     name: string;
     width: number;
+    /** Optional trail surface colours (hex). Defaults to packed dirt. */
+    surface?: { center: number; mid: number; edge: number };
     westNodes: { x: number; z: number }[];
     eastNodes: { x: number; z: number }[];
     bridge: {
@@ -787,7 +818,10 @@ export const SHENANDOAH: ParkDefinition = {
   trail: {
     name: 'Lower Hawksbill Trail',
     width: 2.4,
+    surface: { center: 0x95938a, mid: 0x7d7b71, edge: 0x58613f }, // pale rocky greenstone path
     westNodes: [
+      { x: -44.0, z: 47.0 }, // starts at the parking area
+      { x: -31.0, z: 46.6 },
       { x: -18.0, z: 46.0 },
       { x: -12.0, z: 41.0 },
       { x: -5.0, z: 35.0 },
@@ -900,7 +934,7 @@ export const SHENANDOAH: ParkDefinition = {
     spawns: [
       // Deer around the trailhead meadow
       { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: -9.0, z: 41.5, roamRadius: 16.0 },   // Doe
-      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -32.0, z: 40.0, roamRadius: 18.0 },   // Antlered buck
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -22.0, z: 28.0, roamRadius: 14.0 },   // Antlered buck
       { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: -6.0, z: 46.5, roamRadius: 12.0 },    // Fawn
       // A second doe and fawn grazing in the brook meadow, a good distance from the trail
       { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 46.0, z: 38.0, roamRadius: 12.0 },
@@ -908,6 +942,65 @@ export const SHENANDOAH: ParkDefinition = {
       // Black bear foraging on the slope south of the trail, well beyond the 46 m guidance from the start
       { species: 'black-bear', isBuck: false, isFawn: false, x: 78.0, z: 40.0, roamRadius: 12.0 },
     ],
+  },
+  // Task 19: things that belong to Shenandoah. Skyline Drive and its stone walls, the Hawksbill Gap parking area,
+  // greenstone scree near the summit, a stone summit wall and layered Blue Ridge ridgelines on the horizon.
+  features: {
+    roads: [
+      {
+        id: 'skyline-drive',
+        name: 'Skyline Drive',
+        kind: 'road',
+        width: 7.0,
+        nodes: [
+          { x: -84, z: -200 },
+          { x: -78, z: -100 },
+          { x: -72, z: -20 },
+          { x: -71, z: 30 },
+          { x: -74, z: 80 },
+          { x: -84, z: 150 },
+          { x: -98, z: 230 },
+        ],
+        walls: [
+          { side: -1, from: 0.46, to: 0.555 },
+          { side: -1, from: 0.585, to: 0.69 },
+        ],
+      },
+      {
+        id: 'hawksbill-gap-lot',
+        name: 'Hawksbill Gap Parking',
+        kind: 'lot',
+        levelFrom: 'skyline-drive',
+        width: 12.0,
+        nodes: [
+          { x: -52, z: 36 },
+          { x: -52, z: 56 },
+        ],
+      },
+      {
+        id: 'hawksbill-gap-entrance',
+        name: 'Parking Entrance',
+        kind: 'drive',
+        levelFrom: 'skyline-drive',
+        width: 6.0,
+        nodes: [
+          { x: -67, z: 47 },
+          { x: -58, z: 47 },
+        ],
+      },
+    ],
+    cars: [
+      { x: -55.5, z: 40.5, yaw: Math.PI / 2, color: 0x9a2a2a },
+      { x: -55.5, z: 51.5, yaw: Math.PI / 2, color: 0xd9d6cc },
+      { x: -48.5, z: 44.0, yaw: -Math.PI / 2, color: 0x2f4a6b },
+    ],
+    talusFields: [
+      { x: 104, z: -42, radius: 15, count: 80 },
+      { x: 115, z: -50, radius: 26, innerRadius: 9, count: 160 },
+      { x: 121, z: -22, radius: 11, count: 45 },
+    ],
+    summitWall: { gapDeg: 75 },
+    distantRidges: true,
   },
   rules: {
     zones: [

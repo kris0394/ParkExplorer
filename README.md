@@ -26,7 +26,9 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 15 | Real terrain pilot from elevation data | **Done (first pass, needs first real download)** | Real Kuwohi-area relief blended into the Smokies hills, away from the trail. Guide: `docs/REAL_TERRAIN.md` |
 | 16 | Black bears (calm-and-back-away lesson) | **Done (first pass)** | One bear in the Smokies; approach, back away, never run. Winter: no bears |
 | 17 | Shenandoah (second real park) | **Done (first pass)** | Hawksbill area, NPS code `shen`, six sourced facts, real wildlife guidance (75 ft / 150 ft), Hawksbill real relief, deer and one bear |
-| 18 | More real parks (Acadia next) and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; a full real level needs NPS trail data and a layout step |
+| 18 | Shenandoah's own layout, unique Jump-to labels, redesigned landing page, clone guard | **Done (first pass)** | Own trail, brook, summit spot, hills and forest pattern. Park list with search and tabs. `npm run check:parks` errors if two real parks share a trail |
+| 19 | Shenandoah scenery: Skyline Drive, parking area, stone walls, greenstone scree, summit wall, Blue Ridge ridgelines | **Done (first pass)** | Data-driven `features` block any park can use. Yellow-rope (fragile) vs red-rope (closed) warnings made clearer |
+| 20 | More real parks (Acadia next) and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; give each park its own layout and features. Chiricahua (Arizona, the 64th national park since 20 Oct 2026) is on the list |
 
 ---
 
@@ -146,8 +148,14 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - Wildlife: four deer (doe, buck, fawn, second doe) and one black bear. No elk (they do not live in the park). The bear lesson is the same: if a bear comes closer, move away slowly without turning your back, never run. The park's page adds that a bear may stand on its hind legs for a better look or smell, which is curiosity.
 - Names: Hawksbill (4,051 ft / 1,235 m, highest peak), Hawksbill Gap trailhead, Lower Hawksbill Trail, Hawksbill Summit observation platform. Elevation range 535 ft (163 m) to 4,051 ft is from the NPS park statistics page.
 - No winter summit closure: Hawksbill is a year-round hike, so the game does not invent a closure there. The start-screen trail line says real trails and roads can close and to check nps.gov.
-- The map uses the same trail and bridge layout as the Smokies, with different ground shape, colours, haze, forest mix (oak-hickory) and names. It is a game-scale landscape, not a survey.
+- The map has its own layout (Tasks 18 and 19): a long climb with two hairpins, a narrow brook with a short footbridge, its own hills and forest pattern, Skyline Drive, the Hawksbill Gap parking area, stone walls, greenstone scree, a stone summit wall and layered Blue Ridge ridgelines. It is a game-scale landscape, not a survey.
 - Add-a-park steps and honesty rules: `docs/ADDING_A_PARK.md`, `docs/REAL_PARK_CHECKLIST.md`.
+
+## 13b. Tasks 18 and 19: every park gets its own look
+- **Own layout:** each real park defines its own `spawn`, `terrain.mountain`, `trail`, `water`, `terrain.noiseX/noiseZ` (hill pattern) and `layoutSeed` (tree, rock and log scatter). `npm run check:parks` reports an error if two real parks share the same trail.
+- **Optional `features` block (Task 19):** `roads` (road, parking area, driveway; the ground is levelled under them and trees, rocks and grass keep off), `cars`, `talusFields` (angular boulder fields), `summitWall` and `distantRidges`. Parks without it are unchanged. `trail.surface` recolours the path.
+- **Ropes:** red-capped ropes are closed areas and block you. Yellow-capped ropes are fragile areas: you can walk in, but Stewardship drops if you stay about 6 seconds. The on-screen message now says so.
+- **Park count:** the long-term goal is every U.S. national park, now **64** (Chiricahua in Arizona became the 64th on 20 October 2026).
 
 ## 14. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
@@ -155,7 +163,7 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - Trees and rocks do not block binocular or camera views.
 - Three species (deer, elk, black bear). Desktop browsers only.
 - Bears: one bear only, no cubs (a mother with cubs would need extra rules), no food or campsite mechanics yet, and the model is the deer body reshaped, so it may look rough. The "rise onto hind legs" pose is simple.
-- Shenandoah reuses the Smokies trail and bridge layout, so the two parks feel similar until real terrain is loaded.
+- Shenandoah's scenery (Task 19) is game-made: the road, cars and walls are simple shapes, and the positions are not a survey of Hawksbill Gap.
 - Bear approach is simplified: a bear that is approached by a standing player just stops at about 12 m and carries on.
 - The Smokies map is still a game landscape with real names. Real relief from the Kuwohi area is blended into the hills (Task 15), but the trail, river and landmarks are hand-placed, so it is not a map of the real park.
 - The terrain download has only been tested with made-up tiles. The first real download happens on GitHub, so check the build log line starting with `[terrain]`.
@@ -163,7 +171,7 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - Facts in the `about` block are a snapshot (checked 2026-10-10). Re-check them from time to time.
 - NPS data is a snapshot from build time (up to about a day old) and is not shown inside the 3D world, only on the start screen. The standalone `park-explorer.html` carries the snapshot from when it was built.
 - The NPS download was tested against a simulated NPS server only. The first real run happens on GitHub after you add the secret.
-- Terrain shape and trail curves still use shared code; new parks reuse the same generated terrain with different numbers.
+- Terrain shape and trail curves still use shared code; new parks reuse the same generated terrain with different numbers, but now with their own layout, hill pattern and optional features.
 - The Switchback landmark's stored height (16.5) is higher than the ground there, so fast travel drops you slightly. The checker flags it.
 - Seasons are visual and behavioural only: no rain, snowfall or wind yet. Winter trees are bare trunks, which may look sparse.
 - Photos do not record which season they were taken in yet.
