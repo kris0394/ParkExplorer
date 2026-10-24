@@ -15,6 +15,7 @@ import {
   isPointOnSummitDeck,
 } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
+import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { RockInstance } from '../types/nature.ts';
 import { getActivePark } from '../data/parks.ts';
 
@@ -24,6 +25,13 @@ const rockGrid = new Map<string, { x: number; z: number; r: number }[]>();
 
 function rKey(cx: number, cz: number): string {
   return `${cx},${cz}`;
+}
+
+/** Adds a solid circle (cars, walls, big boulders) that players and animals cannot walk through. Call after createRocksSystem. */
+export function registerObstacle(x: number, z: number, r: number): void {
+  const key = rKey(Math.floor(x / ROCK_CELL), Math.floor(z / ROCK_CELL));
+  if (!rockGrid.has(key)) rockGrid.set(key, []);
+  rockGrid.get(key)!.push({ x, z, r });
 }
 
 export function pushOutOfRocks(p: { x: number; z: number }): void {
@@ -204,6 +212,7 @@ export function createRocksSystem(): THREE.Group {
 
     // Skip trail center
     if (getDistanceToTrail(x, z) < 2.5) continue;
+    if (isNearRoad(x, z, 2.5)) continue;
     // Skip summit deck
     if (isPointOnSummitDeck(x, z)) continue;
 

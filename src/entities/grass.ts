@@ -15,6 +15,7 @@ import {
   isPointOnSummitDeck,
 } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
+import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { getActivePark } from '../data/parks.ts';
 
 const GRASS_COUNT = 2200;
@@ -190,7 +191,7 @@ export class GrassSystem {
 
       // --- EXCLUSION RULES ---
       const inRiver = getRiverDistance(wx, wz) < (getActivePark().water.halfWidth + 0.8);
-      const onTrail = getDistanceToTrail(wx, wz) < 1.45;
+      const onTrail = getDistanceToTrail(wx, wz) < 1.45 || isNearRoad(wx, wz, 0.9);
       const onBridge = isPointOnBridge(wx, wz);
       const onSummit = isPointOnSummitDeck(wx, wz);
       const slope = slopeAt(wx, wz);

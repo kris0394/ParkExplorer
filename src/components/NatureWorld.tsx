@@ -20,6 +20,7 @@ import { createTrailMeshGroup } from '../entities/trailMesh.ts';
 import { createBridgeGroup } from '../entities/bridge.ts';
 import { createSummitOverlookGroup } from '../entities/summitOverlook.ts';
 import { createRocksSystem, pushOutOfRocks } from '../entities/rocks.ts';
+import { createParkFeaturesGroup } from '../entities/parkFeatures.ts';
 import { GrassSystem } from '../entities/grass.ts';
 import { createForestSystem, pushOutOfTrees } from '../entities/trees.ts';
 import { createForestFloorSystem } from '../entities/forestFloor.ts';
@@ -672,6 +673,9 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
     // 11. Rocks & Boulders
     const rocksGroup = createRocksSystem();
     scene.add(rocksGroup);
+
+    // 11b. Park-specific scenery: roads, parked cars, stone walls, boulder fields, distant ridges (Task 19)
+    scene.add(createParkFeaturesGroup());
 
     // 12. Forest Floor & Decaying Logs
     const floorDebris = createForestFloorSystem();

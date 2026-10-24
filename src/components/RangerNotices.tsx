@@ -99,10 +99,10 @@ export const RangerNotices: React.FC<Props> = ({ notice }) => {
             <div>
               {zone.reason}{' '}
               {zone.kind === 'closed'
-                ? 'Please go around.'
+                ? 'This area is closed and you cannot enter. Please go around.'
                 : zone.inside
-                ? 'Step back onto the trail.'
-                : 'Please stay on the trail.'}
+                ? 'You are allowed to walk here, but it harms the area, so Stewardship drops if you stay. Step back onto the trail.'
+                : 'Yellow ropes mark fragile ground you can still enter, but it costs Stewardship. Red ropes are closed and block you.'}
             </div>
             <div className="mt-1 text-[10px] opacity-70">Game example, not an official NPS notice.</div>
           </div>
