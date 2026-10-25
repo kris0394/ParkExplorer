@@ -102,6 +102,17 @@ export interface ParkFeatures {
     /** Rounded boulders (glacial erratics) instead of angular scree. */
     round?: boolean;
   }[];
+  /** Tall balancing-rock pillars (Chiricahua's rhyolite "standing-up rocks"). */
+  pinnacles?: {
+    x: number; z: number; radius: number; innerRadius?: number; count: number;
+    minHeight: number; maxHeight: number;
+    /** Rock colours (hex). */
+    colors?: number[];
+  }[];
+  /** Desert plants: agave, sotol/yucca and prickly pear, scattered over open dry ground. */
+  succulents?: { count: number; spread: number; maxHeight: number };
+  /** A small stone fire-lookout hut beside the summit deck. */
+  lookoutHut?: boolean;
   /** Trail cairns (small stacks of stones) on bare ground above this height, one every `every` metres. */
   cairns?: { minHeight: number; every: number };
   /** The sea (needs terrain.coast) and rocky islands out in it. */
@@ -1505,11 +1516,372 @@ export const ACADIA: ParkDefinition = {
   waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -95, z: 72 }, { x: 95, z: -85 }),
 };
 
+/**
+ * Task 21: Chiricahua National Park (Arizona), the 64th national park (20 Oct 2026; formerly a national monument).
+ * A desert "sky island": balancing rhyolite pinnacles, oak and pine woods above grassland, agave and prickly pear,
+ * an intermittent creek, a CCC fire lookout on Sugarloaf Mountain, and warm dry light.
+ */
+export const CHIRICAHUA: ParkDefinition = {
+  id: 'chiricahua',
+  npsParkCode: 'chir',
+  // Real relief around Sugarloaf Mountain (NPS photo-gallery location 32.0122 N, 109.3410 W; check the real max is about 2,228 m)
+  realTerrain: {
+    id: 'chir',
+    featureName: 'Sugarloaf Mountain area',
+    centerLat: 32.0122,
+    centerLon: -109.341,
+    zoom: 13,
+    sizeM: 1000,
+    stepM: 5,
+    originX: 64,
+    originZ: 76,
+    mix: 0.5,
+    detrendSigmaM: 120,
+  },
+  layoutSeed: 23,
+  name: 'Chiricahua',
+  subtitle: 'Wonderland of Rocks',
+  parkServiceUnit: 'National Park',
+  state: 'Arizona',
+  region: 'Southwest / Sky Islands',
+  description: 'A desert "sky island" in southeastern Arizona, where balancing pillars of volcanic rhyolite rise out of oak and pine woods, grassland and agave, high above the surrounding desert valleys.',
+  elevationRange: { min: 1562, max: 2228 },
+  spawn: { x: -122.0, y: 2.5, z: -84.0, yaw: -1.35 }, // faces the footbridge
+  terrain: {
+    baseScale: 0.0062,
+    heightScale: 14.0,
+    noiseX: -86,
+    noiseZ: -62,
+    mountain: {
+      x: 64.0,
+      z: 76.0,
+      height: 30.0,
+      radius: 60.0,
+      plateauRadius: 9.0,
+      name: 'Sugarloaf Mountain',
+    },
+    colors: {
+      valley: 0x8e8c52,     // dry olive grass
+      meadow: 0xb7aa68,     // golden grassland
+      dryGrass: 0xd4c288,
+      steepSlope: 0x9c7f63, // red-brown rhyolite soil
+      summitRock: 0xb59c86, // pale pink-tan rhyolite
+      riverbed: 0x6b5a48,
+      riverbank: 0x8c7a5e,
+    },
+  },
+  water: {
+    hasRiver: true,
+    name: 'Intermittent Creek',
+    surfaceY: -1.0,
+    halfWidth: 1.7,    // a small, often-dry creek
+    bankWidth: 5.0,
+    valleyWidth: 40.0,
+    gradient: 0.004,
+    course: { baseX: -20.0, amp1: 6.0, freq1: 0.022, amp2: 2.5, freq2: 0.055 },
+    deepColor: 0x3f4a42,
+    shallowColor: 0x7a8a6a,
+    skyReflectColor: 0xc8d0c0,
+  },
+  trail: {
+    name: 'Sugarloaf Mountain Trail',
+    width: 2.2,
+    surface: { center: 0xc2ab90, mid: 0xa98f76, edge: 0x7c7a4a }, // pale gravel path
+    westNodes: [
+      { x: -130.0, z: -90.0 }, // starts at the parking area
+      { x: -122.0, z: -84.0 },
+      { x: -112.0, z: -76.0 },
+      { x: -100.0, z: -70.0 },
+      { x: -88.0, z: -62.0 },
+      { x: -76.0, z: -55.0 },
+      { x: -64.0, z: -50.0 },
+      { x: -52.0, z: -46.0 },
+      { x: -40.0, z: -43.0 },
+      { x: -26.5, z: -40.0 },
+    ],
+    // Through the pinnacles, then a few switchbacks up to the lookout
+    eastNodes: [
+      { x: -14.5, z: -40.0 },
+      { x: -5.0, z: -33.0 },
+      { x: 7.0, z: -22.0 },
+      { x: 18.0, z: -8.0 },
+      { x: 26.0, z: 6.0 },
+      { x: 30.0, z: 20.0 },
+      { x: 36.0, z: 32.0 },
+      { x: 46.0, z: 40.0 },
+      { x: 54.0, z: 50.0 },
+      { x: 58.0, z: 60.0 },
+      { x: 61.0, z: 69.0 },
+    ],
+    bridge: {
+      name: 'Dry Wash Footbridge',
+      westX: -26.5,
+      eastX: -14.5,
+      centerZ: -40.0,
+      deckY: 0.9,
+      width: 2.6,
+    },
+  },
+  overlook: {
+    name: 'Sugarloaf Mountain Lookout',
+    elevationLabel: 'Elev. 2,228m (7,310 ft)',
+    deckRadius: 5.2,
+    hasBench: true,
+    hasTelescope: true,
+    signHeading: 'SUGARLOAF MOUNTAIN',
+    signSubheading: 'HIGHEST POINT IN THE PARK',
+  },
+  vegetation: {
+    treeCount: 560,   // open oak and pine woodland with wide grassy gaps
+    shrubCount: 800,
+    speciesWeights: {
+      conifer: 2.0,   // Arizona cypress and juniper
+      pine: 4.5,      // Apache and Mexican pinyon pine
+      broadleaf: 0.8, // sycamore in the canyon
+      oak: 6.0,       // evergreen Emory and silverleaf oak
+      birch: 0.0,
+      poplar: 0.0,
+      snag: 0.8,
+    },
+    // Task 21: sun-baked, open woodland of dull-green evergreen oak and pine, golden grassland, red paintbrush
+    look: {
+      treeScale: 0.82,
+      glades: 0.55,
+      palettes: {
+        oak: [0x5b6b3a, 0x667740, 0x50602f, 0x6f7d45],
+        pine: [0x4d6b4a, 0x5a7a52, 0x426044],
+        conifer: [0x5c7566, 0x66806f, 0x52695a],
+        broadleaf: [0xa8b45a, 0x98a84d, 0xb4bd66],
+      },
+      shrubPalette: [0x8a8a55, 0x77824a, 0x9a9460, 0x6b7a50],
+      grass: { root: 0x6b5a30, stalk: 0xb8a95a, dry: 0xe0cf8a, fern: 0x8a9a4a, flowerA: 0xd8472f, flowerB: 0xf2d34a },
+    },
+  },
+  atmosphere: {
+    fogColor: 0xd9d2bf,
+    fogDensity: 0.0048, // dry, clear desert air: you can see far
+    hemiSky: 0xd6e4f0,
+    hemiGround: 0x9a8a60,
+    sunColor: 0xfff0c8,
+    sunIntensity: 3.0,
+    skyHorizon: 0xdcd3bd,
+    skyMid: 0x7fb0d8,
+    skyZenith: 0x2c68b0,
+    skySun: 0xffe0a0,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Sugarloaf Trailhead',
+      description: 'Parking area and trailhead beside the scenic drive.',
+      x: -122,
+      y: 2.5,
+      z: -84,
+      yaw: -1.35,
+    },
+    {
+      id: 'bridge',
+      name: 'Dry Wash Footbridge',
+      description: 'A short footbridge over a creek that often runs dry. Water flows here only now and then.',
+      x: -28.0,
+      y: 0.92,
+      z: -40.0,
+      yaw: -Math.PI / 2,
+    },
+    {
+      id: 'switchback',
+      name: 'Pinnacle Gallery',
+      description: 'Pillars of rhyolite tower over the trail, many balanced on a small base.',
+      x: 26.0,
+      y: 5.4,
+      z: 6.0,
+      yaw: Math.PI * 0.3,
+    },
+    {
+      id: 'summit',
+      name: 'Sugarloaf Summit',
+      description: 'A flat summit with a stone fire lookout and views across the pinnacles and the desert valleys.',
+      x: 64.0,
+      y: 30.2,
+      z: 76.0,
+      yaw: Math.PI * 1.2,
+    },
+  ],
+  wildlife: {
+    spawns: [
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: -116.0, z: -76.0, roamRadius: 14.0 },
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -108.0, z: -96.0, roamRadius: 14.0 },
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: -112.0, z: -82.0, roamRadius: 10.0 },
+      // A black bear foraging well off the trail on the south slope
+      { species: 'black-bear', isBuck: false, isFawn: false, x: 4.0, z: 66.0, roamRadius: 12.0 },
+    ],
+  },
+  features: {
+    roads: [
+      {
+        id: 'scenic-drive',
+        name: 'Bonita Canyon Drive',
+        kind: 'road',
+        width: 6.5,
+        nodes: [
+          { x: -290, z: -90 },
+          { x: -220, z: -120 },
+          { x: -160, z: -120 },
+          { x: -110, z: -160 },
+          { x: -80, z: -230 },
+          { x: -60, z: -300 },
+        ],
+        surface: { wallColors: [0xb39a82, 0xa38b74, 0xbfa88f, 0x9a8470] }, // rough CCC-style rubble walls
+        walls: [{ side: 1, from: 0.18, to: 0.3 }],
+      },
+      {
+        id: 'sugarloaf-lot',
+        name: 'Sugarloaf Parking',
+        kind: 'lot',
+        levelFrom: 'scenic-drive',
+        width: 12.0,
+        nodes: [
+          { x: -152, z: -94 },
+          { x: -134, z: -94 },
+        ],
+      },
+      {
+        id: 'sugarloaf-entrance',
+        name: 'Parking Entrance',
+        kind: 'drive',
+        levelFrom: 'scenic-drive',
+        width: 6.0,
+        nodes: [
+          { x: -158, z: -118 },
+          { x: -146, z: -100 },
+        ],
+      },
+    ],
+    cars: [
+      { x: -148.5, z: -97.5, yaw: 0, color: 0xd9d6cc },
+      { x: -140.5, z: -90.0, yaw: Math.PI, color: 0x7a2c2c },
+    ],
+    pinnacles: [
+      { x: -8, z: -5, radius: 34, count: 50, minHeight: 6, maxHeight: 20 },
+      { x: 30, z: 28, radius: 30, innerRadius: 4, count: 55, minHeight: 6, maxHeight: 22 },
+      { x: -75, z: -40, radius: 24, count: 24, minHeight: 4, maxHeight: 14 },
+      { x: 62, z: 52, radius: 22, count: 30, minHeight: 5, maxHeight: 16 },
+      // a distant field, like the Heart of Rocks
+      { x: 120, z: -50, radius: 40, count: 70, minHeight: 7, maxHeight: 24 },
+    ],
+    talusFields: [
+      { x: 10, z: -10, radius: 36, count: 50, sizeRange: [0.3, 1.2], colors: [0xb39a86, 0xa8907e, 0xc2aa94] },
+      { x: 40, z: 40, radius: 30, count: 45, sizeRange: [0.3, 1.2], colors: [0xb39a86, 0xa8907e, 0xc2aa94] },
+    ],
+    succulents: { count: 300, spread: 230, maxHeight: 12 },
+    lookoutHut: true,
+    distantRidges: true,
+  },
+  rules: {
+    zones: [
+      {
+        id: 'pinnacle-base-closure',
+        kind: 'closed',
+        name: 'Pinnacle Base Closure',
+        x: -92,
+        z: -48,
+        radius: 6,
+        reason: 'Closed to protect the loose, crumbling base of the rock pillars. In the game this is an example closure, not a real one.',
+      },
+      {
+        id: 'lichen-rock-garden',
+        kind: 'sensitive',
+        name: 'Lichen Rock Garden',
+        x: 14,
+        z: 28,
+        radius: 8,
+        reason: 'Colourful lichens and ferns grow very slowly on and between the rocks. Stay on the trail so you do not scrape them off.',
+      },
+      {
+        id: 'spring-seep',
+        kind: 'sensitive',
+        name: 'Spring Seep',
+        x: 60,
+        z: 12,
+        radius: 7,
+        reason: 'Small wet seeps are rare here and are home to tiger salamanders. Stay out so the damp ground is not trampled.',
+      },
+    ],
+    litter: STANDARD_LITTER,
+  },
+  about: {
+    designNote:
+      'A game-scale landscape inspired by the Sugarloaf Mountain and Echo Canyon part of Chiricahua National Park. The rhyolite pinnacles, the dry creek, the oak and pine woods and the CCC fire lookout are real kinds of features here, but this map is not a survey: real trails, distances and layouts differ.',
+    wildlifeGuidance: {
+      text:
+        'Chiricahua National Park asks visitors to keep a safe distance from all wildlife, never to feed animals, and to remember that coatis, which are related to raccoons, are wild and should not be approached.',
+      caveat:
+        'The park\'s pages say to keep a safe distance but give no number, so the game uses the National Park Service\'s general guidance: about 75 feet (23 m) from most animals and 150 feet (46 m) from black bears. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://home.nps.gov/chir/learn/nature/animals.htm',
+      sourceLabel: 'nps.gov: Animals (Chiricahua)',
+    },
+    facts: [
+      {
+        id: 'newest-park',
+        title: 'America\'s newest national park',
+        text: 'Chiricahua, long a national monument, became the 64th U.S. national park on 20 October 2026.',
+        sourceUrl: 'https://www.kold.com/2026/10/21/chiricahua-national-monument-officially-named-countrys-newest-national-park/',
+        sourceLabel: 'KOLD News: Chiricahua named newest national park',
+      },
+      {
+        id: 'pinnacles',
+        title: 'Balancing pillars',
+        text: 'The most noticeable natural features are rhyolite pinnacles that rise sometimes hundreds of feet, many balancing on a small base. The Civilian Conservation Corps named many of the formations in the 1930s.',
+        sourceUrl: 'https://www.nps.gov/chir/learn/nature/geologicformations.htm',
+        sourceLabel: 'nps.gov: Geologic Formations (Chiricahua)',
+      },
+      {
+        id: 'volcano',
+        title: 'A giant volcano made the rocks',
+        text: 'About 27 million years ago a huge eruption formed the Turkey Creek Caldera, roughly 12 miles wide. Its ash settled into a thick layer of rhyolite tuff that has since cracked and eroded into the rock pillars.',
+        sourceUrl: 'https://www.nps.gov/chir/learn/nature/geologicformations.htm',
+        sourceLabel: 'nps.gov: Geologic Formations (Chiricahua)',
+      },
+      {
+        id: 'sky-island',
+        title: 'A sky island',
+        text: 'The Chiricahua Mountains are one of many sky islands in southern Arizona: mountains rising from the surrounding desert, with their own mix of plants and animals.',
+        sourceUrl: 'https://www.nps.gov/chir/learn/nature/geologicformations.htm',
+        sourceLabel: 'nps.gov: Geologic Formations (Chiricahua)',
+      },
+      {
+        id: 'water',
+        title: 'Water is rare and precious',
+        text: 'Water flows on the surface only now and then, but seeps and springs are vital to most of the park\'s animals. Underground faults let water rise in places, making small wetlands where tiger salamanders live.',
+        sourceUrl: 'https://www.nps.gov/chir/learn/nature/geologicformations.htm',
+        sourceLabel: 'nps.gov: Geologic Formations (Chiricahua)',
+      },
+      {
+        id: 'animals',
+        title: 'Lots of animal life',
+        text: 'At least 71 kinds of mammals, 46 reptiles, 8 amphibians and 171 birds regularly occur here. Visitors often see deer and wild turkeys on the scenic drive, and lucky ones may see coatis or a black bear.',
+        sourceUrl: 'https://home.nps.gov/chir/learn/nature/animals.htm',
+        sourceLabel: 'nps.gov: Animals (Chiricahua)',
+      },
+      {
+        id: 'elevation',
+        title: 'From desert to lookout',
+        text: 'The park rises from 5,124 feet (1,562 m) at the entrance station to 7,310 feet (2,228 m) at the top of Sugarloaf Mountain.',
+        sourceUrl: 'https://www.nps.gov/chir/espanol/index.htm',
+        sourceLabel: 'nps.gov: Chiricahua (Spanish home page)',
+      },
+    ],
+    checkedOn: '2026-10-25',
+  },
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -122, z: -84 }, { x: 64, z: 76 }),
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
   SHENANDOAH,
   ACADIA,
+  CHIRICAHUA,
   PROTOTYPE_PARK,
 ];
 

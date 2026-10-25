@@ -9,11 +9,13 @@
  */
 import * as THREE from 'three';
 import { getActivePark } from '../data/parks.ts';
-import { heightAt } from '../terrain/riverTerrain.ts';
+import { heightAt, getRiverDistance } from '../terrain/riverTerrain.ts';
 import { getRoadPaths, type RoadPath } from '../terrain/roadTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
 import { registerObstacle } from './rocks.ts';
 import { mulberry32 } from '../utils/noise.ts';
+import { isNearRoad } from '../terrain/roadTerrain.ts';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const GRAVEL = 0x77735f;
 const ASPHALT = 0x3b3d41;
@@ -401,6 +403,225 @@ function buildSea(group: THREE.Group, rand: () => number): void {
   }
 }
 
+/** Is this spot clear of the trail, roads, bridge, closed zones and the summit deck? (used when scattering big props) */
+function isClearGround(x: number, z: number, clearance: number): boolean {
+  const park = getActivePark();
+  if (getDistanceToTrail(x, z) < clearance) return false;
+  if (isNearRoad(x, z, clearance)) return false;
+  const mtn = park.terrain.mountain;
+  if (Math.hypot(x - mtn.x, z - mtn.z) < park.overlook.deckRadius + clearance + 2) return false;
+  const b = park.trail.bridge;
+  if (x > b.westX - 6 && x < b.eastX + 6 && Math.abs(z - b.centerZ) < 8) return false;
+  for (const zn of park.rules.zones) {
+    if (Math.hypot(x - zn.x, z - zn.z) < zn.radius + 1.5) return false;
+  }
+  return true;
+}
+
+/** Chiricahua's balancing rhyolite pillars: tall, lumpy columns, some with a narrow "neck" under a wider cap. */
+function buildPinnacles(group: THREE.Group, rand: () => number): void {
+  const park = getActivePark();
+  const fields = park.features?.pinnacles ?? [];
+  if (fields.length === 0) return;
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const RING = 9;
+  const defaultColors = [0xb39a86, 0xa8907e, 0xc2aa94, 0x9c8574, 0xb8a08a, 0xa59384];
+  const lichen = new THREE.Color(0x93b06a);
+  const c = new THREE.Color();
+
+  for (const f of fields) {
+    const palette = f.colors ?? defaultColors;
+    let placed = 0;
+    let tries = 0;
+    while (placed < f.count && tries < f.count * 25) {
+      tries++;
+      const a = rand() * Math.PI * 2;
+      const inner = f.innerRadius ?? 0;
+      const r = Math.sqrt(inner * inner + rand() * (f.radius * f.radius - inner * inner));
+      const x = f.x + Math.cos(a) * r;
+      const z = f.z + Math.sin(a) * r;
+      const width = 0.9 + rand() * 1.9;
+      if (!isClearGround(x, z, 3.4 + width)) continue;
+      if (getRiverDistance(x, z) < park.water.halfWidth + width + 3) continue;
+      const height = f.minHeight + Math.pow(rand(), 1.6) * (f.maxHeight - f.minHeight);
+      // sit on the lowest ground under the pillar so it never floats on a slope
+      let base = heightAt(x, z);
+      for (const [dx, dz] of [[width, 0], [-width, 0], [0, width], [0, -width]]) base = Math.min(base, heightAt(x + dx, z + dz));
+      base -= 0.5;
+
+      const levels = 7;
+      const neckAt = rand() < 0.45 ? 1 + Math.floor(rand() * 3) : -1; // a narrow neck gives the "balanced rock" look
+      const baseColor = palette[Math.floor(rand() * palette.length)];
+      const phase = rand() * 6.28;
+      const rings: { y: number; cx: number; cz: number; rad: number[] }[] = [];
+      let driftX = 0;
+      let driftZ = 0;
+      for (let i = 0; i <= levels; i++) {
+        const t = i / levels;
+        let rw = width * (0.8 + 0.28 * Math.sin(i * 1.9 + phase) + (1 - t) * 0.18);
+        if (i === neckAt) rw *= 0.55;
+        if (i === neckAt + 1 && neckAt >= 0) rw *= 1.25;
+        if (i === levels) rw *= 0.62; // rounded top
+        driftX += (rand() - 0.5) * width * 0.16;
+        driftZ += (rand() - 0.5) * width * 0.16;
+        const rad: number[] = [];
+        for (let k = 0; k < RING; k++) rad.push(rw * (0.86 + rand() * 0.28));
+        rings.push({ y: base + t * height, cx: x + driftX, cz: z + driftZ, rad });
+      }
+      const vert = (ri: number, k: number) => {
+        const ring = rings[ri];
+        const ang = (k / RING) * Math.PI * 2;
+        return [ring.cx + Math.cos(ang) * ring.rad[k % RING], ring.y, ring.cz + Math.sin(ang) * ring.rad[k % RING]] as const;
+      };
+      const pushTri = (p: readonly number[][], shade: number, ringIndex: number) => {
+        for (const v of p) {
+          positions.push(v[0], v[1], v[2]);
+          c.set(baseColor).multiplyScalar(shade);
+          // pale lichen patches higher up
+          if (ringIndex > 1 && rand() < 0.05) c.lerp(lichen, 0.55);
+          colors.push(c.r, c.g, c.b);
+        }
+      };
+      for (let i = 0; i < levels; i++) {
+        for (let k = 0; k < RING; k++) {
+          const a0 = vert(i, k), a1 = vert(i, k + 1), b0 = vert(i + 1, k), b1 = vert(i + 1, k + 1);
+          const shade = 0.78 + (i / levels) * 0.32 + (rand() - 0.5) * 0.08;
+          pushTri([[...a0], [...b0], [...a1]], shade, i);
+          pushTri([[...a1], [...b0], [...b1]], shade, i);
+        }
+      }
+      // top cap
+      const top = rings[levels];
+      for (let k = 0; k < RING; k++) {
+        const p0 = vert(levels, k), p1 = vert(levels, k + 1);
+        pushTri([[...p0], [top.cx, top.y + width * 0.28, top.cz], [...p1]], 1.05, levels);
+      }
+      registerObstacle(x, z, width * 0.9);
+      placed++;
+    }
+  }
+  if (positions.length === 0) return;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+}
+
+/** Agave, sotol/yucca and prickly pear on open dry ground. */
+function buildSucculents(group: THREE.Group, rand: () => number): void {
+  const park = getActivePark();
+  const cfg = park.features?.succulents;
+  if (!cfg) return;
+
+  const leafGeo = (n: number, len: number, wid: number, tilt: number) => {
+    const parts: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < n; i++) {
+      const g = new THREE.ConeGeometry(wid, len, 4);
+      g.translate(0, len / 2, 0);
+      g.rotateZ(tilt + (i % 2) * 0.25);
+      g.rotateY((i / n) * Math.PI * 2 + (i % 3) * 0.2);
+      parts.push(g);
+    }
+    return mergeGeometries(parts);
+  };
+  const agaveGeo = leafGeo(11, 1.5, 0.17, 0.95);
+  const sotolGeo = leafGeo(16, 1.9, 0.07, 0.75);
+  const padGeos: THREE.BufferGeometry[] = [];
+  for (let i = 0; i < 4; i++) {
+    const g = new THREE.SphereGeometry(0.42, 7, 5);
+    g.scale(1, 1.05, 0.2);
+    g.rotateZ((i - 1.5) * 0.45);
+    g.rotateY(i * 0.9);
+    g.translate((i - 1.5) * 0.35, 0.5 + (i % 2) * 0.5, (i % 2) * 0.2);
+    padGeos.push(g);
+  }
+  const pearGeo = mergeGeometries(padGeos);
+
+  const kinds = [
+    { geo: agaveGeo, cols: [0x6f9a82, 0x7aa58a, 0x628c76], weight: 0.34, scale: [0.8, 1.7] },
+    { geo: sotolGeo, cols: [0x8a9f58, 0x95a860, 0x7d9150], weight: 0.33, scale: [0.9, 1.7] },
+    { geo: pearGeo, cols: [0x6a8a48, 0x75964f, 0x5e7d40], weight: 0.33, scale: [0.8, 1.5] },
+  ];
+  const items: { k: number; x: number; y: number; z: number; s: number; ry: number }[] = [];
+  let tries = 0;
+  while (items.length < cfg.count && tries < cfg.count * 12) {
+    tries++;
+    const x = (rand() * 2 - 1) * cfg.spread;
+    const z = (rand() * 2 - 1) * cfg.spread;
+    const h = heightAt(x, z);
+    if (h > cfg.maxHeight) continue;
+    if (!isClearGround(x, z, 2.0)) continue;
+    if (getRiverDistance(x, z) < park.water.halfWidth + 2.5) continue;
+    const roll = rand();
+    const k = roll < kinds[0].weight ? 0 : roll < kinds[0].weight + kinds[1].weight ? 1 : 2;
+    const [s0, s1] = kinds[k].scale;
+    items.push({ k, x, y: h, z, s: s0 + rand() * (s1 - s0), ry: rand() * Math.PI * 2 });
+  }
+  kinds.forEach((kind, ki) => {
+    const mine = items.filter(it => it.k === ki);
+    if (mine.length === 0) return;
+    const mesh = new THREE.InstancedMesh(kind.geo, new THREE.MeshLambertMaterial({ flatShading: true }), mine.length);
+    const dummy = new THREE.Object3D();
+    mine.forEach((it, i) => {
+      dummy.position.set(it.x, it.y - 0.05, it.z);
+      dummy.rotation.set(0, it.ry, 0);
+      dummy.scale.setScalar(it.s);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, new THREE.Color(kind.cols[Math.floor(rand() * kind.cols.length)]));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.castShadow = true;
+    group.add(mesh);
+  });
+}
+
+/** A small stone fire-lookout hut beside the summit deck, like the one built by the CCC on Sugarloaf Mountain. */
+function buildLookoutHut(group: THREE.Group): void {
+  const park = getActivePark();
+  if (!park.features?.lookoutHut) return;
+  const mtn = park.terrain.mountain;
+  const nodes = park.trail.eastNodes;
+  const end = nodes[nodes.length - 1];
+  // opposite side of the summit from where the trail arrives
+  const dx = mtn.x - end.x;
+  const dz = mtn.z - end.z;
+  const len = Math.hypot(dx, dz) || 1;
+  const x = mtn.x + (dx / len) * 7.2;
+  const z = mtn.z + (dz / len) * 7.2;
+  const y = mtn.height;
+  const g = new THREE.Group();
+  const wall = new THREE.MeshLambertMaterial({ color: 0xa89a82 });
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x4a3f36 });
+  const dark = new THREE.MeshLambertMaterial({ color: 0x2a2622 });
+  const glass = new THREE.MeshLambertMaterial({ color: 0x5b7184 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.5, 3.4), wall);
+  body.position.y = 1.25;
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.25, 4.0), roofMat);
+  roof.position.y = 2.62;
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.7, 0.1), dark);
+  door.position.set(0, 0.85, 1.72);
+  const win1 = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.8, 0.1), glass);
+  win1.position.set(1.7, 1.5, 0.6);
+  win1.rotation.y = Math.PI / 2;
+  const win2 = win1.clone();
+  win2.position.set(-1.7, 1.5, 0.6);
+  g.add(body, roof, door, win1, win2);
+  g.traverse(o => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  g.position.set(x, y, z);
+  g.rotation.y = Math.atan2(end.x - x, end.z - z); // door faces the trail
+  group.add(g);
+  registerObstacle(x, z, 1.9);
+  registerObstacle(x + 1.0, z, 1.4);
+  registerObstacle(x - 1.0, z, 1.4);
+}
+
 export function createParkFeaturesGroup(): THREE.Group {
   const group = new THREE.Group();
   group.name = 'parkFeatures';
@@ -413,6 +634,9 @@ export function createParkFeaturesGroup(): THREE.Group {
   buildTalus(group, rand);
   buildSummitWall(group, rand);
   buildCairns(group, rand);
+  buildPinnacles(group, rand);
+  buildSucculents(group, rand);
+  buildLookoutHut(group);
   buildSea(group, rand);
   if (f.distantRidges) buildDistantRidges(group);
   return group;

@@ -36,7 +36,7 @@ Checked 2026-10-10. Update: Task 15 now uses AWS Terrain Tiles for a pilot (see 
 | Shenandoah | Hawksbill summit area (in use since Task 17: 38.5553 N, 78.3950 W, from Wikipedia and SummitPost) |
 | Acadia | Cadillac Mountain summit |
 | Saguaro or Joshua Tree | A desert wash and rock outcrop near a visitor trailhead |
-| Chiricahua (Arizona, the 64th national park, 20 Oct 2026) | A rock-spire ("Wonderland of Rocks") section such as Echo Canyon or Heart of Rocks. Confirm the coordinates against NPS and USGS pages first |
+| Chiricahua (Arizona, the 64th national park, 20 Oct 2026) | Sugarloaf Mountain area, centred on the NPS photo-gallery location 32.0122 N, 109.3410 W (first pass; check the real maximum is about 2,228 m after the first build) |
 | Badlands or Theodore Roosevelt | Door Trail / Painted Canyon style badlands section |
 | Congaree or Everglades | Boardwalk loop (almost flat, so best for a simple test of flat terrain) |
 | Rocky Mountain | Bear Lake area |

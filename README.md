@@ -29,7 +29,8 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 18 | Shenandoah's own layout, unique Jump-to labels, redesigned landing page, clone guard | **Done (first pass)** | Own trail, brook, summit spot, hills and forest pattern. Park list with search and tabs. `npm run check:parks` errors if two real parks share a trail |
 | 19 | Shenandoah scenery: Skyline Drive, parking area, stone walls, greenstone scree, summit wall, Blue Ridge ridgelines | **Done (first pass)** | Data-driven `features` block any park can use. Yellow-rope (fragile) vs red-rope (closed) warnings made clearer |
 | 20 | Third real park: Acadia (Maine) | **Done (first pass)** | Own layout and look: bare pink-granite summit above the tree line, cairns, granite boulders, a stone bridge, a coast with a sea and islands. NPS code `acad`, real Cadillac Mountain relief, sourced facts. New engine options: `terrain.coast`, `features.sea/islands/cairns`, `bridge.style`, `treeLine`, `talusFields` colours and sizes |
-| 21 | More real parks (Chiricahua or another next) and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; give each park its own layout and features. Chiricahua (Arizona, the 64th national park since 20 Oct 2026) is on the list. Revisit Shenandoah's polish at the end |
+| 21 | Fourth real park: Chiricahua (Arizona, the 64th national park) | **Done (first pass)** | Own layout and look: balancing rhyolite pinnacles, agave/sotol/prickly pear, open oak-pine woodland and golden grassland, an intermittent creek, a stone fire lookout on Sugarloaf Mountain, warm dry light. NPS code `chir`, sourced facts. New options: `features.pinnacles`, `features.succulents`, `features.lookoutHut` |
+| 22 | Shared ground/grass polish (the "tennis lawn" look), Shenandoah polish, then more parks and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; give each park its own layout and features. Chiricahua (Arizona, the 64th national park since 20 Oct 2026) is on the list. Revisit Shenandoah's polish at the end |
 
 ---
 
@@ -166,6 +167,15 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - **Also new:** `features.cairns` (stone stacks marking the route on bare ground), round granite boulders (`talusFields` with `round`, `colors`, `sizeRange`), granite coping-stone walls (`roads[].surface.wallColors`), and `bridge.style: 'stone'`.
 - **Sources:** facts and wildlife guidance come from nps.gov (see the `about` block). The Acadia wildlife page shows distances in a picture, not text, so the game uses the general NPS 75 ft (23 m) deer guidance and says so. Bears are not in the game here because the park says they are rarely seen.
 - **Real elevation:** Cadillac Mountain summit at 44.35127 N, 68.22649 W (Wikipedia and a USGS benchmark agree). Downloaded at build time like the other parks.
+
+## 13d. Task 21: Chiricahua
+- **Layout:** parking and trailhead off the scenic drive in the north-west, a short footbridge over a creek that is often dry, then a climb through fields of rock pillars to a flat summit with a stone fire lookout in the south-east.
+- **Look:** warm, dry, very clear light; golden grassland with wide open gaps; dull-green evergreen oak and pine; agave, sotol and prickly pear; red and yellow wildflowers.
+- **Pinnacles (`features.pinnacles`):** tall lumpy rhyolite pillars with an occasional narrow neck under a wider cap, pale lichen patches, solid to walk into. Built as one merged mesh.
+- **Succulents (`features.succulents`), lookout hut (`features.lookoutHut`).**
+- **Sources:** nps.gov pages for Chiricahua National Park (animals, geologic formations, elevations). The park gives no distance numbers, so the game uses the general NPS 75 ft (23 m) and 150 ft (46 m, bears) guidance and says so. A black bear is included because the park lists bears among the animals visitors may see.
+- **Real elevation:** centred on the NPS photo-gallery location for Sugarloaf Mountain (32.0122 N, 109.3410 W). Check after the first build that the real maximum shown on the landing page is about 2,228 m; if not, the centre needs a small nudge.
+- **Park name:** NPS pages now say Chiricahua National Park. The NPS code is still `chir`.
 
 ## 14. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.
