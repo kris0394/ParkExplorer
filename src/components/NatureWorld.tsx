@@ -21,6 +21,7 @@ import { createBridgeGroup } from '../entities/bridge.ts';
 import { createSummitOverlookGroup } from '../entities/summitOverlook.ts';
 import { createRocksSystem, pushOutOfRocks } from '../entities/rocks.ts';
 import { createParkFeaturesGroup } from '../entities/parkFeatures.ts';
+import { getCoastLimitX } from '../terrain/riverTerrain.ts';
 import { GrassSystem } from '../entities/grass.ts';
 import { createForestSystem, pushOutOfTrees } from '../entities/trees.ts';
 import { createForestFloorSystem } from '../entities/forestFloor.ts';
@@ -613,6 +614,13 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
             const tBank = sstep(park.water.halfWidth + 5.5, park.water.halfWidth, rDist);
             col.lerp(cRiverbank, tBank * 0.8);
           }
+        }
+
+        // Coast (Task 20): bare granite along the shore, sea floor under the water
+        if (park.terrain.coast) {
+          const seaY = park.terrain.coast.seaY;
+          col.lerp(cRock, sstep(seaY + 3.2, seaY + 0.3, y) * 0.8);
+          if (y < seaY) col.lerp(cRiverbed, 0.9);
         }
 
         if (y > 20.0) {
@@ -1241,6 +1249,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       const limit = WORLD_SETTINGS.worldSize / 2 - 30;
       p.pos.x = Math.max(-limit, Math.min(limit, p.pos.x));
       p.pos.z = Math.max(-limit, Math.min(limit, p.pos.z));
+      p.pos.x = Math.min(p.pos.x, getCoastLimitX(p.pos.z)); // the sea is as far as you can go
 
       pushOutOfTrees(p.pos);
       pushOutOfRocks(p.pos);

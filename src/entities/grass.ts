@@ -191,6 +191,7 @@ export class GrassSystem {
       }
 
       // --- EXCLUSION RULES ---
+      const seaY = getActivePark().terrain.coast?.seaY;
       const inRiver = getRiverDistance(wx, wz) < (getActivePark().water.halfWidth + 0.8);
       const onTrail = getDistanceToTrail(wx, wz) < 1.45 || isNearRoad(wx, wz, 0.9);
       const onBridge = isPointOnBridge(wx, wz);
@@ -207,7 +208,7 @@ export class GrassSystem {
       }
 
       const gy = heightAt(wx, wz);
-      const finalScale = Math.max(0.1, item.baseScale * edgeFade);
+      const finalScale = Math.max(0.1, item.baseScale * edgeFade * ((seaY !== undefined && gy < seaY + 0.8) ? 0 : 1));
 
       this.dummy.position.set(wx, gy, wz);
       this.dummy.rotation.set(0, item.rotY, 0);

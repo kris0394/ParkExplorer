@@ -67,9 +67,10 @@ function buildRoads(group: THREE.Group, rand: () => number): void {
   for (const rp of getRoadPaths()) {
     const w = rp.road.width;
     // gravel shoulder, asphalt, then painted lines
-    group.add(ribbonMesh(rp, -(w / 2 + 0.9), w / 2 + 0.9, 0.04, GRAVEL, 0));
-    group.add(ribbonMesh(rp, -w / 2, w / 2, 0.06, rp.road.kind === 'lot' ? LOT_ASPHALT : ASPHALT, 1));
-    if (rp.road.kind === 'road') {
+    const sf = rp.road.surface;
+    group.add(ribbonMesh(rp, -(w / 2 + 0.9), w / 2 + 0.9, 0.04, sf?.shoulder ?? GRAVEL, 0));
+    group.add(ribbonMesh(rp, -w / 2, w / 2, 0.06, sf?.paved ?? (rp.road.kind === 'lot' ? LOT_ASPHALT : ASPHALT), 1));
+    if (rp.road.kind === 'road' && sf?.lines !== false) {
       group.add(ribbonMesh(rp, 0.1, 0.2, 0.075, 0xd6ad2a, 2));
       group.add(ribbonMesh(rp, -0.2, -0.1, 0.075, 0xd6ad2a, 2));
       group.add(ribbonMesh(rp, w / 2 - 0.45, w / 2 - 0.3, 0.075, 0xdddbd0, 2));
@@ -95,7 +96,7 @@ function buildRoads(group: THREE.Group, rand: () => number): void {
           x, y: gy + sy / 2 - 0.08, z,
           sx: 1.0 + rand() * 0.2, sy, sz: 0.55 + rand() * 0.15,
           yaw: Math.atan2(-t.z, t.x) + (rand() - 0.5) * 0.12,
-          color: wallColors[Math.floor(rand() * wallColors.length)],
+          color: (rp.road.surface?.wallColors ?? wallColors)[Math.floor(rand() * (rp.road.surface?.wallColors ?? wallColors).length)],
         });
         if (s % 2 === 0) registerObstacle(x, z, 0.8);
       }
@@ -169,9 +170,11 @@ function buildTalus(group: THREE.Group, rand: () => number): void {
   const mtn = park.terrain.mountain;
   const zones = park.rules.zones;
   const items: { x: number; y: number; z: number; sx: number; sy: number; sz: number; rx: number; ry: number; rz: number; color: number }[] = [];
-  const colors = [0x667064, 0x5b665a, 0x73796a, 0x6a7468, 0x808674, 0x58605a];
+  const defaultColors = [0x667064, 0x5b665a, 0x73796a, 0x6a7468, 0x808674, 0x58605a];
 
   for (const f of fields) {
+    const colors = f.colors ?? defaultColors;
+    const [minSize, maxSize] = f.sizeRange ?? [0.35, 1.6];
     let placed = 0;
     let tries = 0;
     while (placed < f.count && tries < f.count * 12) {
@@ -184,10 +187,10 @@ function buildTalus(group: THREE.Group, rand: () => number): void {
       if (getDistanceToTrail(x, z) < 2.4) continue;
       if (Math.hypot(x - mtn.x, z - mtn.z) < park.overlook.deckRadius + 2.2) continue;
       if (zones.some(zn => zn.kind === 'closed' && Math.hypot(x - zn.x, z - zn.z) < zn.radius + 1)) continue;
-      const size = 0.35 + Math.pow(rand(), 2.2) * 1.25;
-      const sx = size * (0.8 + rand() * 0.9);
-      const sz = size * (0.8 + rand() * 0.9);
-      const sy = size * (0.45 + rand() * 0.5);
+      const size = minSize + Math.pow(rand(), 2.2) * (maxSize - minSize);
+      const sx = size * (f.round ? 0.9 + rand() * 0.3 : 0.8 + rand() * 0.9);
+      const sz = size * (f.round ? 0.9 + rand() * 0.3 : 0.8 + rand() * 0.9);
+      const sy = size * (f.round ? 0.6 + rand() * 0.3 : 0.45 + rand() * 0.5);
       items.push({
         x, y: heightAt(x, z) + sy * 0.25, z, sx, sy, sz,
         rx: (rand() - 0.5) * 0.5, ry: rand() * Math.PI * 2, rz: (rand() - 0.5) * 0.5,
@@ -199,7 +202,8 @@ function buildTalus(group: THREE.Group, rand: () => number): void {
   }
 
   const mat = new THREE.MeshLambertMaterial({ flatShading: true });
-  const mesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), mat, items.length);
+  // Round boulders use a smoother shape than angular scree
+  const mesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, fields.some(f => f.round) ? 1 : 0), mat, items.length);
   const dummy = new THREE.Object3D();
   items.forEach((it, i) => {
     dummy.position.set(it.x, it.y, it.z);
@@ -309,6 +313,94 @@ function buildDistantRidges(group: THREE.Group): void {
   }
 }
 
+/** Cairns: small stacks of stones marking the route across bare granite, as on Acadia's open summits. */
+function buildCairns(group: THREE.Group, rand: () => number): void {
+  const park = getActivePark();
+  const cfg = park.features?.cairns;
+  if (!cfg) return;
+  const curve = new THREE.CatmullRomCurve3(park.trail.eastNodes.map(n => new THREE.Vector3(n.x, 0, n.z)), false, 'centripetal', 0.5);
+  const total = curve.getLength();
+  const count = Math.floor(total / cfg.every);
+  const slabs: { x: number; y: number; z: number; sx: number; sy: number; sz: number; ry: number }[] = [];
+  let side = 1;
+  for (let i = 1; i < count; i++) {
+    const u = (i * cfg.every) / total;
+    const p = curve.getPointAt(u);
+    const t = curve.getTangentAt(u);
+    const x = p.x + -t.z * side * 2.3;
+    const z = p.z + t.x * side * 2.3;
+    side = -side;
+    const base = heightAt(x, z);
+    if (base < cfg.minHeight) continue;
+    if (getDistanceToTrail(x, z) < 1.5) continue;
+    const layers = [ [0.55, 0.22], [0.44, 0.2], [0.34, 0.18], [0.24, 0.16] ];
+    let y = base - 0.04;
+    for (const [r, h] of layers) {
+      slabs.push({ x: x + (rand() - 0.5) * 0.08, y: y + h / 2, z: z + (rand() - 0.5) * 0.08, sx: r * (0.9 + rand() * 0.2), sy: h, sz: r * (0.9 + rand() * 0.2), ry: rand() * Math.PI });
+      y += h * 0.95;
+    }
+    registerObstacle(x, z, 0.45);
+  }
+  if (slabs.length === 0) return;
+  const mesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshLambertMaterial({ flatShading: true }), slabs.length);
+  const dummy = new THREE.Object3D();
+  const cols = [0xb7a69c, 0xa8978d, 0xc2b2a8];
+  slabs.forEach((s, i) => {
+    dummy.position.set(s.x, s.y, s.z);
+    dummy.rotation.set(0, s.ry, 0);
+    dummy.scale.set(s.sx, s.sy, s.sz);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+    mesh.setColorAt(i, new THREE.Color(cols[Math.floor(rand() * cols.length)]));
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+}
+
+/** The sea, east of the coast, with rocky islands (like the Porcupine Islands). */
+function buildSea(group: THREE.Group, rand: () => number): void {
+  const park = getActivePark();
+  const coast = park.terrain.coast;
+  const sea = park.features?.sea;
+  if (!coast || !sea) return;
+  const geo = new THREE.PlaneGeometry(4000, 4000);
+  geo.rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshPhongMaterial({ color: sea.color, shininess: 90, specular: 0x9fc4d8, transparent: true, opacity: 0.94 });
+  const mesh = new THREE.Mesh(geo, mat);
+  // Covers only the land-ward edge of the sea and everything east of it
+  mesh.position.set(coast.x0 - 60 + 2000, coast.seaY, 0);
+  mesh.receiveShadow = true;
+  mesh.renderOrder = 1;
+  group.add(mesh);
+
+  for (const isl of park.features?.islands ?? []) {
+    const geoI = new THREE.IcosahedronGeometry(1, 2);
+    const pos = geoI.attributes.position;
+    const colors = new Float32Array(pos.count * 3);
+    const rock = new THREE.Color(0x8a8079);
+    const wood = new THREE.Color(0x2b4a35);
+    const c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const bump = 0.86 + rand() * 0.28;
+      pos.setXYZ(i, pos.getX(i) * bump, pos.getY(i) * (0.9 + rand() * 0.2), pos.getZ(i) * bump);
+      const y = pos.getY(i);
+      c.copy(rock).lerp(wood, Math.min(1, Math.max(0, (y + 0.1) * 2.2)));
+      colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
+    }
+    geoI.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geoI.computeVertexNormals();
+    const m = new THREE.Mesh(geoI, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+    m.scale.set(isl.radius, isl.height, isl.radius * (0.7 + rand() * 0.4));
+    m.rotation.y = rand() * Math.PI;
+    m.position.set(isl.x, coast.seaY + isl.height * 0.25, isl.z);
+    m.castShadow = true;
+    group.add(m);
+  }
+}
+
 export function createParkFeaturesGroup(): THREE.Group {
   const group = new THREE.Group();
   group.name = 'parkFeatures';
@@ -320,6 +412,8 @@ export function createParkFeaturesGroup(): THREE.Group {
   buildCars(group);
   buildTalus(group, rand);
   buildSummitWall(group, rand);
+  buildCairns(group, rand);
+  buildSea(group, rand);
   if (f.distantRidges) buildDistantRidges(group);
   return group;
 }

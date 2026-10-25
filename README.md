@@ -28,7 +28,8 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 17 | Shenandoah (second real park) | **Done (first pass)** | Hawksbill area, NPS code `shen`, six sourced facts, real wildlife guidance (75 ft / 150 ft), Hawksbill real relief, deer and one bear |
 | 18 | Shenandoah's own layout, unique Jump-to labels, redesigned landing page, clone guard | **Done (first pass)** | Own trail, brook, summit spot, hills and forest pattern. Park list with search and tabs. `npm run check:parks` errors if two real parks share a trail |
 | 19 | Shenandoah scenery: Skyline Drive, parking area, stone walls, greenstone scree, summit wall, Blue Ridge ridgelines | **Done (first pass)** | Data-driven `features` block any park can use. Yellow-rope (fragile) vs red-rope (closed) warnings made clearer |
-| 20 | More real parks (Acadia next) and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; give each park its own layout and features. Chiricahua (Arizona, the 64th national park since 20 Oct 2026) is on the list |
+| 20 | Third real park: Acadia (Maine) | **Done (first pass)** | Own layout and look: bare pink-granite summit above the tree line, cairns, granite boulders, a stone bridge, a coast with a sea and islands. NPS code `acad`, real Cadillac Mountain relief, sourced facts. New engine options: `terrain.coast`, `features.sea/islands/cairns`, `bridge.style`, `treeLine`, `talusFields` colours and sizes |
+| 21 | More real parks (Chiricahua or another next) and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; give each park its own layout and features. Chiricahua (Arizona, the 64th national park since 20 Oct 2026) is on the list. Revisit Shenandoah's polish at the end |
 
 ---
 
@@ -157,6 +158,14 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - **Plant life (`vegetation.look`):** per-park leaf colours by tree kind, tree size, `glades` (share of open sunny ground between woods), bush colours and grass/fern/wildflower colours. Shenandoah uses bright yellow-green oak-hickory woods with open glades, fewer bushes, bracken and black-eyed Susans, a lighter ground palette and thinner haze; the Smokies keep their dense, dark, misty forest.
 - **Ropes:** closed areas now use clear red ropes (fragile areas stay yellow). Shenandoah's closed area is beside the trail before the footbridge, so it is easy to find. In the Smokies it is straight north of the start, about 44 m away. Red-capped ropes are closed areas and block you. Yellow-capped ropes are fragile areas: you can walk in, but Stewardship drops if you stay about 6 seconds. The on-screen message now says so.
 - **Park count:** the long-term goal is every U.S. national park, now **64** (Chiricahua in Arizona became the 64th on 20 October 2026).
+
+## 13c. Task 20: Acadia
+- **Layout:** trailhead and parking beside Park Loop Road in the west, a stone bridge over a brook, then a long open climb across bare granite to the Cadillac Mountain summit. The east side of the map slopes into the sea.
+- **Look:** dark spruce-fir woods that stop at a tree line (`vegetation.look.treeLine`), bare pink granite above it, blueberry-heath bushes, lupines, cool clear light.
+- **Coast (`terrain.coast`, `features.sea`, `features.islands`):** land slopes into a sea plane with rocky islands in the distance. You cannot walk past the shore. Trees, bushes, grass and logs keep off the beach.
+- **Also new:** `features.cairns` (stone stacks marking the route on bare ground), round granite boulders (`talusFields` with `round`, `colors`, `sizeRange`), granite coping-stone walls (`roads[].surface.wallColors`), and `bridge.style: 'stone'`.
+- **Sources:** facts and wildlife guidance come from nps.gov (see the `about` block). The Acadia wildlife page shows distances in a picture, not text, so the game uses the general NPS 75 ft (23 m) deer guidance and says so. Bears are not in the game here because the park says they are rarely seen.
+- **Real elevation:** Cadillac Mountain summit at 44.35127 N, 68.22649 W (Wikipedia and a USGS benchmark agree). Downloaded at build time like the other parks.
 
 ## 14. Known limitations
 - Not browser-tested by the assistant: type-checked, built and logic-tested with scripts only.

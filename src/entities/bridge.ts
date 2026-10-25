@@ -20,12 +20,14 @@ export function createBridgeGroup(): THREE.Group {
   const group = new THREE.Group();
   group.name = 'bridge';
 
+  const isStone = b.style === 'stone';
+
   const woodMat = new THREE.MeshLambertMaterial({
-    color: 0x634f3c,
+    color: isStone ? 0x9a8f88 : 0x634f3c, // pink-grey granite paving, or timber
   });
 
   const railingMat = new THREE.MeshLambertMaterial({
-    color: 0x4e3e30,
+    color: isStone ? 0x8a7f78 : 0x4e3e30,
   });
 
   const stoneMat = new THREE.MeshLambertMaterial({
@@ -94,7 +96,9 @@ export function createBridgeGroup(): THREE.Group {
       const pz = b.centerZ + sz;
       const bedY = heightAt(pierX, pz);
       const pileHeight = (b.deckY - plankThickness) - bedY + 1.5;
-      const colGeo = new THREE.CylinderGeometry(0.14, 0.18, pileHeight, 7);
+      const colGeo = isStone
+        ? new THREE.BoxGeometry(0.9, pileHeight, 0.9)
+        : new THREE.CylinderGeometry(0.14, 0.18, pileHeight, 7);
       colGeo.translate(pierX, bedY + pileHeight / 2 - 0.6, pz);
       pileGeos.push(colGeo);
     }
@@ -130,6 +134,17 @@ export function createBridgeGroup(): THREE.Group {
 
   for (const side of [-1, 1]) {
     const rz = b.centerZ + side * (halfW - 0.08);
+
+    if (isStone) {
+      // Solid granite parapet wall with a lighter coping stone on top, as on Acadia's carriage-road bridges
+      const wall = new THREE.BoxGeometry(length + 0.4, 0.85, 0.5);
+      wall.translate(centerX, b.deckY + 0.42, rz + side * 0.05);
+      railingGeos.push(wall);
+      const coping = new THREE.BoxGeometry(length + 0.6, 0.14, 0.62);
+      coping.translate(centerX, b.deckY + 0.92, rz + side * 0.05);
+      railingGeos.push(coping);
+      continue;
+    }
 
     for (let i = 0; i < numPosts; i++) {
       const rx = b.westX + i * postStep;
@@ -169,14 +184,14 @@ export function createBridgeGroup(): THREE.Group {
   }
 
   // 6. Trail Sign at the West Entrance (on dry land)
-  const signGroup = createBridgeTrailSign(b.name);
+  const signGroup = createBridgeTrailSign(b.name, isStone);
   signGroup.position.set(b.westX - 1.2, 0.95, b.centerZ + halfW + 0.7);
   group.add(signGroup);
 
   return group;
 }
 
-function createBridgeTrailSign(bridgeName: string): THREE.Group {
+function createBridgeTrailSign(bridgeName: string, isStoneSign = false): THREE.Group {
   const g = new THREE.Group();
 
   const postGeo = new THREE.CylinderGeometry(0.06, 0.07, 1.6, 6);
@@ -205,7 +220,7 @@ function createBridgeTrailSign(bridgeName: string): THREE.Group {
   ctx.fillStyle = '#f6edd9';
   ctx.font = 'bold 18px Georgia, serif';
   ctx.textAlign = 'center';
-  ctx.fillText('FOOTBRIDGE', 128, 42);
+  ctx.fillText(isStoneSign ? 'STONE BRIDGE' : 'FOOTBRIDGE', 128, 42);
   ctx.font = '13px Georgia, serif';
   ctx.fillText(bridgeName.length > 20 ? bridgeName.substring(0, 18) + '...' : bridgeName, 128, 74);
 

@@ -66,6 +66,7 @@ export function createForestFloorSystem(): THREE.Group {
     const angleY = rand() * Math.PI * 2;
 
     const yMid = heightAt(x, z);
+    if (park.terrain.coast && yMid < park.terrain.coast.seaY + 1.2) continue;
     const x1 = x - Math.cos(angleY) * (logLength / 2);
     const z1 = z - Math.sin(angleY) * (logLength / 2);
     const x2 = x + Math.cos(angleY) * (logLength / 2);
