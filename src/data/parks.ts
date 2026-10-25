@@ -78,6 +78,8 @@ export interface ParkRoad {
   kind: 'road' | 'lot' | 'drive';
   /** Take this level from another road (by id), so a parking area and its entrance sit level with the road they join. */
   levelFrom?: string;
+  /** Optional surface colours (hex) and whether to paint lane lines. Default: grey asphalt with lines. */
+  surface?: { paved?: number; shoulder?: number; lines?: boolean; wallColors?: number[] };
   /** Width of the paved surface in metres. */
   width: number;
   nodes: { x: number; z: number }[];
@@ -91,7 +93,20 @@ export interface ParkFeatures {
   /** Parked cars (colour is a hex number). */
   cars?: { x: number; z: number; yaw: number; color: number }[];
   /** Fields of angular boulders, for example greenstone scree. */
-  talusFields?: { x: number; z: number; radius: number; innerRadius?: number; count: number }[];
+  talusFields?: {
+    x: number; z: number; radius: number; innerRadius?: number; count: number;
+    /** Rock colours (hex). Default: grey-green greenstone. */
+    colors?: number[];
+    /** Smallest and largest rock size in metres (default 0.35 to 1.6). */
+    sizeRange?: [number, number];
+    /** Rounded boulders (glacial erratics) instead of angular scree. */
+    round?: boolean;
+  }[];
+  /** Trail cairns (small stacks of stones) on bare ground above this height, one every `every` metres. */
+  cairns?: { minHeight: number; every: number };
+  /** The sea (needs terrain.coast) and rocky islands out in it. */
+  sea?: { color: number };
+  islands?: { x: number; z: number; radius: number; height: number }[];
   /** A low stone wall around the summit deck, with a gap (in degrees) where the trail arrives. */
   summitWall?: { gapDeg: number };
   /** Layered blue ridgelines on the horizon. */
@@ -152,6 +167,8 @@ export interface ParkDefinition {
     /** Optional: shifts the hill pattern so this park's hills differ from other parks. */
     noiseX?: number;
     noiseZ?: number;
+    /** Optional: land slopes down into the sea on the east side. x0 is roughly where the shore is; wiggle bends the shoreline. */
+    coast?: { x0: number; wiggle: number; seaY: number; floorY: number };
     mountain: {
       x: number;
       z: number;
@@ -192,6 +209,8 @@ export interface ParkDefinition {
     westNodes: { x: number; z: number }[];
     eastNodes: { x: number; z: number }[];
     bridge: {
+      /** 'timber' (default) or 'stone' (granite arch-style bridge with stone parapets). */
+      style?: 'timber' | 'stone';
       name: string;
       westX: number;
       eastX: number;
@@ -218,6 +237,8 @@ export interface ParkDefinition {
       palettes?: Partial<Record<'conifer' | 'pine' | 'broadleaf' | 'oak' | 'birch' | 'poplar', number[]>>;
       /** Tree size multiplier (1 = normal). */
       treeScale?: number;
+      /** Height (m) above which no trees grow, leaving bare granite summits. */
+      treeLine?: number;
       /** 0 to 1: share of the land left as open sunny glades between woods (0 = unbroken forest). */
       glades?: number;
       /** Bush colours in summer. */
@@ -1120,10 +1141,375 @@ export const SHENANDOAH: ParkDefinition = {
   waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -18, z: 46 }, { x: 115, z: -50 }),
 };
 
+/**
+ * Task 20: Acadia National Park (Maine). Its own layout and look: a bare pink-granite summit with a long open climb,
+ * cairns, granite boulders (glacial erratics), a stone bridge, a coast with islands, and cool maritime light.
+ */
+export const ACADIA: ParkDefinition = {
+  id: 'acadia',
+  npsParkCode: 'acad',
+  // Real elevation relief from the Cadillac Mountain area (summit 44.35127 N, 68.22649 W), lined up with the game's summit
+  realTerrain: {
+    id: 'acad',
+    featureName: 'Cadillac Mountain area',
+    centerLat: 44.35127,
+    centerLon: -68.22649,
+    zoom: 13,
+    sizeM: 1000,
+    stepM: 5,
+    originX: 95,
+    originZ: -85,
+    mix: 0.45,
+    detrendSigmaM: 120,
+  },
+  layoutSeed: 11,
+  name: 'Acadia',
+  subtitle: 'Granite Summits & the Maine Coast',
+  parkServiceUnit: 'National Park',
+  state: 'Maine',
+  region: 'New England / Coastal Maine',
+  description: 'Rounded pink-granite mountains rising straight from the Atlantic, with spruce and fir woods, bare summits, stone carriage-road bridges and rocky shores on Mount Desert Island.',
+  elevationRange: { min: 0, max: 466 },
+  spawn: { x: -95.0, y: 5.2, z: 72.0, yaw: -1.0 }, // faces the stone bridge
+  terrain: {
+    baseScale: 0.0056,
+    heightScale: 15.0,
+    noiseX: 10,
+    noiseZ: 196,
+    coast: { x0: 175, wiggle: 14, seaY: -0.8, floorY: -8 },
+    mountain: {
+      x: 95.0,
+      z: -85.0,
+      height: 34.0,
+      radius: 72.0,
+      plateauRadius: 9.0,
+      name: 'Cadillac Mountain',
+    },
+    colors: {
+      valley: 0x35553a,     // cool spruce-fir green
+      meadow: 0x6e8d52,
+      dryGrass: 0xb8ac80,   // blueberry heath and dry grass
+      steepSlope: 0x8a7b72, // thin granite soil
+      summitRock: 0xbca79c, // pink granite
+      riverbed: 0x4a4440,
+      riverbank: 0x70675c,
+    },
+  },
+  water: {
+    hasRiver: true,
+    name: 'Mountain Brook',
+    surfaceY: -1.0,
+    halfWidth: 5.0,
+    bankWidth: 6.0,
+    valleyWidth: 44.0,
+    gradient: 0.003,
+    course: { baseX: -10.0, amp1: 7.0, freq1: 0.02, amp2: 3.0, freq2: 0.05 },
+    deepColor: 0x1a3d4a,
+    shallowColor: 0x3d7a80,
+    skyReflectColor: 0xa8c4d6,
+  },
+  trail: {
+    name: 'Cadillac North Ridge Trail',
+    width: 2.4,
+    surface: { center: 0xb9aca2, mid: 0xa09188, edge: 0x5e6c47 }, // pink granite path
+    westNodes: [
+      { x: -104.0, z: 73.0 }, // starts at the parking area
+      { x: -95.0, z: 72.0 },
+      { x: -84.0, z: 67.0 },
+      { x: -72.0, z: 60.0 },
+      { x: -60.0, z: 53.0 },
+      { x: -48.0, z: 45.0 },
+      { x: -37.0, z: 36.0 },
+      { x: -28.0, z: 29.0 },
+      { x: -21.0, z: 24.0 },
+    ],
+    // A long open climb across bare granite, marked by cairns
+    eastNodes: [
+      { x: -0.5, z: 24.0 },
+      { x: 8.0, z: 18.0 },
+      { x: 19.0, z: 9.0 },
+      { x: 31.0, z: -1.0 },
+      { x: 41.0, z: -14.0 },
+      { x: 48.0, z: -29.0 },
+      { x: 55.0, z: -41.0 },
+      { x: 66.0, z: -49.0 },
+      { x: 77.0, z: -55.0 },
+      { x: 86.0, z: -64.0 },
+      { x: 90.0, z: -74.0 },
+      { x: 93.5, z: -81.5 },
+    ],
+    bridge: {
+      style: 'stone',
+      name: 'Stone Bridge',
+      westX: -21.0,
+      eastX: -0.5,
+      centerZ: 24.0,
+      deckY: 1.4,
+      width: 3.8,
+    },
+  },
+  overlook: {
+    name: 'Cadillac Mountain Summit',
+    elevationLabel: 'Elev. 466m (1,530 ft)',
+    deckRadius: 5.2,
+    hasBench: true,
+    hasTelescope: true,
+    signHeading: 'CADILLAC MOUNTAIN',
+    signSubheading: 'TALLEST MOUNTAIN ON THE EAST COAST',
+  },
+  vegetation: {
+    treeCount: 820,
+    shrubCount: 1300,
+    speciesWeights: {
+      conifer: 8.0,   // spruce and fir
+      pine: 3.5,      // pitch pine on the ledges
+      broadleaf: 1.2, // red maple
+      oak: 0.3,
+      birch: 2.2,     // paper birch
+      poplar: 0.4,
+      snag: 0.6,
+    },
+    // Task 20: dark spruce-fir woods, bare granite above the tree line, blueberry heath and lupines
+    look: {
+      treeScale: 0.92,
+      treeLine: 16,
+      glades: 0.18,
+      palettes: {
+        conifer: [0x1f4538, 0x254f3f, 0x1b3d33, 0x2b5946],
+        pine: [0x4a6b3a, 0x56783f, 0x3f5f35],
+        birch: [0xa9c25a, 0xb8cf66, 0x9ab552],
+        broadleaf: [0x6f9040, 0x7e9d48, 0x5f8238],
+      },
+      shrubPalette: [0x5b7338, 0x6a8040, 0x8a6a3c, 0x7a5e3a],
+      grass: { root: 0x26402a, stalk: 0x6c8744, dry: 0xbeae78, fern: 0x3a6a3d, flowerA: 0xb878d6, flowerB: 0xf1efe4 },
+    },
+  },
+  atmosphere: {
+    fogColor: 0xc6d6de,
+    fogDensity: 0.0072, // clear, cool sea air
+    hemiSky: 0xd3e6f2,
+    hemiGround: 0x6e7c63,
+    sunColor: 0xfff3dc,
+    sunIntensity: 2.6,
+    skyHorizon: 0xc6d6de,
+    skyMid: 0x8fb8d6,
+    skyZenith: 0x3d7db5,
+    skySun: 0xffdca0,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'North Ridge Trailhead',
+      description: 'Trailhead beside the loop road where a trail climbs toward Cadillac Mountain.',
+      x: -95,
+      y: 5.2,
+      z: 72,
+      yaw: -1.0,
+    },
+    {
+      id: 'bridge',
+      name: 'Granite Stone Bridge',
+      description: 'A granite bridge with stone parapets, in the style of Acadia\'s carriage-road bridges.',
+      x: -23.0,
+      y: 1.0,
+      z: 24.0,
+      yaw: -Math.PI / 2,
+    },
+    {
+      id: 'switchback',
+      name: 'Bald Granite Ledge',
+      description: 'Trees give way to bare pink granite here. Look for the stacked-stone cairns that mark the route.',
+      x: 55.0,
+      y: 7.2,
+      z: -41.0,
+      yaw: Math.PI * 0.75,
+    },
+    {
+      id: 'summit',
+      name: 'Cadillac Summit',
+      description: 'A bare granite summit with long views over the islands and the Atlantic.',
+      x: 95.0,
+      y: 34.2,
+      z: -85.0,
+      yaw: Math.PI * 0.6,
+    },
+  ],
+  wildlife: {
+    spawns: [
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: -90.0, z: 66.0, roamRadius: 14.0 },
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -86.0, z: 48.0, roamRadius: 14.0 },
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: -88.0, z: 70.0, roamRadius: 10.0 },
+      // A doe grazing in the coastal heath, far from the trail
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 135.0, z: 20.0, roamRadius: 12.0 },
+    ],
+  },
+  features: {
+    roads: [
+      {
+        id: 'park-loop-road',
+        name: 'Park Loop Road',
+        kind: 'road',
+        width: 7.5,
+        nodes: [
+          { x: -260, z: -70 },
+          { x: -190, z: 10 },
+          { x: -140, z: 55 },
+          { x: -128, z: 110 },
+          { x: -150, z: 210 },
+          { x: -190, z: 290 },
+        ],
+        surface: { wallColors: [0xb09b91, 0xa38f86, 0xbba79d, 0x9a8880] }, // pink granite coping stones
+        walls: [
+          { side: -1, from: 0.40, to: 0.45 },
+          { side: -1, from: 0.475, to: 0.58 },
+        ],
+      },
+      {
+        id: 'trailhead-lot',
+        name: 'Trailhead Parking',
+        kind: 'lot',
+        levelFrom: 'park-loop-road',
+        width: 12.0,
+        nodes: [
+          { x: -112, z: 62 },
+          { x: -112, z: 84 },
+        ],
+      },
+      {
+        id: 'trailhead-entrance',
+        name: 'Parking Entrance',
+        kind: 'drive',
+        levelFrom: 'park-loop-road',
+        width: 6.0,
+        nodes: [
+          { x: -131, z: 74 },
+          { x: -118, z: 74 },
+        ],
+      },
+    ],
+    cars: [
+      { x: -115.5, z: 68.0, yaw: Math.PI / 2, color: 0x2d5a3d },
+      { x: -108.5, z: 79.0, yaw: -Math.PI / 2, color: 0xc9c4b8 },
+      { x: -115.5, z: 80.5, yaw: Math.PI / 2, color: 0x8a2f35 },
+    ],
+    talusFields: [
+      // Bare-summit glacial erratics, pink granite
+      { x: 95, z: -85, radius: 30, innerRadius: 10, count: 70, round: true, sizeRange: [0.5, 2.2], colors: [0xb59f95, 0xa8948a, 0xc0aea4, 0x9c8b83, 0x8f817b] },
+      // One big perched boulder beside the trail, like Bubble Rock
+      { x: 61, z: -33, radius: 0.4, count: 1, round: true, sizeRange: [2.8, 3.0], colors: [0xb8a398] },
+      { x: 50, z: -45, radius: 22, count: 40, round: true, sizeRange: [0.4, 1.4], colors: [0xb59f95, 0xa8948a, 0xc0aea4] },
+      // Rocky shore
+      { x: 152, z: -60, radius: 20, count: 35, round: true, sizeRange: [0.6, 1.8], colors: [0xa89488, 0x9a8a80, 0xb7a69b] },
+      { x: 156, z: 10, radius: 24, count: 40, round: true, sizeRange: [0.6, 1.8], colors: [0xa89488, 0x9a8a80, 0xb7a69b] },
+      { x: 160, z: 70, radius: 22, count: 35, round: true, sizeRange: [0.6, 1.8], colors: [0xa89488, 0x9a8a80, 0xb7a69b] },
+    ],
+    cairns: { minHeight: 11, every: 13 },
+    sea: { color: 0x246a8f },
+    islands: [
+      { x: 255, z: -130, radius: 42, height: 24 },
+      { x: 300, z: -55, radius: 30, height: 17 },
+      { x: 275, z: 25, radius: 26, height: 13 },
+      { x: 335, z: -175, radius: 52, height: 30 },
+      { x: 360, z: 45, radius: 36, height: 18 },
+    ],
+  },
+  rules: {
+    zones: [
+      {
+        id: 'granite-restoration',
+        kind: 'closed',
+        name: 'Plant Restoration Area',
+        x: -62,
+        z: 68,
+        radius: 7,
+        reason: 'Closed so thin granite soil and young plants can recover. In the game this is an example closure, not a real one.',
+      },
+      {
+        id: 'summit-heath',
+        kind: 'sensitive',
+        name: 'Fragile Summit Heath',
+        x: 108,
+        z: -74,
+        radius: 8,
+        reason: 'Low summit plants grow slowly in thin soil in the cracks of the granite. Stay on the bare rock and the trail.',
+      },
+      {
+        id: 'coastal-heath',
+        kind: 'sensitive',
+        name: 'Coastal Heath',
+        x: 128,
+        z: -8,
+        radius: 9,
+        reason: 'Fragile heath plants on the shore. Trampling them exposes the thin soil to wind and waves.',
+      },
+    ],
+    litter: STANDARD_LITTER,
+  },
+  about: {
+    designNote:
+      'A game-scale landscape inspired by Cadillac Mountain and the Mount Desert Island coast. Cadillac Mountain, Acadia\'s granite, carriage-road bridges and the islands in the bay are real, but this map is not a survey: real distances, trails and layouts differ. Elevation relief near Cadillac Mountain is real.',
+    wildlifeGuidance: {
+      text:
+        'Acadia National Park asks visitors to give animals the space they need, to stay on the trail rather than step off for a closer view, never to feed wildlife, and to back away if an animal approaches.',
+      caveat:
+        'The park\'s page says the recommended distance depends on the animal and shows it in a picture, not in text, so the game uses the National Park Service\'s general guidance of about 75 feet (23 m) from deer. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://www.nps.gov/acad/planyourvisit/viewing_wildlife.htm',
+      sourceLabel: 'nps.gov: Wildlife Viewing (Acadia)',
+    },
+    facts: [
+      {
+        id: 'cadillac',
+        title: 'Tallest mountain on the east coast',
+        text: 'Cadillac Mountain, at 1,530 feet (466 m), is the highest mountain on the east coast. It is made of pink granite.',
+        sourceUrl: 'https://www.nps.gov/hdp/exhibits/lll/post/acadia.htm',
+        sourceLabel: 'nps.gov: Acadia National Park postcard tour',
+      },
+      {
+        id: 'first-eastern',
+        title: 'First in the east',
+        text: 'Acadia was the first national park established in the eastern United States.',
+        sourceUrl: 'https://www.nps.gov/hdp/exhibits/lll/post/acadia.htm',
+        sourceLabel: 'nps.gov: Acadia National Park postcard tour',
+      },
+      {
+        id: 'roads-trails',
+        title: 'Roads and trails',
+        text: 'Visitors enjoy 27 miles of historic motor roads, 158 miles of hiking trails and 45 miles of carriage roads.',
+        sourceUrl: 'https://www.nps.gov/acad/index.htm',
+        sourceLabel: 'nps.gov: Acadia National Park home page',
+      },
+      {
+        id: 'visits',
+        title: 'A very popular park',
+        text: 'Acadia has about 4 million visits a year, which makes it one of the 10 most-visited national parks in the United States.',
+        sourceUrl: 'https://www.nps.gov/acad/index.htm',
+        sourceLabel: 'nps.gov: Acadia National Park home page',
+      },
+      {
+        id: 'rare-big-animals',
+        title: 'Bears and moose are rare here',
+        text: 'Black bears are present throughout Acadia but are rarely seen, and on Mount Desert Island many years can pass between confirmed moose sightings.',
+        sourceUrl: 'https://www.nps.gov/acad/planyourvisit/viewing_wildlife.htm',
+        sourceLabel: 'nps.gov: Wildlife Viewing (Acadia)',
+      },
+      {
+        id: 'stay-on-trail',
+        title: 'Stay on the trail',
+        text: 'Stepping off the trail for a closer look can disrupt wildlife and damage the park\'s fragile ecosystems.',
+        sourceUrl: 'https://www.nps.gov/acad/planyourvisit/viewing_wildlife.htm',
+        sourceLabel: 'nps.gov: Wildlife Viewing (Acadia)',
+      },
+    ],
+    checkedOn: '2026-10-25',
+  },
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -95, z: 72 }, { x: 95, z: -85 }),
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
   SHENANDOAH,
+  ACADIA,
   PROTOTYPE_PARK,
 ];
 

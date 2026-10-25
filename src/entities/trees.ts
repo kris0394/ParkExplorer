@@ -310,6 +310,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
   const treeScale = look?.treeScale ?? 1;
   const glades = look?.glades ?? 0;
   const gladeCut = 0.44 - 0.93 * glades; // glade noise above this = open ground
+  const coastSeaY = park.terrain.coast?.seaY;
   const DECIDUOUS = ['broadleaf', 'oak', 'birch', 'poplar'];
   const SNOW_WHITE = new THREE.Color(0xeef3f6);
 
@@ -448,6 +449,9 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     if (glades > 0 && fbm(x * 0.011 + 200, z * 0.011 - 90, 3) > gladeCut) continue;
 
     const h = heightAt(x, z);
+    // Bare granite summits above the tree line, and no trees on the beach or under water (Task 19/20)
+    if (look?.treeLine !== undefined && h > look.treeLine && rand() < 0.9) continue;
+    if (coastSeaY !== undefined && h < coastSeaY + 1.2) continue;
     const zone = fbm(x * 0.008 + 55, z * 0.008 - 33, 2) + h * 0.02 + (rand() - 0.5) * 0.5;
     const grove = fbm(x * 0.03 + 9, z * 0.03 - 4, 2);
     const kind = chooseKind(zone, grove, rand());
@@ -551,7 +555,9 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     if (glades > 0 && fbm(x * 0.011 + 200, z * 0.011 - 90, 3) > gladeCut + 0.1) continue;
 
     const s = 0.7 + rand() * 1.1;
-    dummy.position.set(x, heightAt(x, z) - 0.05, z);
+    const shrubH = heightAt(x, z);
+    if (coastSeaY !== undefined && shrubH < coastSeaY + 0.9) continue;
+    dummy.position.set(x, shrubH - 0.05, z);
     dummy.rotation.set(0, rand() * Math.PI * 2, 0);
     dummy.scale.set(s, s * (0.8 + rand() * 0.5), s);
     dummy.updateMatrix();

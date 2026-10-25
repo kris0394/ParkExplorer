@@ -105,7 +105,27 @@ export function proceduralBaseHeight(x: number, z: number): number {
     baseH = baseH * (1.0 - spawnWeight) + park.spawn.y * spawnWeight;
   }
 
+  // Coast (Task 20): the land slopes down into the sea on the east side
+  const coast = park.terrain.coast;
+  if (coast) {
+    const s = sstep(-35, 35, x - coastWiggleX(z));
+    baseH = baseH * (1 - s) + coast.floorY * s;
+  }
+
   return baseH;
+}
+
+/** Shoreline position for a park with a coast, bent by a gentle wiggle so it is not a straight line. */
+function coastWiggleX(z: number): number {
+  const c = getActivePark().terrain.coast;
+  if (!c) return Infinity;
+  return c.x0 + c.wiggle * (Math.sin(z * 0.021) + 0.5 * Math.sin(z * 0.057 + 1.3));
+}
+
+/** The furthest east a walker may go (dry land only). Infinity for parks without a coast. */
+export function getCoastLimitX(z: number): number {
+  const c = getActivePark().terrain.coast;
+  return c ? coastWiggleX(z) - 20 : Infinity;
 }
 
 export function heightAt(x: number, z: number): number {
