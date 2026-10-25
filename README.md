@@ -154,7 +154,8 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 ## 13b. Tasks 18 and 19: every park gets its own look
 - **Own layout:** each real park defines its own `spawn`, `terrain.mountain`, `trail`, `water`, `terrain.noiseX/noiseZ` (hill pattern) and `layoutSeed` (tree, rock and log scatter). `npm run check:parks` reports an error if two real parks share the same trail.
 - **Optional `features` block (Task 19):** `roads` (road, parking area, driveway; the ground is levelled under them and trees, rocks and grass keep off), `cars`, `talusFields` (angular boulder fields), `summitWall` and `distantRidges`. Parks without it are unchanged. `trail.surface` recolours the path.
-- **Ropes:** red-capped ropes are closed areas and block you. Yellow-capped ropes are fragile areas: you can walk in, but Stewardship drops if you stay about 6 seconds. The on-screen message now says so.
+- **Plant life (`vegetation.look`):** per-park leaf colours by tree kind, tree size, `glades` (share of open sunny ground between woods), bush colours and grass/fern/wildflower colours. Shenandoah uses bright yellow-green oak-hickory woods with open glades, fewer bushes, bracken and black-eyed Susans, a lighter ground palette and thinner haze; the Smokies keep their dense, dark, misty forest.
+- **Ropes:** closed areas now use clear red ropes (fragile areas stay yellow). Shenandoah's closed area is beside the trail before the footbridge, so it is easy to find. In the Smokies it is straight north of the start, about 44 m away. Red-capped ropes are closed areas and block you. Yellow-capped ropes are fragile areas: you can walk in, but Stewardship drops if you stay about 6 seconds. The on-screen message now says so.
 - **Park count:** the long-term goal is every U.S. national park, now **64** (Chiricahua in Arizona became the 64th on 20 October 2026).
 
 ## 14. Known limitations

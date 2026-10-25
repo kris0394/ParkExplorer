@@ -212,6 +212,19 @@ export interface ParkDefinition {
   vegetation: {
     treeCount: number;
     shrubCount: number;
+    /** Task 19: how this park's plant life LOOKS (all optional; leave out for the original look). */
+    look?: {
+      /** Leaf colours by tree kind (replaces the default greens in summer; autumn and winter still apply). */
+      palettes?: Partial<Record<'conifer' | 'pine' | 'broadleaf' | 'oak' | 'birch' | 'poplar', number[]>>;
+      /** Tree size multiplier (1 = normal). */
+      treeScale?: number;
+      /** 0 to 1: share of the land left as open sunny glades between woods (0 = unbroken forest). */
+      glades?: number;
+      /** Bush colours in summer. */
+      shrubPalette?: number[];
+      /** Grass, fern and wildflower colours. */
+      grass?: { root?: number; stalk?: number; dry?: number; fern?: number; flowerA?: number; flowerB?: number };
+    };
     speciesWeights: {
       conifer: number;
       pine: number;
@@ -793,13 +806,13 @@ export const SHENANDOAH: ParkDefinition = {
       name: 'Hawksbill',
     },
     colors: {
-      valley: 0x35653a,     // hardwood hollow green
-      meadow: 0x6a9444,     // meadow grass
-      dryGrass: 0xb2a95a,
-      steepSlope: 0x76593d, // forest loam
-      summitRock: 0x66705e, // greenstone, grey-green
-      riverbed: 0x3a332b,
-      riverbank: 0x4e5a3d,
+      valley: 0x5a8a3e,     // sunlit hardwood hollow green
+      meadow: 0x95b04c,     // bright yellow-green glades
+      dryGrass: 0xd2c070,
+      steepSlope: 0x93724c, // lighter forest loam
+      summitRock: 0x86917f, // pale greenstone, grey-green
+      riverbed: 0x4a4339,
+      riverbank: 0x62704a,
     },
   },
   water: {
@@ -868,28 +881,41 @@ export const SHENANDOAH: ParkDefinition = {
     signSubheading: 'HIGHEST POINT IN SHENANDOAH',
   },
   vegetation: {
-    treeCount: 1250,
-    shrubCount: 1500,
+    treeCount: 880,   // lighter, more open woods than the dense Smokies
+    shrubCount: 650,  // far fewer bushes: this is open oak woodland, not rhododendron thicket
     speciesWeights: {
-      conifer: 1.2,   // scattered hemlock and fir
-      pine: 1.5,
-      broadleaf: 5.0, // mixed hardwoods
-      oak: 5.0,       // oak-dominated forest
-      birch: 1.2,
-      poplar: 2.2,    // tulip poplar in the hollows
-      snag: 0.4,
+      conifer: 0.5,   // a few hemlocks
+      pine: 1.2,
+      broadleaf: 4.0, // hickory and maple
+      oak: 7.0,       // oak-dominated forest
+      birch: 0.6,
+      poplar: 1.4,
+      snag: 0.3,
+    },
+    // Task 19: Shenandoah's own look: bright yellow-green oak-hickory woods, sunny glades, bracken and black-eyed Susans
+    look: {
+      treeScale: 1.12,
+      glades: 0.34,
+      palettes: {
+        oak: [0x7f9c34, 0x8fa83a, 0x6f9230, 0x9bb140, 0x78982f],
+        broadleaf: [0x93b03f, 0xa0ba48, 0x84a53a, 0xb0c04c],
+        conifer: [0x2b4f3d, 0x305840, 0x25493b],
+        poplar: [0x8dad40, 0x9cb84a, 0x7f9f38],
+      },
+      shrubPalette: [0x7d9a3a, 0x8eab42, 0x6a8a34, 0xa3b24a],
+      grass: { root: 0x3b5a22, stalk: 0x8aa83e, dry: 0xd6c46a, fern: 0x6f9a3a, flowerA: 0xf0eedc, flowerB: 0xe8b82a },
     },
   },
   atmosphere: {
-    fogColor: 0xa7bccb,
-    fogDensity: 0.011, // soft Blue Ridge haze
-    hemiSky: 0xb9d6ea,
-    hemiGround: 0x5e7d4c,
-    sunColor: 0xffe8c2,
-    sunIntensity: 2.5,
-    skyHorizon: 0xa7bccb,
-    skyMid: 0x80a8c2,
-    skyZenith: 0x417599,
+    fogColor: 0xbccfdc,
+    fogDensity: 0.0082, // thin, bright Blue Ridge haze, so you can see far down the ridges
+    hemiSky: 0xc4ddf0,
+    hemiGround: 0x7a9658,
+    sunColor: 0xfff0d2,
+    sunIntensity: 2.7,
+    skyHorizon: 0xbccfdc,
+    skyMid: 0x8ab4d0,
+    skyZenith: 0x4f88b4,
     skySun: 0xffe2a8,
   },
   landmarks: [
@@ -1008,9 +1034,9 @@ export const SHENANDOAH: ParkDefinition = {
         id: 'stream-habitat-closure',
         kind: 'closed',
         name: 'Stream Habitat Closure',
-        x: 40,
-        z: 54,
-        radius: 8,
+        x: -6,
+        z: 12,
+        radius: 7,
         reason: 'Closed to protect small stream life, such as salamanders, that live under rocks and leaf litter here.',
       },
       {

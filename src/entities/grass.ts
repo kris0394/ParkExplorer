@@ -30,12 +30,13 @@ function createWildVegetationGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
 
   // Authentic wild nature color palette
-  const cDeepRoot = new THREE.Color(0x1a3316);   // deep shaded earth root
-  const cOliveStalk = new THREE.Color(0x486629); // wild mountain rye
-  const cGoldenWheat = new THREE.Color(0xc4af57);// dry golden seed awns
-  const cFernGreen = new THREE.Color(0x285427);  // wild cove fern
-  const cLupine = new THREE.Color(0x8f62c0);     // wild mountain lupine purple
-  const cGoldFlower = new THREE.Color(0xdca236); // mountain goldenrod amber
+  const gl = getActivePark().vegetation.look?.grass; // per-park colours (Task 19)
+  const cDeepRoot = new THREE.Color(gl?.root ?? 0x1a3316);       // deep shaded earth root
+  const cOliveStalk = new THREE.Color(gl?.stalk ?? 0x486629);    // wild mountain rye
+  const cGoldenWheat = new THREE.Color(gl?.dry ?? 0xc4af57);     // dry golden seed awns
+  const cFernGreen = new THREE.Color(gl?.fern ?? 0x285427);      // wild cove fern
+  const cLupine = new THREE.Color(gl?.flowerA ?? 0x8f62c0);      // wild mountain lupine purple
+  const cGoldFlower = new THREE.Color(gl?.flowerB ?? 0xdca236);  // mountain goldenrod amber
 
   const rand = mulberry32(19283);
 

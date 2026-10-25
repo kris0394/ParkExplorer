@@ -103,9 +103,9 @@ export function createZoneMarkersGroup(zones: RangerZone[], park: ParkDefinition
   group.name = 'rangerZoneMarkers';
 
   const postMat = new THREE.MeshLambertMaterial({ color: 0x6b4a2f });
-  const closedMat = new THREE.MeshLambertMaterial({ color: 0xd9472b });
+  const closedMat = new THREE.MeshLambertMaterial({ color: 0xc41414 });
   const sensitiveMat = new THREE.MeshLambertMaterial({ color: 0xe8b52a });
-  const ropeClosedMat = new THREE.MeshBasicMaterial({ color: 0xff6a3d });
+  const ropeClosedMat = new THREE.MeshBasicMaterial({ color: 0xe01010 }); // clear red, never confusable with the yellow fragile-area rope
   const ropeSensitiveMat = new THREE.MeshBasicMaterial({ color: 0xffd35a });
 
   const postGeo = new THREE.CylinderGeometry(0.05, 0.07, 1.2, 6);

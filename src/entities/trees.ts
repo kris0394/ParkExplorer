@@ -17,6 +17,7 @@ import { getDistanceToTrail } from './trailMesh.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { getActivePark } from '../data/parks.ts';
 import { getSeasonDef } from '../data/seasons.ts';
+import { getActiveSeason } from '../data/seasons.ts';
 
 const CELL = 8;
 const treeGrid = new Map<string, { x: number; z: number; r: number }[]>();
@@ -305,13 +306,17 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
   const shrubCount = park.vegetation.shrubCount;
   const weightsMultiplier = park.vegetation.speciesWeights;
   const season = getSeasonDef();
+  const look = park.vegetation.look;
+  const treeScale = look?.treeScale ?? 1;
+  const glades = look?.glades ?? 0;
+  const gladeCut = 0.44 - 0.93 * glades; // glade noise above this = open ground
   const DECIDUOUS = ['broadleaf', 'oak', 'birch', 'poplar'];
   const SNOW_WHITE = new THREE.Color(0xeef3f6);
 
   const SPECIES: Record<string, TreeSpeciesDef> = {
     conifer: {
       build: [makeSpruce, makeFir],
-      palette: [0x2f5d45, 0x3a6b4a, 0x2a5a52, 0x426e45],
+      palette: look?.palettes?.conifer ?? [0x2f5d45, 0x3a6b4a, 0x2a5a52, 0x426e45],
       tint: [0.85, 1.15],
       size: [0.9, 1.7],
       stretch: [0.85, 1.35],
@@ -320,7 +325,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     },
     pine: {
       build: [makePine, makePine],
-      palette: [0x4a6b3a, 0x557a3c, 0x3d5f3a, 0x5d7a35],
+      palette: look?.palettes?.pine ?? [0x4a6b3a, 0x557a3c, 0x3d5f3a, 0x5d7a35],
       tint: [0.9, 1.15],
       size: [1.0, 1.5],
       stretch: [0.85, 1.25],
@@ -329,7 +334,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     },
     broadleaf: {
       build: [() => makeMaple(1.0, 1.0), () => makeMaple(0.8, 1.15)],
-      palette: [0x5f8f3e, 0x4e8a46, 0x769a3c, 0x3f7a45, 0x8ba33f],
+      palette: look?.palettes?.broadleaf ?? [0x5f8f3e, 0x4e8a46, 0x769a3c, 0x3f7a45, 0x8ba33f],
       autumn: [0xb7a23a, 0xc08a2e, 0xa9532b],
       tint: [0.9, 1.2],
       size: [0.9, 1.5],
@@ -339,7 +344,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     },
     oak: {
       build: [makeOak, makeOak],
-      palette: [0x4f7f33, 0x5f8a36, 0x6f8f3a, 0x7a8f35, 0x46763a],
+      palette: look?.palettes?.oak ?? [0x4f7f33, 0x5f8a36, 0x6f8f3a, 0x7a8f35, 0x46763a],
       autumn: [0xb08a30, 0x9a6a2a],
       tint: [0.9, 1.15],
       size: [1.0, 1.5],
@@ -349,7 +354,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     },
     birch: {
       build: [makeBirch, makeBirch],
-      palette: [0x9bbf5a, 0x86b04e, 0xb2c35e, 0xa4c060],
+      palette: look?.palettes?.birch ?? [0x9bbf5a, 0x86b04e, 0xb2c35e, 0xa4c060],
       autumn: [0xd6c24a, 0xe0b23a],
       tint: [0.9, 1.2],
       size: [0.9, 1.4],
@@ -359,7 +364,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     },
     poplar: {
       build: [makePoplar],
-      palette: [0x6f9a3c, 0x80a844, 0x5f8f3e, 0xa9b845],
+      palette: look?.palettes?.poplar ?? [0x6f9a3c, 0x80a844, 0x5f8f3e, 0xa9b845],
       tint: [0.9, 1.2],
       size: [0.9, 1.4],
       stretch: [0.9, 1.3],
@@ -439,6 +444,9 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     const density = fbm(x * 0.012 + 7, z * 0.012 + 3, 3);
     if (rand() > sstep(-0.35, 0.35, density) * 0.95 + 0.05) continue;
 
+    // Open sunny glades between woods (parks with look.glades)
+    if (glades > 0 && fbm(x * 0.011 + 200, z * 0.011 - 90, 3) > gladeCut) continue;
+
     const h = heightAt(x, z);
     const zone = fbm(x * 0.008 + 55, z * 0.008 - 33, 2) + h * 0.02 + (rand() - 0.5) * 0.5;
     const grove = fbm(x * 0.03 + 9, z * 0.03 - 4, 2);
@@ -446,7 +454,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     const sp = SPECIES[kind];
     const variant = sp.variants[Math.floor(rand() * sp.variants.length)];
 
-    let s = between(sp.size);
+    let s = between(sp.size) * treeScale;
     if (kind !== 'snag' && rand() < 0.1) s *= 0.4 + rand() * 0.25;
 
     dummy.position.set(x, h - 0.1, z);
@@ -521,7 +529,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
   }
 
   // --- Place low bushes / shrubs ---
-  const shrubPalette = season.shrubPalette;
+  const shrubPalette = (getActiveSeason() === 'summer' && look?.shrubPalette) ? look.shrubPalette : season.shrubPalette;
   const shrubs: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
   let sPlaced = 0;
   let sTries = 0;
@@ -540,6 +548,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
 
     const density = fbm(x * 0.02 + 90, z * 0.02 + 12, 3);
     if (rand() > sstep(-0.4, 0.4, density) * 0.9 + 0.1) continue;
+    if (glades > 0 && fbm(x * 0.011 + 200, z * 0.011 - 90, 3) > gladeCut + 0.1) continue;
 
     const s = 0.7 + rand() * 1.1;
     dummy.position.set(x, heightAt(x, z) - 0.05, z);
