@@ -21,5 +21,6 @@ A real park must be honest. Work through this list before it ships.
 
 ## Parks done so far
 - Great Smoky Mountains (first real park, Task 13)
+- Chiricahua (Task 21): NPS pages give no distance numbers, so the guidance block says so and the game uses the general NPS numbers; the park name changed from monument to national park on 20 Oct 2026 (code still `chir`); summit coordinates come from an NPS photo-gallery record and need a check on the first build
 - Acadia (Task 20): its wildlife page gives no distances in text, so the guidance block says so and the game uses the general NPS 75 ft / 150 ft numbers; bears left out because the park says they are rarely seen; summit coordinates cross-checked (Wikipedia and a USGS benchmark)
 - Shenandoah (Task 17): wildlife guidance matched the game's distances, facts from the NPS park statistics, wildlife viewing and bear safety pages
