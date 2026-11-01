@@ -948,7 +948,7 @@ export const SHENANDOAH: ParkDefinition = {
     mix: 0.6,
     detrendSigmaM: 120,
   },
-  // Task 18: this park has its own layout (own trail, brook, summit spot, hills and forest pattern), not a copy of the Smokies
+  // Task 18: this park has its own layout (own hills and forest pattern), not a copy of the Smokies. Task 23: trails, parking and landmarks follow the NPS Hawksbill Area map.
   layoutSeed: 7,
   name: 'Shenandoah',
   subtitle: 'Skyline Drive & Blue Ridge Views',
@@ -957,7 +957,7 @@ export const SHENANDOAH: ParkDefinition = {
   region: 'Mid-Atlantic / Blue Ridge Mountains',
   description: 'A long, narrow park along the crest of the Blue Ridge Mountains, with hardwood forest, rocky greenstone summits and far views over the Shenandoah Valley and the Virginia Piedmont.',
   elevationRange: { min: 163, max: 1235 },
-  spawn: { x: -18.0, y: 2.4, z: 46.0, yaw: -0.855 }, // faces the footbridge
+  spawn: { x: -50.0, y: 2.4, z: 42.0, yaw: -0.245 }, // in the Hawksbill Gap parking area, facing the connector trail
   terrain: {
     baseScale: 0.0052,
     heightScale: 16.5, // rounder, older ridges than the Smokies
@@ -982,60 +982,99 @@ export const SHENANDOAH: ParkDefinition = {
     },
   },
   water: {
-    hasRiver: true,
-    name: 'Mountain Stream',
+    // Task 23: the NPS Hawksbill area map shows no stream or footbridge on the summit trails (older versions invented a
+    // "Stream Footbridge" here), so this map has no river.
+    hasRiver: false,
+    mode: 'none',
+    name: 'No stream on the summit trails',
     surfaceY: -1.0,
-    halfWidth: 2.4,    // a narrow mountain brook, not a wide river
+    halfWidth: 2.4,
     bankWidth: 5.0,
     valleyWidth: 30.0,
     gradient: 0.0035,
-    course: { baseX: 20.0, amp1: 5.0, freq1: 0.026, amp2: 2.0, freq2: 0.06 },
     deepColor: 0x17434a,
     shallowColor: 0x336f68,
     skyReflectColor: 0x94b6c9,
   },
   trail: {
-    name: 'Lower Hawksbill Trail',
+    name: 'Hawksbill Loop',
     width: 2.4,
     surface: { center: 0x95938a, mid: 0x7d7b71, edge: 0x58613f }, // pale rocky greenstone path
-    westNodes: [
-      { x: -44.0, z: 47.0 }, // starts at the parking area
-      { x: -31.0, z: 46.6 },
-      { x: -18.0, z: 46.0 },
-      { x: -12.0, z: 41.0 },
-      { x: -5.0, z: 35.0 },
-      { x: 2.0, z: 29.0 },
-      { x: 7.0, z: 24.0 },
-      { x: 12.0, z: 20.0 },
+    // Task 23: the trails of the NPS "Hawksbill Area" map at game scale. The park's own loop hike goes from the parking
+    // area on a short connector to the Appalachian Trail, south along it to the Salamander Trail, up to the summit,
+    // and back down the Lower Hawksbill Trail.
+    paths: [
+      {
+        id: 'lower-hawksbill-trail',
+        name: 'Lower Hawksbill Trail',
+        steps: 16,
+        nodes: [
+          { x: -44.0, z: 47.0 },  // starts at the parking area
+          { x: -31.0, z: 46.6 },
+          { x: -18.0, z: 46.0 },
+          { x: -12.0, z: 41.0 },
+          { x: -5.0, z: 35.0 },
+          { x: 2.0, z: 29.0 },
+          { x: 7.0, z: 24.0 },
+          { x: 12.0, z: 20.0 },
+          { x: 27.0, z: 20.0 },
+          { x: 38.0, z: 19.0 },
+          { x: 50.0, z: 15.0 },
+          { x: 62.0, z: 9.0 },
+          { x: 74.0, z: 3.0 },
+          { x: 86.0, z: -3.0 },
+          { x: 97.0, z: -6.0 },
+          { x: 107.0, z: -10.0 },
+          { x: 116.0, z: -14.0 },
+          { x: 122.0, z: -20.0 },
+          { x: 118.0, z: -27.0 },
+          { x: 108.0, z: -29.0 },
+          { x: 100.0, z: -33.0 },
+          { x: 98.0, z: -40.0 },
+          { x: 104.0, z: -44.0 },
+          { x: 110.0, z: -47.0 },
+          { x: 113.0, z: -47.5 },
+        ],
+      },
+      {
+        id: 'connector',
+        name: 'Connector to the Appalachian Trail',
+        nodes: [
+          { x: -50.0, z: 35.0 },  // north end of the parking area
+          { x: -40.0, z: 30.0 },
+          { x: -30.0, z: 26.0 },
+          { x: -22.0, z: 24.0 },
+        ],
+      },
+      {
+        id: 'appalachian-trail',
+        name: 'Appalachian Trail',
+        nodes: [
+          { x: -34.0, z: -70.0 },
+          { x: -30.0, z: -40.0 },
+          { x: -26.0, z: -12.0 },
+          { x: -22.0, z: 24.0 },   // the connector arrives here
+          { x: -20.0, z: 44.0 },
+          { x: -18.0, z: 62.0 },   // the Salamander Trail leaves here
+          { x: -10.0, z: 84.0 },
+          { x: -4.0, z: 110.0 },
+        ],
+      },
+      {
+        id: 'salamander-trail',
+        name: 'Salamander Trail',
+        nodes: [
+          { x: -18.0, z: 62.0 },
+          { x: 2.0, z: 66.0 },
+          { x: 24.0, z: 62.0 },
+          { x: 46.0, z: 52.0 },
+          { x: 68.0, z: 38.0 },
+          { x: 88.0, z: 22.0 },
+          { x: 106.0, z: 4.0 },
+          { x: 116.0, z: -14.0 },   // joins the Lower Hawksbill Trail near the summit
+        ],
+      },
     ],
-    // A long, steady climb with two hairpins near the top (the real Lower Hawksbill Trail is a steady, rocky climb)
-    eastNodes: [
-      { x: 27.0, z: 20.0 },
-      { x: 38.0, z: 19.0 },
-      { x: 50.0, z: 15.0 },
-      { x: 62.0, z: 9.0 },
-      { x: 74.0, z: 3.0 },
-      { x: 86.0, z: -3.0 },
-      { x: 97.0, z: -6.0 },
-      { x: 107.0, z: -10.0 },
-      { x: 116.0, z: -14.0 },
-      { x: 122.0, z: -20.0 },
-      { x: 118.0, z: -27.0 },
-      { x: 108.0, z: -29.0 },
-      { x: 100.0, z: -33.0 },
-      { x: 98.0, z: -40.0 },
-      { x: 104.0, z: -44.0 },
-      { x: 110.0, z: -47.0 },
-      { x: 113.0, z: -47.5 },
-    ],
-    bridge: {
-      name: 'Stream Footbridge',
-      westX: 12.0,
-      eastX: 27.0,
-      centerZ: 20.0,
-      deckY: 1.25,
-      width: 3.4,
-    },
   },
   overlook: {
     name: 'Hawksbill Summit Observation Platform',
@@ -1084,41 +1123,66 @@ export const SHENANDOAH: ParkDefinition = {
     skyZenith: 0x4f88b4,
     skySun: 0xffe2a8,
   },
+  // Task 23: landmarks from the NPS Hawksbill Area map (keys 1 to 6)
   landmarks: [
     {
       id: 'spawn',
-      name: 'Hawksbill Gap Trailhead',
-      description: 'Trailhead beside Skyline Drive where the Lower Hawksbill Trail begins.',
-      x: -18,
-      y: 2.4,
-      z: 46,
-      yaw: -0.855,
+      name: 'Hawksbill Gap Parking Area',
+      shortName: 'Parking Area',
+      description: 'The parking area beside Skyline Drive. The Lower Hawksbill Trail starts here, and a short connector leads from its north end to the Appalachian Trail.',
+      x: -50,
+      y: 1.7,
+      z: 42,
+      yaw: -0.245,
     },
     {
-      id: 'bridge',
-      name: 'Stream Footbridge',
-      description: 'A short timber footbridge over a clear mountain brook.',
-      x: 14.0,
-      y: 1.3,
-      z: 20.0,
+      id: 'appalachian-trail',
+      name: 'Appalachian Trail Junction',
+      shortName: 'A.T.',
+      description: 'Where the short connector from the parking area meets the Appalachian Trail. The park\'s loop hike turns south here.',
+      x: -22,
+      y: 4.5,
+      z: 24,
+      yaw: Math.PI,
+    },
+    {
+      id: 'spitler-knoll-overlook',
+      name: 'Spitler Knoll Overlook',
+      shortName: 'Spitler Knoll',
+      description: 'A pull-off on Skyline Drive with a view across the valley. (The Hawksbill area map lists this overlook; its exact spot here is a game placement.)',
+      x: -63,
+      y: 0.7,
+      z: -3,
       yaw: -Math.PI / 2,
     },
     {
-      id: 'switchback',
-      name: 'Oak Woods Hairpin',
-      description: 'The trail doubles back on itself as it climbs through oak woods with filtered views of the ridges.',
-      x: 122.0,
-      y: 13.9,
-      z: -20.0,
-      yaw: Math.PI * 0.9,
+      id: 'salamander-trail',
+      name: 'Salamander Trail Junction',
+      shortName: 'Salamander',
+      description: 'Where the blue-blazed Salamander Trail leaves the Appalachian Trail and heads up toward the summit.',
+      x: -16,
+      y: 3.3,
+      z: 62,
+      yaw: -Math.PI / 2,
+    },
+    {
+      id: 'byrds-nest-shelter',
+      name: 'Byrds Nest 2 Shelter',
+      shortName: 'Shelter',
+      description: 'Near the top, a day-use shelter stands beside the trail; a short path past it leads to the viewing platform.',
+      x: 106,
+      y: 28.0,
+      z: -45,
+      yaw: Math.PI * 0.2,
     },
     {
       id: 'summit',
-      name: 'Hawksbill Summit',
-      description: 'A rocky summit with a stone observation platform and long views of the Blue Ridge.',
-      x: 115.0,
+      name: 'Hawksbill Summit Viewing Platform',
+      shortName: 'Summit',
+      description: 'A rocky summit with a stone viewing platform and long views of the Blue Ridge.',
+      x: 115,
       y: 30.2,
-      z: -50.0,
+      z: -50,
       yaw: Math.PI * 0.8,
     },
   ],
@@ -1128,11 +1192,11 @@ export const SHENANDOAH: ParkDefinition = {
       { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: -9.0, z: 41.5, roamRadius: 16.0 },   // Doe
       { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -22.0, z: 28.0, roamRadius: 14.0 },   // Antlered buck
       { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: -6.0, z: 46.5, roamRadius: 12.0 },    // Fawn
-      // A second doe and fawn grazing in the brook meadow, a good distance from the trail
-      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 46.0, z: 38.0, roamRadius: 12.0 },
-      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 49.0, z: 41.0, roamRadius: 10.0 },
-      // Black bear foraging on the slope south of the trail, well beyond the 46 m guidance from the start
-      { species: 'black-bear', isBuck: false, isFawn: false, x: 78.0, z: 40.0, roamRadius: 12.0 },
+      // A second doe and fawn grazing in an open glade, a good distance from the trails
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 40.0, z: -8.0, roamRadius: 12.0 },
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 43.0, z: -5.0, roamRadius: 10.0 },
+      // Black bear foraging on the wooded slope north-west of the summit trail, well off the trails
+      { species: 'black-bear', isBuck: false, isFawn: false, x: 40.0, z: -55.0, roamRadius: 12.0 },
     ],
   },
   // Task 19: things that belong to Shenandoah. Skyline Drive and its stone walls, the Hawksbill Gap parking area,
@@ -1170,6 +1234,17 @@ export const SHENANDOAH: ParkDefinition = {
         ],
       },
       {
+        id: 'spitler-knoll-pulloff',
+        name: 'Spitler Knoll Overlook',
+        kind: 'lot',
+        levelFrom: 'skyline-drive',
+        width: 7.0,
+        nodes: [
+          { x: -63, z: -9 },
+          { x: -63, z: 3 },
+        ],
+      },
+      {
         id: 'hawksbill-gap-entrance',
         name: 'Parking Entrance',
         kind: 'drive',
@@ -1197,13 +1272,13 @@ export const SHENANDOAH: ParkDefinition = {
   rules: {
     zones: [
       {
-        id: 'stream-habitat-closure',
+        id: 'hawksbill-north-face-closure',
         kind: 'closed',
-        name: 'Stream Habitat Closure',
-        x: -6,
-        z: 12,
-        radius: 7,
-        reason: 'Closed to protect small stream life, such as salamanders, that live under rocks and leaf litter here.',
+        name: 'North Face Closure',
+        x: 92,
+        z: -78,
+        radius: 9,
+        reason: 'The park closes part of the north and northwest face of Hawksbill to visitors, so stay out of this area.',
       },
       {
         id: 'understory-wildflower-slope',
@@ -1224,11 +1299,15 @@ export const SHENANDOAH: ParkDefinition = {
         reason: 'Lichens and moss grow very slowly on the bare summit rocks. One footstep can destroy decades of growth.',
       },
     ],
-    litter: STANDARD_LITTER,
+    // litter lies along this park's own paths
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'lower-hawksbill-trail', 'bottle-1': 'appalachian-trail', 'wrapper-1': 'salamander-trail', 'peel-1': 'lower-hawksbill-trail', 'bag-1': 'lower-hawksbill-trail' } as Record<string, string>)[l.id] ?? 'lower-hawksbill-trail',
+    })),
   },
   about: {
     designNote:
-      'A game-scale landscape inspired by the Hawksbill area. Hawksbill, Skyline Drive and the Lower Hawksbill Trail are real, but this map is not a survey: real distances, trails and layouts differ. Elevation relief near Hawksbill is real.',
+      'A game-scale landscape of the Hawksbill area, following the NPS "Hawksbill Area" map: Skyline Drive and the Hawksbill Gap parking area, the connector to the Appalachian Trail, the Salamander Trail, the Lower Hawksbill Trail and the viewing platform. Distances are shortened a lot and this map is not a survey. The Spitler Knoll Overlook is listed on the park map, but where it sits here is a game placement. Elevation relief near Hawksbill is real.',
     wildlifeGuidance: {
       text:
         'Shenandoah National Park asks visitors to stay at least 75 feet (23 m), about two bus-lengths, from all wildlife, and at least 150 feet (46 m), about four bus-lengths, from black bears. If wildlife approaches you, it is your responsibility to back away and keep that distance.',
@@ -1280,10 +1359,31 @@ export const SHENANDOAH: ParkDefinition = {
         sourceUrl: 'https://www.nps.gov/shen/planyourvisit/bear-safety.htm',
         sourceLabel: 'nps.gov: Bear Safety (Shenandoah)',
       },
+      {
+        id: 'hawksbill-loop',
+        title: 'The park\'s own Hawksbill loop',
+        text: 'The park map suggests a 2.9-mile circuit with about 860 feet of climbing. From the north end of the Hawksbill Gap parking area, a short connector joins the Appalachian Trail; follow it south to the Salamander Trail, climb to the summit, and return on the Lower Hawksbill Trail.',
+        sourceUrl: 'https://www.nps.gov/shen/planyourvisit/upload/Hawksbill_RoadTrail.pdf',
+        sourceLabel: 'nps.gov: Hawksbill Area map (Shenandoah)',
+      },
+      {
+        id: 'hawksbill-closure',
+        title: 'Parts of Hawksbill are closed',
+        text: 'The park closes the summit area and cliff faces of Hawksbill to climbing, and a portion of the northern and northwest face of the mountain is also closed to visitor use.',
+        sourceUrl: 'https://www.nps.gov/shen/planyourvisit/upload/Climbing_Guidelines_2017-508.pdf',
+        sourceLabel: 'nps.gov: Climbing Guidelines (Shenandoah)',
+      },
+      {
+        id: 'shenandoah-salamander',
+        title: 'A salamander found only here',
+        text: 'The Shenandoah salamander is an endangered species found only in Shenandoah National Park. It was listed as federally endangered in 1989.',
+        sourceUrl: 'https://www.nps.gov/shen/learn/nature/shenandoah_salamander.htm',
+        sourceLabel: 'nps.gov: Shenandoah Salamander',
+      },
     ],
-    checkedOn: '2026-10-19',
+    checkedOn: '2026-11-01',
   },
-  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -18, z: 46 }, { x: 115, z: -50 }),
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -50, z: 42 }, { x: 115, z: -50 }),
 };
 
 /**
