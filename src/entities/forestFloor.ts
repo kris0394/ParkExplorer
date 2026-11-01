@@ -16,6 +16,7 @@ import {
 import { getDistanceToTrail } from './trailMesh.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { getActivePark } from '../data/parks.ts';
+import { isInBald } from '../data/parkStructure.ts';
 
 /**
  * Creates natural wild forest floor debris:
@@ -53,6 +54,7 @@ export function createForestFloorSystem(): THREE.Group {
     if (Math.hypot(x - park.spawn.x, z - park.spawn.z) < 14.0) continue;
     if (getDistanceToTrail(x, z) < 3.2) continue;
     if (isNearRoad(x, z, 2.5)) continue;
+    if (isInBald(park, x, z)) continue; // treeless meadow (Task 23)
     if (getRiverDistance(x, z) < (park.water.halfWidth + 1.8)) continue;
     if (isPointOnBridge(x, z) || isPointOnSummitDeck(x, z)) continue;
     if (slopeAt(x, z) > 0.75) continue;

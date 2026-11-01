@@ -16,7 +16,7 @@ import {
 import { getDistanceToTrail } from './trailMesh.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { getActivePark } from '../data/parks.ts';
-import { getBridges } from '../data/parkStructure.ts';
+import { getBridges, isInBald } from '../data/parkStructure.ts';
 import { getSeasonDef } from '../data/seasons.ts';
 import { getActiveSeason } from '../data/seasons.ts';
 
@@ -431,6 +431,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     // 3. Trail corridor exclusion: keep trail unobstructed
     if (getDistanceToTrail(x, z) < 3.2) continue;
     if (isNearRoad(x, z, 3.0)) continue;
+    if (isInBald(park, x, z)) continue; // treeless meadow (Task 23)
 
     // 4. Bridge exclusion zone
     if (getBridges(park).some(b => x >= (b.westX - 3.5) && x <= (b.eastX + 3.5) && Math.abs(z - b.centerZ) < 5.0)) continue;

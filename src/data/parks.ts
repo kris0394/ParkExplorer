@@ -269,6 +269,8 @@ export interface ParkDefinition {
       treeLine?: number;
       /** 0 to 1: share of the land left as open sunny glades between woods (0 = unbroken forest). */
       glades?: number;
+      /** Task 23: treeless grassy meadows (like the Smokies' grassy balds). No trees or fallen logs grow inside. */
+      balds?: { x: number; z: number; radius: number }[];
       /** Bush colours in summer. */
       shrubPalette?: number[];
       /** Grass, fern and wildflower colours. */
@@ -573,14 +575,16 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
   description: 'World-renowned for its biodiversity and ancient mountains shrouded in blue mist. Ridge upon ridge of forest straddles the border between North Carolina and Tennessee.',
   elevationRange: { min: 260, max: 2025 },
   spawn: {
-    x: 0.0,
-    y: 2.4,
-    z: 14.0,
-    yaw: 0,
+    x: 58.0,
+    y: 8.1,
+    z: -6.0,
+    yaw: -0.98, // faces the start of the steep paved Kuwohi Trail
   },
   terrain: {
     baseScale: 0.0048,
     heightScale: 19.5, // taller rolling ridges
+    noiseX: -75,       // Task 23: hill pattern chosen so the Forney Ridge Trail walks DOWNHILL from the parking area to Andrews Bald
+    noiseZ: 15,
     mountain: {
       x: 82.0,
       z: -70.0,
@@ -600,52 +604,86 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
     },
   },
   water: {
-    hasRiver: true,
-    name: 'Little River & Roaring Fork',
+    // Task 23: the Kuwohi crest has no stream on the NPS visitor pages, so the park has no river, no footbridge and no
+    // flowing water in this map (older versions invented a "Roaring Fork Footbridge" here).
+    hasRiver: false,
+    mode: 'none',
+    name: 'No stream on the crest',
     surfaceY: -1.0,
     halfWidth: 6.5,
     bankWidth: 7.5,
     valleyWidth: 36.0,
     gradient: 0.0028,
-    deepColor: 0x143f45,   // deep cold mountain stream
+    deepColor: 0x143f45,
     shallowColor: 0x2c6863,
     skyReflectColor: 0x8dafc2,
   },
   trail: {
-    name: 'Alum Cave to Ridge Trail',
+    name: 'Kuwohi Area Trails',
     width: 2.4,
-    westNodes: [
-      { x: 0.0, z: 14.0 },
-      { x: 5.5, z: 12.0 },
-      { x: 10.0, z: 9.5 },
-      { x: 13.5, z: 6.8 },
-      { x: 16.5, z: 4.0 },
+    // Task 23: the trails of the Kuwohi area (NPS "Trails in the Kuwohi Area" map), at game scale:
+    // a steep paved trail from the parking area to the tower, the Forney Ridge Trail that DESCENDS from the west end
+    // of the parking area to Andrews Bald, the Kuwohi Bypass Trail that climbs from the same trailhead to the
+    // Appalachian Trail, and the Appalachian Trail passing north of the tower.
+    paths: [
+      {
+        id: 'kuwohi-trail',
+        name: 'Kuwohi Trail (steep paved path to the tower)',
+        nodes: [
+          { x: 70.0, z: -14.0 },
+          { x: 99.0, z: -20.7 },
+          { x: 118.4, z: -39.5 },
+          { x: 124.5, z: -63.3 },
+          { x: 117.9, z: -84.5 },
+          { x: 102.7, z: -97.4 },
+          { x: 85.1, z: -99.9 },
+          { x: 71.1, z: -93.4 },
+          { x: 64.1, z: -82.1 },
+          { x: 64.6, z: -70.9 },
+          { x: 70.3, z: -63.8 },
+          { x: 77.3, z: -62.2 },
+          { x: 79.5, z: -70.5 },
+        ],
+      },
+      {
+        id: 'forney-ridge-trail',
+        name: 'Forney Ridge Trail (down to Andrews Bald)',
+        nodes: [
+          { x: 50.0, z: -6.0 },
+          { x: 40.0, z: -1.0 },
+          { x: 30.0, z: 5.0 },
+          { x: 20.0, z: 13.0 },
+          { x: 11.0, z: 22.0 },
+          { x: 4.0, z: 32.0 },
+        ],
+      },
+      {
+        id: 'kuwohi-bypass-trail',
+        name: 'Kuwohi Bypass Trail',
+        nodes: [
+          { x: 50.0, z: -6.0 },
+          { x: 40.0, z: -22.0 },
+          { x: 34.0, z: -40.0 },
+          { x: 38.0, z: -58.0 },
+          { x: 46.0, z: -76.0 },
+          { x: 56.0, z: -92.0 },
+          { x: 68.0, z: -103.0 },   // joins the Appalachian Trail
+        ],
+      },
+      {
+        id: 'appalachian-trail',
+        name: 'Appalachian Trail',
+        nodes: [
+          { x: 8.0, z: -108.0 },
+          { x: 30.0, z: -106.0 },
+          { x: 52.0, z: -104.0 },
+          { x: 70.0, z: -104.0 },
+          { x: 90.0, z: -106.0 },
+          { x: 112.0, z: -104.0 },
+          { x: 135.0, z: -98.0 },
+        ],
+      },
     ],
-    eastNodes: [
-      { x: 41.5, z: 4.0 },
-      { x: 46.5, z: 2.5 },
-      { x: 51.5, z: -1.5 },
-      { x: 56.5, z: -6.5 },
-      { x: 62.5, z: -13.0 },
-      { x: 70.0, z: -22.0 },
-      { x: 79.5, z: -31.5 },
-      { x: 91.0, z: -39.5 },
-      { x: 99.5, z: -52.0 },
-      { x: 102.5, z: -65.0 },
-      { x: 98.0, z: -78.5 },
-      { x: 88.5, z: -86.5 },
-      { x: 76.5, z: -84.0 },
-      { x: 73.0, z: -75.5 },
-      { x: 79.5, z: -70.5 },
-    ],
-    bridge: {
-      name: 'Roaring Fork Footbridge',
-      westX: 16.5,
-      eastX: 41.5,
-      centerZ: 4.0,
-      deckY: 1.25,
-      width: 3.6,
-    },
   },
   overlook: {
     name: 'Kuwohi Observation Overlook',
@@ -658,15 +696,19 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
   },
   vegetation: {
     treeCount: 1300,
-    shrubCount: 1900, // famous dense rhododendron and mountain laurel understory
+    shrubCount: 1900, // dense rhododendron and laurel understory
+    // Task 23: the Kuwohi crest is spruce-fir forest (NPS), so conifers dominate; Andrews Bald is a treeless grassy meadow
+    look: {
+      balds: [{ x: 0.0, z: 38.0, radius: 14.0 }],
+    },
     speciesWeights: {
-      conifer: 3.5,     // red spruce & fraser fir on ridges
-      pine: 1.5,
-      broadleaf: 5.0,   // lush sugar maples, tuliptrees, yellow buckeyes
-      oak: 3.5,         // chestnut oaks
-      birch: 2.2,       // yellow birch
-      poplar: 1.8,      // tulip poplar
-      snag: 0.4,
+      conifer: 8.0,     // red spruce & fraser fir
+      pine: 0.3,
+      broadleaf: 1.2,
+      oak: 0.2,
+      birch: 1.2,       // yellow birch
+      poplar: 0.1,
+      snag: 0.9,
     },
   },
   atmosphere: {
@@ -682,86 +724,140 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
     skyZenith: 0x3d7096,
     skySun: 0xffe2a8,
   },
+  // Task 23: landmarks of the Kuwohi area (keys 1 to 5)
   landmarks: [
     {
       id: 'spawn',
-      name: 'Cove Hardwoods Trailhead',
-      description: 'Sheltered cove forest floor carpeted with wild ferns.',
-      x: 0,
-      y: 2.4,
-      z: 14,
-      yaw: 0,
+      name: 'Kuwohi Parking Area',
+      shortName: 'Parking Area',
+      description: 'The large parking area at the end of Kuwohi Road, with a small visitor center. Trails start here.',
+      x: 58,
+      y: 8.1,
+      z: -6,
+      yaw: -0.98,
     },
     {
-      id: 'bridge',
-      name: 'Roaring Fork Footbridge',
-      description: 'Moss-covered timber bridge spanning the cold mountain stream.',
-      x: 18.0,
-      y: 1.35,
-      z: 4.0,
-      yaw: -Math.PI / 2,
+      id: 'forney-ridge-trailhead',
+      name: 'Forney Ridge Trailhead',
+      shortName: 'Forney Ridge',
+      description: 'At the west end of the parking area. The Forney Ridge Trail and the Kuwohi Bypass Trail both start here.',
+      x: 52,
+      y: 8.1,
+      z: -6,
+      yaw: Math.PI / 2,
     },
     {
-      id: 'switchback',
-      name: 'Appalachian Ridge Switchback',
-      description: 'Climbing through laurel slicks with layers of misty blue ridges.',
-      x: 95.0,
-      y: 16.5,
-      z: -55.0,
-      yaw: -Math.PI * 0.8,
+      id: 'andrews-bald',
+      name: 'Andrews Bald',
+      shortName: 'Andrews Bald',
+      description: 'A treeless grassy bald reached by walking downhill through spruce-fir forest.',
+      x: 6,
+      y: 2.1,
+      z: 30,
+      yaw: Math.PI * 0.8,
+    },
+    {
+      id: 'appalachian-trail',
+      name: 'Appalachian Trail Crossing',
+      shortName: 'A.T.',
+      description: 'The Appalachian Trail passes just north of the observation tower, near the highest point on its whole length.',
+      x: 80,
+      y: 14.8,
+      z: -104,
+      yaw: Math.PI,
     },
     {
       id: 'summit',
-      name: 'Kuwohi Ridge Overlook',
-      description: 'High vantage point looking across endless waves of blue smoky ridges.',
-      x: 82.0,
+      name: 'Kuwohi Observation Tower',
+      shortName: 'Tower',
+      description: 'The highest point in the park, with panoramic views of the Smokies from the observation tower.',
+      x: 82,
       y: 33.2,
-      z: -70.0,
+      z: -70,
       yaw: Math.PI * 0.8,
     },
   ],
   wildlife: {
     spawns: [
-      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 5.5, z: 9.0, roamRadius: 16.0 },   // Doe on right
-      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -7.5, z: 8.0, roamRadius: 18.0 },   // Antlered buck on left
-      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 8.0, z: 6.5, roamRadius: 12.0 },    // Spotted fawn
-      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 14.0, z: 4.5, roamRadius: 15.0 }, // Second doe
-      // Elk herd grazing in a meadow to the west, well beyond the 50-yard (46 m) guidance from the start point
+      // Deer in the forest south of the parking area (placed for the game)
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 52.0, z: 10.0, roamRadius: 16.0 },   // Doe
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: 40.0, z: 14.0, roamRadius: 18.0 },    // Antlered buck
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: 54.0, z: 14.0, roamRadius: 12.0 },    // Spotted fawn
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 62.0, z: 12.0, roamRadius: 15.0 },  // Second doe
+      // Elk herd grazing in a meadow to the west, well beyond the 50-yard (46 m) guidance from the trails and landmarks (placed for the game: the park lists elk at Cataloochee and Oconaluftee, not at Kuwohi)
       { species: 'elk', isBuck: true, isFawn: false, x: -47.0, z: 60.0, roamRadius: 9.0 },   // Bull elk
       { species: 'elk', isBuck: false, isFawn: false, x: -52.0, z: 56.0, roamRadius: 10.0 }, // Cow elk
       { species: 'elk', isBuck: false, isFawn: false, x: -43.0, z: 65.0, roamRadius: 10.0 }, // Cow elk
       { species: 'elk', isBuck: false, isFawn: false, x: -55.0, z: 63.0, roamRadius: 8.0 },  // Cow elk
-      // Black bear foraging on the forested ridge below the summit, about 30 m off the trail
-      { species: 'black-bear', isBuck: false, isFawn: false, x: 130.0, z: -86.0, roamRadius: 12.0 },
+      // Black bear foraging on the forested slope east of the summit, well off the trails
+      { species: 'black-bear', isBuck: false, isFawn: false, x: 150.0, z: -56.0, roamRadius: 12.0 },
     ],
   },
   rules: {
     zones: [
       {
-        id: 'stream-habitat-closure',
+        id: 'spruce-fir-closure',
         kind: 'closed',
-        name: 'Stream Habitat Closure',
-        x: -8,
-        z: -30,
-        radius: 9,
-        reason: 'Closed to protect small stream life, such as salamanders, that live under rocks and leaf litter here.',
+        name: 'Spruce-Fir Forest Closure',
+        x: 18,
+        z: -22,
+        radius: 8,
+        reason: 'Closed in this game to protect the fragile floor of the high-elevation spruce-fir forest.',
       },
       {
-        id: 'understory-wildflower-slope',
+        id: 'bald-azalea-patch',
         kind: 'sensitive',
-        name: 'Understory Wildflower Slope',
-        x: 70,
-        z: 32,
-        radius: 11,
-        reason: 'Fragile spring wildflowers. Stepping off the trail tramples them and the soil beneath.',
+        name: 'Azalea Patch',
+        x: -8,
+        z: 42,
+        radius: 7,
+        reason: 'Flowering azaleas and grasses on the bald are easily trampled. Stay on the trail.',
       },
       SUMMIT_WINTER_CLOSURE,
     ],
-    litter: STANDARD_LITTER,
+    // litter lies along this park's own paths
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'kuwohi-trail', 'bottle-1': 'forney-ridge-trail', 'wrapper-1': 'kuwohi-bypass-trail', 'peel-1': 'appalachian-trail', 'bag-1': 'kuwohi-trail' } as Record<string, string>)[l.id] ?? 'kuwohi-trail',
+    })),
+  },
+  // Task 23: the parking area and Kuwohi Road, as on the NPS Kuwohi area map
+  features: {
+    roads: [
+      {
+        id: 'kuwohi-road',
+        name: 'Kuwohi Road',
+        kind: 'road',
+        width: 6.5,
+        nodes: [
+          { x: 190, z: -18 },
+          { x: 150, z: -10 },
+          { x: 110, z: -6 },
+          { x: 78, z: -6 },
+        ],
+      },
+      {
+        id: 'forney-ridge-parking',
+        name: 'Kuwohi (Forney Ridge) Parking Area',
+        kind: 'lot',
+        levelFrom: 'kuwohi-road',
+        width: 14.0,
+        nodes: [
+          { x: 50, z: -6 },
+          { x: 76, z: -6 },
+        ],
+      },
+    ],
+    cars: [
+      { x: 56.0, z: -2.5, yaw: Math.PI / 2, color: 0x9a2a2a },
+      { x: 64.0, z: -2.5, yaw: Math.PI / 2, color: 0xd9d6cc },
+      { x: 60.0, z: -9.5, yaw: -Math.PI / 2, color: 0x2f4a6b },
+      { x: 68.0, z: -9.5, yaw: -Math.PI / 2, color: 0x3d5a40 },
+    ],
   },
   about: {
     designNote:
-      'A game-scale landscape inspired by the Smokies. Kuwohi, Roaring Fork and Alum Cave are real places, but this map is not a survey: real distances, trails and layouts differ.',
+      'A game-scale landscape of the Kuwohi area, following the NPS "Trails in the Kuwohi Area" map: the parking area at the end of Kuwohi Road, the steep paved trail to the observation tower, the Forney Ridge Trail that descends to Andrews Bald, the Kuwohi Bypass Trail and the Appalachian Trail. Distances are shortened a lot (the real paved path is half a mile and the real walk to Andrews Bald is 1.8 miles) and this map is not a survey. The deer and elk are placed for the game: the park lists elk at Cataloochee and Oconaluftee, not at Kuwohi.',
     wildlifeGuidance: {
       text:
         'Great Smoky Mountains National Park says to stay at least 50 yards (150 feet) from bears and elk, or any distance that changes an animal\'s natural behavior. It is illegal to feed, touch, tease, frighten or intentionally disturb wildlife.',
@@ -800,16 +896,30 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
         sourceLabel: 'nps.gov: Elk (Great Smoky Mountains)',
       },
       {
-        id: 'roaring-fork-wildlife',
-        title: 'Roaring Fork wildlife',
-        text: 'The park lists the Roaring Fork Motor Nature Trail as a place where black bears, white-tailed deer and turkeys are often seen.',
-        sourceUrl: 'https://www.nps.gov/grsm/planyourvisit/wildlifeviewing.htm',
-        sourceLabel: 'nps.gov: Wildlife Viewing (Great Smoky Mountains)',
+        id: 'kuwohi-trail',
+        title: 'A steep paved path to the tower',
+        text: 'From the parking area, a steep paved path of 1 mile round trip (half a mile each way) leads to the observation tower. The bypass trail also reaches the tower: it starts at the Forney Ridge trailhead and climbs toward the Appalachian Trail.',
+        sourceUrl: 'https://home.nps.gov/thingstodo/kuwohi.htm',
+        sourceLabel: 'nps.gov: Kuwohi (things to do)',
+      },
+      {
+        id: 'andrews-bald',
+        title: 'A walk that goes downhill to a grassy bald',
+        text: 'The Forney Ridge Trail descends through high-elevation spruce-fir forest to Andrews Bald, 3.6 miles round trip from the Kuwohi parking area. The park describes it as a popular grassy bald known for flowering azaleas in summer and views of the surrounding mountains.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/hike-to-andrews-bald.htm',
+        sourceLabel: 'nps.gov: Hike to Andrews Bald',
+      },
+      {
+        id: 'andrews-name',
+        title: 'Who Andrews Bald is named for',
+        text: 'Andrews Bald is named for Andrew Thompson, a cattle herder who brought livestock to the grassy bald in the 1840s.',
+        sourceUrl: 'https://www.nps.gov/places/andrews-bald.htm',
+        sourceLabel: 'nps.gov: Andrews Bald',
       },
     ],
-    checkedOn: '2026-10-10',
+    checkedOn: '2026-11-01',
   },
-  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: 0, z: 14 }, { x: 82, z: -70 }),
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: 58, z: -6 }, { x: 82, z: -70 }),
 };
 
 /**
