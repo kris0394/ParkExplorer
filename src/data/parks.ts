@@ -117,6 +117,8 @@ export interface ParkFeatures {
   succulents?: { count: number; spread: number; maxHeight: number };
   /** A small stone fire-lookout hut beside the summit deck. */
   lookoutHut?: boolean;
+  /** Task 24: a tall steel fire tower (you cannot climb it) at the given spot, as at Rankin Ridge. */
+  fireTower?: { x: number; z: number; height?: number };
   /** Trail cairns (small stacks of stones) on bare ground above this height, one every `every` metres. */
   cairns?: { minHeight: number; every: number; /** Which trail paths get cairns (default: the path that climbs to the summit). */ pathIds?: string[] };
   /** The sea (needs terrain.coast) and rocky islands out in it. */
@@ -191,6 +193,24 @@ export interface ParkDefinition {
       radius: number;
       plateauRadius: number;
       name: string;
+    };
+    /**
+     * Task 24 "ground look": patchy ground colour (opt-in). Big soft patches of several colours (green, gold, sage,
+     * tan), some bare soil, and fine speckle, so the ground no longer looks like one smooth lawn.
+     */
+    groundLook?: {
+      /** Patch size (smaller = bigger patches), e.g. 0.018. */
+      patchScale: number;
+      /** 0 to 1: how strongly the patch colours show. */
+      strength: number;
+      /** Patch colours, blended across the land in order. */
+      patches: number[];
+      /** 0 to 0.4: fine brightness speckle. */
+      speckle: number;
+      /** Bare soil showing through (optional). */
+      soil?: { color: number; amount: number };
+      /** How much dark forest-floor mulch shows (1 = as in forest parks, 0 = none). Prairie parks use a small number. */
+      mulch?: number;
     };
     colors: {
       valley: number;
@@ -269,6 +289,27 @@ export interface ParkDefinition {
       treeLine?: number;
       /** 0 to 1: share of the land left as open sunny glades between woods (0 = unbroken forest). */
       glades?: number;
+      /**
+       * Task 24 "grassland look": a richer, less lawn-like grass (opt-in; leave out for the original look).
+       * More and varied tufts (taller in some patches, shorter in others, golden or green), a carpet of short
+       * grass, and gentle wind sway.
+       */
+      grassland?: {
+        /** Tuft count compared with the original (1 = same, 1.8 = 80% more). */
+        density: number;
+        /** How far from you tufts are drawn, in metres (original 46). */
+        radius: number;
+        /** Height multiplier range between short and tall patches, e.g. [0.55, 1.7]. */
+        heightRange: [number, number];
+        /** How big the tall and short patches are (smaller = bigger patches), e.g. 0.035. */
+        patchScale: number;
+        /** Colour multipliers blended across the land (greenish, golden, straw...). */
+        tints: number[];
+        /** Wind sway, 0 (none) to 1 (strong). */
+        sway: number;
+        /** A carpet of short grass underfoot. */
+        carpet?: { count: number; radius: number; height: number; root: number; tip: number; tipDry: number };
+      };
       /** Task 23: treeless grassy meadows (like the Smokies' grassy balds). No trees or fallen logs grow inside. */
       balds?: { x: number; z: number; radius: number }[];
       /** Bush colours in summer. */
@@ -552,6 +593,7 @@ export const PROTOTYPE_PARK: ParkDefinition = {
  */
 export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
   id: 'great-smoky-mountains',
+  // TODO (planned, not done yet): adopt the Task 24 ground look and grassland look here, as Wind Cave does (terrain.groundLook and vegetation.look.grassland)
   npsParkCode: 'grsm',
   // Task 15 pilot: real elevation relief from the Kuwohi (Clingmans Dome) area, placed so the real summit lines up with the game's summit
   realTerrain: {
@@ -933,6 +975,7 @@ export const GREAT_SMOKY_MOUNTAINS: ParkDefinition = {
  */
 export const SHENANDOAH: ParkDefinition = {
   id: 'shenandoah',
+  // TODO (planned, not done yet): adopt the Task 24 ground look and grassland look here (and the planned Shenandoah polish), as Wind Cave does (terrain.groundLook and vegetation.look.grassland)
   npsParkCode: 'shen',
   // Real elevation relief from the Hawksbill area, placed so the real summit lines up with the game's summit
   realTerrain: {
@@ -1392,6 +1435,7 @@ export const SHENANDOAH: ParkDefinition = {
  */
 export const ACADIA: ParkDefinition = {
   id: 'acadia',
+  // TODO (planned, not done yet): adopt the Task 24 ground look and grassland look here, as Wind Cave does (terrain.groundLook and vegetation.look.grassland)
   npsParkCode: 'acad',
   // Real elevation relief from the Cadillac Mountain area (summit 44.35127 N, 68.22649 W), lined up with the game's summit
   realTerrain: {
@@ -2321,12 +2365,357 @@ export const CHIRICAHUA: ParkDefinition = {
   waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -122, z: -84 }, { x: 64, z: 76 }),
 };
 
+/**
+ * WIND CAVE NATIONAL PARK (South Dakota) - Task 24
+ * The park's surface is mostly mixed-grass prairie with ponderosa pine on the ridges, so this is the first park to use the
+ * new "ground look" and "grassland look" (patchy ground colour, varied tall and short grass, a carpet of short grass and
+ * gentle wind). The map follows the NPS Rankin Ridge Nature Trail: a one-mile loop from the Rankin Ridge parking lot up to
+ * the historic fire tower, the highest point in the park.
+ */
+export const WIND_CAVE: ParkDefinition = {
+  id: 'wind-cave',
+  npsParkCode: 'wica',
+  layoutSeed: 31,
+  name: 'Wind Cave',
+  subtitle: 'Where the Prairie Meets the Pines',
+  parkServiceUnit: 'National Park',
+  state: 'South Dakota',
+  region: 'Great Plains / Black Hills',
+  description: 'In the southern Black Hills of South Dakota, one of the best remaining areas of mixed-grass prairie rolls up to ridges of ponderosa pine, while one of the world\'s longest caves lies hidden underground.',
+  elevationRange: { min: 1085, max: 1528 },
+  spawn: { x: -60.0, y: 0.0, z: 34.0, yaw: -1.1 }, // in the Rankin Ridge parking lot, facing the trail
+  terrain: {
+    baseScale: 0.0046,
+    heightScale: 6.5, // gentle rolling prairie
+    noiseX: 20,
+    noiseZ: -40,
+    mountain: {
+      x: 30.0,
+      z: -30.0,
+      height: 20.0,
+      radius: 68.0,
+      plateauRadius: 8.0,
+      name: 'Rankin Ridge',
+    },
+    // Task 24: patchy prairie ground (green, gold, straw, sage and tan patches, some bare soil)
+    groundLook: {
+      patchScale: 0.016,
+      strength: 0.85,
+      patches: [0x6c9440, 0x8caa48, 0xb2b156, 0xd2bb68, 0xa98f55, 0x8c9c64],
+      speckle: 0.22,
+      soil: { color: 0xa98a5a, amount: 0.45 },
+      mulch: 0.1,
+    },
+    colors: {
+      valley: 0x7f9a46,     // fresh prairie green
+      meadow: 0xa9ae52,     // green-gold grass
+      dryGrass: 0xd2bd6c,   // cured golden grass
+      steepSlope: 0x9a8a5e, // tan prairie soil
+      summitRock: 0xb0a794, // pale limestone
+      riverbed: 0xa89a78,
+      riverbank: 0x9d9264,
+    },
+  },
+  water: {
+    // The Rankin Ridge area on the NPS pages has no stream, so this map has none.
+    hasRiver: false,
+    mode: 'none',
+    name: 'No stream on the ridge',
+    surfaceY: -1.0,
+    halfWidth: 3.0,
+    bankWidth: 5.0,
+    valleyWidth: 30.0,
+    gradient: 0.003,
+    deepColor: 0x1f4448,
+    shallowColor: 0x3d746b,
+    skyReflectColor: 0xa8c6d8,
+  },
+  trail: {
+    name: 'Rankin Ridge Nature Trail',
+    width: 2.2,
+    surface: { center: 0xb9ab8a, mid: 0xa0926f, edge: 0x7d8e48 }, // pale gravel with grass edges
+    paths: [
+      {
+        // NPS: a one-mile loop that begins and ends at the Rankin Ridge parking lot
+        id: 'rankin-ridge-loop',
+        name: 'Rankin Ridge Nature Trail',
+        closed: true,
+        nodes: [
+          { x: -52.0, z: 30.0 },  // trailhead, beside the parking lot
+          { x: -40.0, z: 22.0 },
+          { x: -26.0, z: 12.0 },  // ponderosa pine woods
+          { x: -13.0, z: 0.0 },
+          { x: 0.0, z: -10.0 },
+          { x: 12.0, z: -20.0 },  // the summit spur leaves here
+          { x: 22.0, z: -12.0 },
+          { x: 36.0, z: -8.0 },
+          { x: 50.0, z: -4.0 },
+          { x: 48.0, z: 8.0 },    // open prairie on the way down
+          { x: 34.0, z: 14.0 },
+          { x: 16.0, z: 24.0 },
+          { x: -4.0, z: 32.0 },
+          { x: -24.0, z: 40.0 },
+          { x: -42.0, z: 42.0 },
+        ],
+      },
+      {
+        // A few steps to the viewing deck by the tower
+        id: 'summit-spur',
+        name: 'Path to the Viewpoint',
+        nodes: [
+          { x: 12.0, z: -20.0 },
+          { x: 19.0, z: -25.0 },
+          { x: 25.0, z: -28.5 },
+          { x: 29.0, z: -30.0 },
+        ],
+      },
+    ],
+  },
+  overlook: {
+    name: 'Rankin Ridge Viewpoint',
+    elevationLabel: 'Elev. 1,528m (5,013 ft)',
+    deckRadius: 5.2,
+    hasBench: true,
+    hasTelescope: true,
+    signHeading: 'RANKIN RIDGE',
+    signSubheading: 'HIGHEST POINT IN THE PARK',
+  },
+  vegetation: {
+    treeCount: 260,   // mostly open prairie, with ponderosa pine on the ridge
+    shrubCount: 900,
+    speciesWeights: {
+      conifer: 0.4,
+      pine: 9.0,      // ponderosa pine
+      broadleaf: 0.3,
+      oak: 0.4,
+      birch: 0.0,
+      poplar: 0.0,
+      snag: 0.4,
+    },
+    look: {
+      treeScale: 1.0,
+      glades: 0.6,
+      palettes: {
+        pine: [0x3f6a3c, 0x4d7a45, 0x35603a, 0x57804a],
+        conifer: [0x4f7358, 0x5a7f62],
+        broadleaf: [0xa4b552, 0x93a84a],
+        oak: [0x6b7f3c, 0x5f7335],
+      },
+      shrubPalette: [0x8a9a5c, 0x7b8f55, 0xa09c62, 0x6f8a52],
+      grass: { root: 0x44602a, stalk: 0x8aa648, dry: 0xd8c37c, fern: 0x6f8f3c, flowerA: 0xc86aa0, flowerB: 0xe8c83a },
+      // Task 24: the richer grass
+      grassland: {
+        density: 1.8,
+        radius: 54,
+        heightRange: [0.55, 1.9],
+        patchScale: 0.03,
+        tints: [0xb9d48a, 0xfff0c0, 0xe8d9a8],
+        sway: 0.9,
+        carpet: { count: 3200, radius: 22, height: 0.28, root: 0x4a6a2c, tip: 0x8aa84a, tipDry: 0xcdb86a },
+      },
+    },
+  },
+  atmosphere: {
+    fogColor: 0xd8dfd2,
+    fogDensity: 0.0042, // clear, dry prairie air
+    hemiSky: 0xd0e4f2,
+    hemiGround: 0x9a9a5c,
+    sunColor: 0xfff2d2,
+    sunIntensity: 3.1,
+    skyHorizon: 0xe2e6da,
+    skyMid: 0x86b8e0,
+    skyZenith: 0x2f72c0,
+    skySun: 0xffe8b0,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Rankin Ridge Parking Area',
+      shortName: 'Parking Area',
+      description: 'The parking lot where the Rankin Ridge Nature Trail begins and ends.',
+      x: -60,
+      y: 0.0,
+      z: 34,
+      yaw: -1.1,
+    },
+    {
+      id: 'pine-woods',
+      name: 'Ponderosa Pine Woods',
+      shortName: 'Pine Woods',
+      description: 'The lower trail winds through ponderosa pines with grass and low shrubs beneath.',
+      x: -26,
+      y: 0.3,
+      z: 12,
+      yaw: Math.PI * 0.8,
+    },
+    {
+      id: 'prairie-slope',
+      name: 'Prairie Slope',
+      shortName: 'Prairie',
+      description: 'Open mixed-grass prairie rolls away on the way down. Watch the grass ripple in the wind.',
+      x: 40,
+      y: 4.3,
+      z: 6,
+      yaw: -Math.PI / 2,
+    },
+    {
+      id: 'summit',
+      name: 'Rankin Ridge Fire Tower',
+      shortName: 'Fire Tower',
+      description: 'The highest point in the park. A historic steel fire tower stands on the ridge; climbing it is not permitted.',
+      x: 30,
+      y: 20.2,
+      z: -30,
+      yaw: Math.PI * 0.3,
+    },
+  ],
+  wildlife: {
+    spawns: [
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: -30.0, z: 62.0, roamRadius: 14.0 },
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -20.0, z: 70.0, roamRadius: 14.0 },
+      { species: 'white-tailed-deer', isBuck: false, isFawn: true, x: -26.0, z: 66.0, roamRadius: 10.0 },
+      // An elk herd grazing on the open prairie east of the ridge, well away from the trail
+      { species: 'elk', isBuck: true, isFawn: false, x: 96.0, z: 40.0, roamRadius: 9.0 },
+      { species: 'elk', isBuck: false, isFawn: false, x: 90.0, z: 48.0, roamRadius: 10.0 },
+      { species: 'elk', isBuck: false, isFawn: false, x: 102.0, z: 50.0, roamRadius: 10.0 },
+      { species: 'elk', isBuck: false, isFawn: false, x: 94.0, z: 56.0, roamRadius: 8.0 },
+    ],
+    // Wind Cave asks visitors to stay at least 25 yards (23 m) from all wildlife
+    safeDistanceOverrides: { elk: 23 },
+  },
+  features: {
+    roads: [
+      {
+        id: 'highway-87',
+        name: 'Highway 87',
+        kind: 'road',
+        width: 7.0,
+        nodes: [
+          { x: -160, z: -140 },
+          { x: -154, z: -40 },
+          { x: -150, z: 34 },
+          { x: -156, z: 140 },
+        ],
+      },
+      {
+        id: 'rankin-ridge-road',
+        name: 'Rankin Ridge Road',
+        kind: 'drive',
+        levelFrom: 'highway-87',
+        width: 5.5,
+        nodes: [
+          { x: -150, z: 34 },
+          { x: -110, z: 34 },
+          { x: -72, z: 34 },
+        ],
+      },
+      {
+        id: 'rankin-ridge-parking',
+        name: 'Rankin Ridge Parking Lot',
+        kind: 'lot',
+        levelFrom: 'highway-87',
+        width: 14.0,
+        nodes: [
+          { x: -66, z: 28 },
+          { x: -66, z: 42 },
+        ],
+      },
+    ],
+    cars: [
+      { x: -62.0, z: 31.0, yaw: Math.PI, color: 0x9a2a2a },
+      { x: -62.0, z: 38.0, yaw: 0, color: 0xd9d6cc },
+      { x: -69.0, z: 40.0, yaw: Math.PI, color: 0x2f4a6b },
+    ],
+    fireTower: { x: 38, z: -34, height: 14 },
+    distantRidges: true,
+  },
+  rules: {
+    zones: [
+      {
+        id: 'fire-tower-base',
+        kind: 'closed',
+        name: 'Fire Tower Base',
+        x: 38,
+        z: -34,
+        radius: 5,
+        reason: 'The park does not permit climbing the historic fire tower.',
+      },
+      {
+        id: 'native-prairie-patch',
+        kind: 'sensitive',
+        name: 'Native Prairie Patch',
+        x: -6,
+        z: 47,
+        radius: 7,
+        reason: 'Slow-growing native prairie plants live here. (In the game this is an example area. Wind Cave is an open-hike park where walking off trail is allowed, but staying on the trail still protects plants.)',
+      },
+    ],
+    // litter lies along this park's own paths
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'rankin-ridge-loop', 'bottle-1': 'rankin-ridge-loop', 'wrapper-1': 'rankin-ridge-loop', 'peel-1': 'rankin-ridge-loop', 'bag-1': 'summit-spur' } as Record<string, string>)[l.id] ?? 'rankin-ridge-loop',
+    })),
+  },
+  about: {
+    designNote:
+      'A game-scale landscape of the Rankin Ridge area, following the NPS description of the Rankin Ridge Nature Trail: a one-mile loop from the parking lot to the historic fire tower. The prairie, ponderosa pines and elk are real kinds of features here, but bison, prairie dogs and the cave are not in the game, and this map is not a survey: real distances, trails and layouts differ. The elevation numbers are commonly published figures and were not checked against an NPS page. This is the first park to use the new ground and grass look.',
+    wildlifeGuidance: {
+      text:
+        'Wind Cave requires visitors to stay at least 25 yards (23 meters) from all wildlife, and strongly recommends staying farther away from bison.',
+      caveat:
+        'The game has deer and elk but no bison. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://www.nps.gov/wica/planyourvisit/hiking.htm',
+      sourceLabel: 'nps.gov: Hiking (Wind Cave)',
+    },
+    facts: [
+      {
+        id: 'prairie',
+        title: 'Prairie above, cave below',
+        text: 'More than 30 miles of hiking trails wander through mixed-grass prairie and ponderosa pine forest. Beneath it all lies Wind Cave, one of the most complex caves in the world.',
+        sourceUrl: 'https://www.nps.gov/wica/planyourvisit/hiking.htm',
+        sourceLabel: 'nps.gov: Hiking (Wind Cave)',
+      },
+      {
+        id: 'open-hike',
+        title: 'An open-hike park',
+        text: 'Wind Cave is an open-hike park, so visitors are welcome to hike off designated trails across thousands of acres.',
+        sourceUrl: 'https://www.nps.gov/wica/planyourvisit/hiking.htm',
+        sourceLabel: 'nps.gov: Hiking (Wind Cave)',
+      },
+      {
+        id: 'rankin-ridge',
+        title: 'The Rankin Ridge loop',
+        text: 'The Rankin Ridge Nature Trail is a one-mile loop that begins and ends at the Rankin Ridge parking lot, with interpretive stops along the way. Climbing the historic fire tower is not permitted.',
+        sourceUrl: 'https://www.nps.gov/places/rankin-ridge-nature-trail.htm',
+        sourceLabel: 'nps.gov: Rankin Ridge Nature Trail',
+      },
+      {
+        id: 'managed-by-fire',
+        title: 'Grass kept healthy by fire and grazers',
+        text: 'The prairie is managed mainly with native grazing animals and fire, the two forces that shaped the vegetation of the Black Hills long before settlement.',
+        sourceUrl: 'https://www.nps.gov/im/ngpn/wica.htm',
+        sourceLabel: 'nps.gov: Inventory and Monitoring (Wind Cave)',
+      },
+      {
+        id: 'wildlife',
+        title: 'Hoofed neighbours',
+        text: 'Deer, bison, elk and pronghorn live throughout the park, along with large prairie dog towns, coyotes, bobcats, mountain lions and eagles.',
+        sourceUrl: 'https://www.nps.gov/im/ngpn/wica.htm',
+        sourceLabel: 'nps.gov: Inventory and Monitoring (Wind Cave)',
+      },
+    ],
+    checkedOn: '2026-11-01',
+  },
+  waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -60, z: 34 }, { x: 30, z: -30 }),
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
   SHENANDOAH,
   ACADIA,
   CHIRICAHUA,
+  WIND_CAVE,
   PROTOTYPE_PARK,
 ];
 

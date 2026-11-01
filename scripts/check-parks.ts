@@ -33,6 +33,10 @@ for (const park of AVAILABLE_PARKS) {
   const hw = waterMode !== 'none' ? park.water.halfWidth : 0;
   const river = (x: number, z: number) => (waterMode !== 'none' ? getRiverDistance(x, z) : Infinity);
   const paths = getTrailPaths(park);
+  if (!park.isPracticePark) {
+    const polish = [park.terrain.groundLook ? 'ground look' : null, park.vegetation.look?.grassland ? 'grassland look' : null].filter(Boolean);
+    console.log(`  ground and grass polish (Task 24): ${polish.length > 0 ? polish.join(' + ') : 'not yet adopted (plain lawn look)'}`);
+  }
   console.log(`  ${paths.length} trail path(s): ${paths.map(p => p.id + (p.closed ? ' (loop)' : '')).join(', ')}; ${getBridges(park).length} bridge(s); water: ${waterMode}`);
 
   // Task 22: every trail path must be walkable: out of the channel (except on a bridge) and not too steep

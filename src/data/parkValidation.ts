@@ -47,6 +47,22 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
     if (twin) say(`has exactly the same trail layout as "${twin.name}". Give it its own trails, bridges and summit position (see docs/ADDING_A_PARK.md, "Making a park feel different")`);
   }
 
+  // Task 24: optional ground look and grassland look must make sense
+  const gl = park.terrain?.groundLook;
+  if (gl) {
+    if (!gl.patches || gl.patches.length < 2) say('terrain.groundLook.patches needs at least 2 colours');
+    if (!(gl.strength >= 0 && gl.strength <= 1)) say('terrain.groundLook.strength must be between 0 and 1');
+    if (!(gl.patchScale > 0 && gl.patchScale < 0.2)) say('terrain.groundLook.patchScale should be a small number such as 0.016');
+    if (gl.speckle < 0 || gl.speckle > 0.4) say('terrain.groundLook.speckle must be between 0 and 0.4');
+  }
+  const gr = park.vegetation?.look?.grassland;
+  if (gr) {
+    if (!(gr.density > 0 && gr.density <= 3)) say('vegetation.look.grassland.density must be above 0 and at most 3 (more tufts slow the game)');
+    if (!(gr.radius >= 20 && gr.radius <= 70)) say('vegetation.look.grassland.radius must be between 20 and 70 metres');
+    if (!(gr.heightRange[0] > 0 && gr.heightRange[1] >= gr.heightRange[0])) say('vegetation.look.grassland.heightRange must be [short, tall] with short above 0');
+    if (gr.carpet && gr.carpet.count > 6000) say('vegetation.look.grassland.carpet.count above 6000 will slow the game');
+  }
+
   // Task 22: bridges are optional (none, one or several)
   const bridges = park.trail ? getBridges(park) : [];
   for (const [i, b] of bridges.entries()) {
