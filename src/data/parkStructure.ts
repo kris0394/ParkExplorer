@@ -154,5 +154,17 @@ export function isSummitLandmark(park: StructurePark, lm: { id: string; x: numbe
   return Math.hypot(lm.x - m.x, lm.z - m.z) <= park.overlook.deckRadius + 6;
 }
 
+/** Task 23: is this spot inside one of the park's treeless meadows (look.balds)? margin widens the meadow. */
+export function isInBald(
+  park: { vegetation: { look?: { balds?: { x: number; z: number; radius: number }[] } } },
+  x: number,
+  z: number,
+  margin = 0
+): boolean {
+  const balds = park.vegetation.look?.balds;
+  if (!balds) return false;
+  return balds.some(b => Math.hypot(x - b.x, z - b.z) < b.radius + margin);
+}
+
 /** Number keys 1 to 9 jump to the first nine landmarks. */
 export const MAX_HOTKEY_LANDMARKS = 9;
