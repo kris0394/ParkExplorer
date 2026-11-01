@@ -4,6 +4,9 @@
  */
 
 import type { Season } from './seasons.ts';
+import type { TrailPath, TrailBridge, WaterMode } from './parkStructure.ts';
+
+export type { TrailPath, TrailBridge, WaterMode };
 
 /** A roped-off area. 'closed' = cannot enter. 'sensitive' = can enter but staying off-trail costs Stewardship. */
 export interface ParkZone {
@@ -25,7 +28,8 @@ export interface ParkLitter {
   label: string;
   tip: string;
   kind: 'can' | 'bottle' | 'wrapper' | 'peel' | 'bag';
-  trail: 'west' | 'east';
+  /** Id of the trail path it lies beside (Task 22). Older parks use 'west' and 'east'. */
+  trail: string;
   /** 0 to 1 along that trail. */
   at: number;
   /** Which side of the trail (1 left, -1 right). */
@@ -114,7 +118,7 @@ export interface ParkFeatures {
   /** A small stone fire-lookout hut beside the summit deck. */
   lookoutHut?: boolean;
   /** Trail cairns (small stacks of stones) on bare ground above this height, one every `every` metres. */
-  cairns?: { minHeight: number; every: number };
+  cairns?: { minHeight: number; every: number; /** Which trail paths get cairns (default: the path that climbs to the summit). */ pathIds?: string[] };
   /** The sea (needs terrain.coast) and rocky islands out in it. */
   sea?: { color: number };
   islands?: { x: number; z: number; radius: number; height: number }[];
@@ -199,7 +203,20 @@ export interface ParkDefinition {
     };
   };
   water: {
+    /** True only for a flowing river. Kept so older parks keep working; new parks should set `mode`. */
     hasRiver: boolean;
+    /**
+     * Task 22: 'river' = flowing water with a water surface (default when hasRiver is true).
+     * 'dry-wash' = a shallow gravel channel with no water, crossed at ground level.
+     * 'none' = no channel at all.
+     */
+    mode?: WaterMode;
+    /** Task 22: the z position the winding channel is measured from (default: the first bridge's centerZ, else 0). */
+    refZ?: number;
+    /** Task 22: flat stepping stones across a dry wash, one set per crossing (z is where the trail crosses). */
+    stones?: { z: number; count?: number }[];
+    /** Task 22: how deep a dry wash is cut below the land, in metres (default 0.55). */
+    washDepth?: number;
     name: string;
     surfaceY: number;
     halfWidth: number;
@@ -217,18 +234,18 @@ export interface ParkDefinition {
     width: number;
     /** Optional trail surface colours (hex). Defaults to packed dirt. */
     surface?: { center: number; mid: number; edge: number };
-    westNodes: { x: number; z: number }[];
-    eastNodes: { x: number; z: number }[];
-    bridge: {
-      /** 'timber' (default) or 'stone' (granite arch-style bridge with stone parapets). */
-      style?: 'timber' | 'stone';
-      name: string;
-      westX: number;
-      eastX: number;
-      centerZ: number;
-      deckY: number;
-      width: number;
-    };
+    /**
+     * Task 22: any number of trail paths (loops and branches allowed). When this is present it is used
+     * instead of westNodes and eastNodes.
+     */
+    paths?: TrailPath[];
+    /** Older parks: the two trail pieces. Optional when `paths` is given. */
+    westNodes?: { x: number; z: number }[];
+    eastNodes?: { x: number; z: number }[];
+    /** One footbridge (older parks). Leave out for parks without a bridge. */
+    bridge?: TrailBridge;
+    /** Task 22: several footbridges. */
+    bridges?: TrailBridge[];
   };
   overlook: {
     name: string;
@@ -287,6 +304,8 @@ export interface ParkDefinition {
     y: number;
     z: number;
     yaw: number;
+    /** Task 22: short label for the "Jump to" bar (default: a plain word for the old ids, else the first word of the name). */
+    shortName?: string;
   }[];
   /** Task 11: everything below used to be hard-coded in game code. */
   wildlife: {
@@ -1519,7 +1538,9 @@ export const ACADIA: ParkDefinition = {
 /**
  * Task 21: Chiricahua National Park (Arizona), the 64th national park (20 Oct 2026; formerly a national monument).
  * A desert "sky island": balancing rhyolite pinnacles, oak and pine woods above grassland, agave and prickly pear,
- * an intermittent creek, a CCC fire lookout on Sugarloaf Mountain, and warm dry light.
+ * a dry wash with small seeps, a CCC fire lookout on Sugarloaf Mountain, and warm dry light.
+ * Task 22: its own structure instead of the old trailhead / bridge / switchback / summit template: a trail to a dry wash
+ * (crossed at ground level, no bridge), an Echo Canyon-style loop through the pinnacle fields, and a spur up to the lookout.
  */
 export const CHIRICAHUA: ParkDefinition = {
   id: 'chiricahua',
@@ -1546,7 +1567,7 @@ export const CHIRICAHUA: ParkDefinition = {
   region: 'Southwest / Sky Islands',
   description: 'A desert "sky island" in southeastern Arizona, where balancing pillars of volcanic rhyolite rise out of oak and pine woods, grassland and agave, high above the surrounding desert valleys.',
   elevationRange: { min: 1562, max: 2228 },
-  spawn: { x: -122.0, y: 2.5, z: -84.0, yaw: -1.35 }, // faces the footbridge
+  spawn: { x: -122.0, y: 2.5, z: -84.0, yaw: -1.35 }, // faces the trail
   terrain: {
     baseScale: 0.0062,
     heightScale: 14.0,
@@ -1566,16 +1587,22 @@ export const CHIRICAHUA: ParkDefinition = {
       dryGrass: 0xd4c288,
       steepSlope: 0x9c7f63, // red-brown rhyolite soil
       summitRock: 0xb59c86, // pale pink-tan rhyolite
-      riverbed: 0x6b5a48,
-      riverbank: 0x8c7a5e,
+      riverbed: 0xbcab8c,   // pale sand and gravel of the dry wash
+      riverbank: 0xa39274,
     },
   },
   water: {
-    hasRiver: true,
-    name: 'Intermittent Creek',
+    // Task 22: NPS says water flows on the surface here only now and then, so there is no stream:
+    // a dry wash (shallow gravel channel, no water) crossed at ground level, plus small seeps (see features.roads).
+    hasRiver: false,
+    mode: 'dry-wash',
+    name: 'Dry Wash',
+    refZ: -40.0,        // the wash is measured from where the trail crosses it
+    stones: [{ z: -40.0, count: 5 }],
+    washDepth: 0.55,
     surfaceY: -1.0,
-    halfWidth: 1.7,    // a small, often-dry creek
-    bankWidth: 5.0,
+    halfWidth: 2.2,
+    bankWidth: 4.0,
     valleyWidth: 40.0,
     gradient: 0.004,
     course: { baseX: -20.0, amp1: 6.0, freq1: 0.022, amp2: 2.5, freq2: 0.055 },
@@ -1584,43 +1611,63 @@ export const CHIRICAHUA: ParkDefinition = {
     skyReflectColor: 0xc8d0c0,
   },
   trail: {
-    name: 'Sugarloaf Mountain Trail',
+    name: 'Sugarloaf and Echo Loop Trails',
     width: 2.2,
     surface: { center: 0xc2ab90, mid: 0xa98f76, edge: 0x7c7a4a }, // pale gravel path
-    westNodes: [
-      { x: -130.0, z: -90.0 }, // starts at the parking area
-      { x: -122.0, z: -84.0 },
-      { x: -112.0, z: -76.0 },
-      { x: -100.0, z: -70.0 },
-      { x: -88.0, z: -62.0 },
-      { x: -76.0, z: -55.0 },
-      { x: -64.0, z: -50.0 },
-      { x: -52.0, z: -46.0 },
-      { x: -40.0, z: -43.0 },
-      { x: -26.5, z: -40.0 },
+    // Task 22: three paths instead of the old west/east pair. No footbridge: the wash is crossed on the ground.
+    paths: [
+      {
+        id: 'approach',
+        name: 'Sugarloaf Trail',
+        steps: 14,
+        nodes: [
+          { x: -130.0, z: -90.0 }, // starts at the parking area
+          { x: -122.0, z: -84.0 },
+          { x: -112.0, z: -76.0 },
+          { x: -100.0, z: -70.0 },
+          { x: -88.0, z: -62.0 },
+          { x: -76.0, z: -55.0 },
+          { x: -64.0, z: -50.0 },
+          { x: -52.0, z: -46.0 },
+          { x: -40.0, z: -43.0 },
+          { x: -26.5, z: -40.0 },
+          { x: -14.5, z: -40.0 }, // across the dry wash
+          { x: -5.0, z: -33.0 },  // loop junction
+        ],
+      },
+      {
+        // An Echo Canyon-style loop through the pinnacle fields
+        id: 'echo-loop',
+        name: 'Echo Loop',
+        closed: true,
+        nodes: [
+          { x: -5.0, z: -33.0 },  // junction with the approach
+          { x: 7.0, z: -22.0 },
+          { x: 18.0, z: -8.0 },
+          { x: 26.0, z: 6.0 },    // Pinnacle Gallery
+          { x: 37.0, z: 15.0 },
+          { x: 41.0, z: 28.0 },   // junction with the Sugarloaf spur
+          { x: 28.0, z: 40.0 },
+          { x: 8.0, z: 38.0 },
+          { x: -1.0, z: 27.0 },   // the west side stays east of the dry wash
+          { x: -3.0, z: 11.0 },
+          { x: -5.0, z: -8.0 },
+          { x: -9.0, z: -21.0 },
+        ],
+      },
+      {
+        // The spur up to the fire lookout
+        id: 'sugarloaf-spur',
+        name: 'Sugarloaf Spur',
+        nodes: [
+          { x: 41.0, z: 28.0 },
+          { x: 48.0, z: 38.0 },
+          { x: 54.0, z: 50.0 },
+          { x: 58.0, z: 60.0 },
+          { x: 61.0, z: 69.0 },
+        ],
+      },
     ],
-    // Through the pinnacles, then a few switchbacks up to the lookout
-    eastNodes: [
-      { x: -14.5, z: -40.0 },
-      { x: -5.0, z: -33.0 },
-      { x: 7.0, z: -22.0 },
-      { x: 18.0, z: -8.0 },
-      { x: 26.0, z: 6.0 },
-      { x: 30.0, z: 20.0 },
-      { x: 36.0, z: 32.0 },
-      { x: 46.0, z: 40.0 },
-      { x: 54.0, z: 50.0 },
-      { x: 58.0, z: 60.0 },
-      { x: 61.0, z: 69.0 },
-    ],
-    bridge: {
-      name: 'Dry Wash Footbridge',
-      westX: -26.5,
-      eastX: -14.5,
-      centerZ: -40.0,
-      deckY: 0.9,
-      width: 2.6,
-    },
   },
   overlook: {
     name: 'Sugarloaf Mountain Lookout',
@@ -1669,10 +1716,12 @@ export const CHIRICAHUA: ParkDefinition = {
     skyZenith: 0x2c68b0,
     skySun: 0xffe0a0,
   },
+  // Task 22: landmarks chosen for this park (any ids, any number; keys 1 to 5 jump to them)
   landmarks: [
     {
       id: 'spawn',
       name: 'Sugarloaf Trailhead',
+      shortName: 'Trailhead',
       description: 'Parking area and trailhead beside the scenic drive.',
       x: -122,
       y: 2.5,
@@ -1680,26 +1729,39 @@ export const CHIRICAHUA: ParkDefinition = {
       yaw: -1.35,
     },
     {
-      id: 'bridge',
-      name: 'Dry Wash Footbridge',
-      description: 'A short footbridge over a creek that often runs dry. Water flows here only now and then.',
-      x: -28.0,
-      y: 0.92,
+      id: 'dry-wash',
+      name: 'Dry Wash',
+      shortName: 'Dry Wash',
+      description: 'A gravel channel that carries water only now and then. The trail simply crosses it on the ground.',
+      x: -29.0,
+      y: 3.0,
       z: -40.0,
       yaw: -Math.PI / 2,
     },
     {
-      id: 'switchback',
+      id: 'pinnacle-gallery',
       name: 'Pinnacle Gallery',
-      description: 'Pillars of rhyolite tower over the trail, many balanced on a small base.',
-      x: 26.0,
-      y: 5.4,
+      shortName: 'Pinnacles',
+      description: 'Pillars of rhyolite tower over the Echo Loop, many balanced on a small base.',
+      x: 24.0,
+      y: 5.1,
       z: 6.0,
       yaw: Math.PI * 0.3,
     },
     {
+      id: 'spring-seep',
+      name: 'Spring Seep',
+      shortName: 'Seep',
+      description: 'Small wet patches where water seeps out of the ground. Rare and precious in this dry land, so look from a distance.',
+      x: 49.0,
+      y: 4.8,
+      z: 12.0,
+      yaw: -Math.PI / 2,
+    },
+    {
       id: 'summit',
-      name: 'Sugarloaf Summit',
+      name: 'Sugarloaf Lookout',
+      shortName: 'Lookout',
       description: 'A flat summit with a stone fire lookout and views across the pinnacles and the desert valleys.',
       x: 64.0,
       y: 30.2,
@@ -1756,8 +1818,46 @@ export const CHIRICAHUA: ParkDefinition = {
           { x: -146, z: -100 },
         ],
       },
+      // Task 22: small seeps (wet patches), made with the road system's 'lot' kind in a water-green colour.
+      // That gives them levelled ground, no trees on them, and cheap rendering.
+      {
+        id: 'seep-main',
+        name: 'Spring Seep',
+        kind: 'lot',
+        width: 3.6,
+        surface: { paved: 0x4f6e58, shoulder: 0x6b6040, lines: false },
+        nodes: [
+          { x: 57, z: 10 },
+          { x: 61, z: 11.5 },
+        ],
+      },
+      {
+        id: 'seep-small',
+        name: 'Small Seep',
+        kind: 'lot',
+        levelFrom: 'seep-main',
+        width: 2.4,
+        surface: { paved: 0x56755f, shoulder: 0x6b6040, lines: false },
+        nodes: [
+          { x: 63.5, z: 15 },
+          { x: 65.5, z: 17.5 },
+        ],
+      },
+      {
+        id: 'seep-low',
+        name: 'Low Seep',
+        kind: 'lot',
+        levelFrom: 'seep-main',
+        width: 2.2,
+        surface: { paved: 0x4a6852, shoulder: 0x6b6040, lines: false },
+        nodes: [
+          { x: 55, z: 14.5 },
+          { x: 57.5, z: 16.5 },
+        ],
+      },
     ],
     cars: [
+
       { x: -148.5, z: -97.5, yaw: 0, color: 0xd9d6cc },
       { x: -140.5, z: -90.0, yaw: Math.PI, color: 0x7a2c2c },
     ],
@@ -1807,11 +1907,15 @@ export const CHIRICAHUA: ParkDefinition = {
         reason: 'Small wet seeps are rare here and are home to tiger salamanders. Stay out so the damp ground is not trampled.',
       },
     ],
-    litter: STANDARD_LITTER,
+    // litter lies along this park's own paths
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'approach', 'bottle-1': 'echo-loop', 'wrapper-1': 'echo-loop', 'peel-1': 'echo-loop', 'bag-1': 'sugarloaf-spur' } as Record<string, string>)[l.id] ?? 'approach',
+    })),
   },
   about: {
     designNote:
-      'A game-scale landscape inspired by the Sugarloaf Mountain and Echo Canyon part of Chiricahua National Park. The rhyolite pinnacles, the dry creek, the oak and pine woods and the CCC fire lookout are real kinds of features here, but this map is not a survey: real trails, distances and layouts differ.',
+      'A game-scale landscape inspired by the Sugarloaf Mountain and Echo Canyon part of Chiricahua National Park. The rhyolite pinnacles, the dry washes and small seeps, the oak and pine woods and the CCC fire lookout are real kinds of features here, but this map is not a survey: real trails, distances and layouts differ.',
     wildlifeGuidance: {
       text:
         'Chiricahua National Park asks visitors to keep a safe distance from all wildlife, never to feed animals, and to remember that coatis, which are related to raccoons, are wild and should not be approached.',

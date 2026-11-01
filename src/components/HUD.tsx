@@ -23,6 +23,7 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 import { ParkDefinition } from '../data/parks.ts';
+import { jumpLabel, isSummitLandmark, MAX_HOTKEY_LANDMARKS } from '../data/parkStructure.ts';
 import { BinocularTarget } from '../entities/binoculars.ts';
 
 interface HUDProps {
@@ -39,6 +40,8 @@ interface HUDProps {
   waterDepth: number;
   isWading: boolean;
   isOnBridge: boolean;
+  /** Name of the bridge the player stands on (Task 22: parks can have several bridges). */
+  bridgeName?: string;
   isOnSummit: boolean;
   isNearTelescope: boolean;
   isNearWaterStation: boolean;
@@ -78,15 +81,7 @@ interface HUDProps {
  * The four standard landmark ids get plain words, so two landmarks of one park can never both read
  * "Hawksbill" (the old label was just the first word of the name). Other ids fall back to the name's first word.
  */
-const JUMP_LABELS: Record<string, string> = {
-  spawn: 'Trailhead',
-  bridge: 'Bridge',
-  switchback: 'Switchback',
-  summit: 'Summit',
-};
-function shortLandmarkLabel(id: string, name: string): string {
-  return JUMP_LABELS[id] ?? name.split(' ')[0];
-}
+// Task 22: the label now comes from the shared helper (landmark.shortName, else the old map, else the first word)
 
 export const HUD: React.FC<HUDProps> = ({
   currentPark,
@@ -102,6 +97,7 @@ export const HUD: React.FC<HUDProps> = ({
   waterDepth,
   isWading,
   isOnBridge,
+  bridgeName,
   isOnSummit,
   isNearTelescope,
   isNearWaterStation,
@@ -542,7 +538,7 @@ export const HUD: React.FC<HUDProps> = ({
           {isOnBridge && (
             <div className="flex items-center gap-2 bg-amber-950/70 backdrop-blur-md px-4 py-1.5 rounded-xl border border-amber-600/50 shadow-xl text-amber-200">
               <MapPin size={16} className="text-amber-400" />
-              <span className="text-xs font-medium">{currentPark.trail.bridge.name}</span>
+              <span className="text-xs font-medium">{bridgeName ?? 'Footbridge'}</span>
             </div>
           )}
           {isOnSummit && !isNearTelescope && (
@@ -715,16 +711,18 @@ export const HUD: React.FC<HUDProps> = ({
               key={lm.id}
               onClick={() => onTeleport(lm.x, lm.y, lm.z, lm.yaw)}
               className={`px-2.5 py-1 text-xs rounded-lg transition cursor-pointer border flex items-center gap-1.5 ${
-                idx === currentPark.landmarks.length - 1
+                isSummitLandmark(currentPark, lm)
                   ? 'text-amber-200 font-medium hover:text-white hover:bg-amber-900/50 border-amber-700/40'
                   : 'text-stone-300 hover:text-white hover:bg-stone-800/80 border-transparent hover:border-stone-700/60'
               }`}
-              title={`${lm.name} (Press ${idx + 1}): ${lm.description}`}
+              title={idx < MAX_HOTKEY_LANDMARKS ? `${lm.name} (Press ${idx + 1}): ${lm.description}` : `${lm.name}: ${lm.description}`}
             >
-              <span className="font-mono text-[10px] bg-stone-800/90 text-amber-300 px-1 py-0.2 rounded border border-stone-700">
-                {idx + 1}
-              </span>
-              <span>{shortLandmarkLabel(lm.id, lm.name)}</span>
+              {idx < MAX_HOTKEY_LANDMARKS && (
+                <span className="font-mono text-[10px] bg-stone-800/90 text-amber-300 px-1 py-0.2 rounded border border-stone-700">
+                  {idx + 1}
+                </span>
+              )}
+              <span>{jumpLabel(lm)}</span>
             </button>
           ))}
         </div>

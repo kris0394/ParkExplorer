@@ -15,6 +15,7 @@ import * as THREE from 'three';
 import { heightAt } from '../terrain/riverTerrain.ts';
 import { ParkDefinition, ParkZone, ParkLitter, AVAILABLE_PARKS, getActivePark } from '../data/parks.ts';
 import { getActiveSeason } from '../data/seasons.ts';
+import { getTrailPaths, getPathLine } from '../data/parkStructure.ts';
 
 /** Game rule: stay at least ~25 yards (23 m) from most wildlife. */
 export const SAFE_DISTANCE_M = 23;
@@ -111,7 +112,7 @@ export function createZoneMarkersGroup(zones: RangerZone[], park: ParkDefinition
   const postGeo = new THREE.CylinderGeometry(0.05, 0.07, 1.2, 6);
   const capGeo = new THREE.BoxGeometry(0.18, 0.1, 0.18);
 
-  const trailNodes = [...park.trail.westNodes, ...park.trail.eastNodes];
+  const trailNodes = getTrailPaths(park).flatMap(getPathLine);
 
   for (const zone of zones) {
     const isClosed = zone.kind === 'closed';
@@ -252,7 +253,10 @@ function pointAlong(nodes: { x: number; z: number }[], f: number) {
 /** Fixed litter positions beside the trails (same every visit, so rewards cannot be farmed). */
 export function buildLitterSpots(park: ParkDefinition): LitterSpot[] {
   return park.rules.litter.map((t: ParkLitter) => {
-    const nodes = t.trail === 'west' ? park.trail.westNodes : park.trail.eastNodes;
+    // Task 22: litter names a trail path by id (unknown ids fall back to the first path)
+    const paths = getTrailPaths(park);
+    const path = paths.find(p => p.id === t.trail) ?? paths[0];
+    const nodes = path ? getPathLine(path) : [{ x: park.spawn.x, z: park.spawn.z }, { x: park.spawn.x, z: park.spawn.z + 1 }];
     const p = pointAlong(nodes, t.at);
     const offset = 2.1 * t.side;
     return {

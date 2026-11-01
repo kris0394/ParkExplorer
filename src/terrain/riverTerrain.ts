@@ -7,6 +7,7 @@ import { fbm, sstep, clamp } from '../utils/noise.ts';
 import { getActivePark } from '../data/parks.ts';
 import { rollingHills } from './realRelief.ts';
 import { applyRoads } from './roadTerrain.ts';
+import { getBridges, getWaterMode, getWaterRefZ, type TrailBridge } from '../data/parkStructure.ts';
 
 /**
  * Calculates the X coordinate of the river centerline for any Z.
@@ -23,7 +24,7 @@ function getCourse() {
 export function getRiverCenterX(z: number): number {
   const park = getActivePark();
   const c = getCourse();
-  const dz = z - park.trail.bridge.centerZ;
+  const dz = z - getWaterRefZ(park);
   return c.baseX + c.amp1 * Math.sin(dz * c.freq1) + c.amp2 * Math.sin(dz * c.freq2 + c.phase2);
 }
 
@@ -33,7 +34,7 @@ export function getRiverCenterX(z: number): number {
 export function getRiverTangentAngle(z: number): number {
   const park = getActivePark();
   const c = getCourse();
-  const dz = z - park.trail.bridge.centerZ;
+  const dz = z - getWaterRefZ(park);
   const dx_dz = c.amp1 * c.freq1 * Math.cos(dz * c.freq1) + c.amp2 * c.freq2 * Math.cos(dz * c.freq2 + c.phase2);
   return Math.atan2(1.0, dx_dz);
 }
@@ -43,7 +44,7 @@ export function getRiverTangentAngle(z: number): number {
  */
 export function getRiverWaterY(z: number): number {
   const park = getActivePark();
-  return park.water.surfaceY - (z - park.trail.bridge.centerZ) * park.water.gradient;
+  return park.water.surfaceY - (z - getWaterRefZ(park)) * park.water.gradient;
 }
 
 /**
@@ -59,6 +60,8 @@ export function getRiverSignedDistance(x: number, z: number): number {
  * Absolute distance from (x, z) to the river centerline.
  */
 export function getRiverDistance(x: number, z: number): number {
+  // Task 22: a park with no channel at all is infinitely far from "the river"
+  if (getWaterMode(getActivePark()) === 'none') return Infinity;
   return Math.abs(getRiverSignedDistance(x, z));
 }
 
@@ -133,23 +136,20 @@ export function heightAt(x: number, z: number): number {
   // Steps 1 to 3: natural ground. Then roads (Task 19) level the ground under them.
   let baseH = applyRoads(x, z, proceduralBaseHeight(x, z));
 
-  // 4. River Valley carving and bank shaping from park definition
-  if (park.water.hasRiver) {
-    const b = park.trail.bridge;
+  // 4. River valley (flowing water) or dry wash (shallow gravel channel), from the park definition
+  const mode = getWaterMode(park);
+  if (mode === 'river') {
     const waterY = getRiverWaterY(z);
     const riverHalfW = park.water.halfWidth;
     const bankEndW = park.water.halfWidth + park.water.bankWidth;
     const valleyEndW = park.water.valleyWidth;
 
-    // Bridge approach causeway: ensure solid dry land connects seamlessly to bridge
-    const isBridgeApproachWest = (x >= b.westX - 5.0 && x <= b.westX + 4.5) && Math.abs(z - b.centerZ) < 3.4;
-    const isBridgeApproachEast = (x >= b.eastX - 4.5 && x <= b.eastX + 5.0) && Math.abs(z - b.centerZ) < 3.4;
-
-    if (isBridgeApproachWest) {
-      return Math.max(0.92, waterY + 1.8);
-    }
-    if (isBridgeApproachEast) {
-      return Math.max(1.05, waterY + 1.85);
+    // Bridge approach causeways: ensure solid dry land connects seamlessly to each bridge
+    for (const b of getBridges(park)) {
+      const isBridgeApproachWest = (x >= b.westX - 5.0 && x <= b.westX + 4.5) && Math.abs(z - b.centerZ) < 3.4;
+      const isBridgeApproachEast = (x >= b.eastX - 4.5 && x <= b.eastX + 5.0) && Math.abs(z - b.centerZ) < 3.4;
+      if (isBridgeApproachWest) return Math.max(0.92, waterY + 1.8);
+      if (isBridgeApproachEast) return Math.max(1.05, waterY + 1.85);
     }
 
     const rDist = getRiverDistance(x, z);
@@ -173,6 +173,15 @@ export function heightAt(x: number, z: number): number {
       const valleyFloorH = waterY + 0.95;
       return valleyFloorH * (1.0 - valleyT) + baseH * valleyT;
     }
+  } else if (mode === 'dry-wash') {
+    // Task 22: a shallow channel cut into the land (follows the natural slope), flat bed, soft shoulders. No water.
+    const rDist = getRiverDistance(x, z);
+    const bankEndW = park.water.halfWidth + park.water.bankWidth;
+    if (rDist < bankEndW) {
+      const depth = park.water.washDepth ?? 0.55;
+      const t = sstep(park.water.halfWidth * 0.5, bankEndW, rDist);
+      baseH -= depth * (1.0 - t);
+    }
   }
 
   return baseH;
@@ -192,17 +201,19 @@ export function slopeAt(x: number, z: number): number {
   return Math.hypot(gx, gz);
 }
 
+/** The bridge whose deck or approach ramps cover this spot, or null (Task 22: a park can have none, one or several). */
+export function getBridgeAt(x: number, z: number): TrailBridge | null {
+  for (const b of getBridges(getActivePark())) {
+    if (x >= b.westX - 0.5 && x <= b.eastX + 0.5 && Math.abs(z - b.centerZ) <= 2.2) return b;
+  }
+  return null;
+}
+
 /**
- * Check if player is on the wooden bridge deck or approach ramps.
+ * Check if player is on a wooden bridge deck or approach ramps.
  */
 export function isPointOnBridge(x: number, z: number): boolean {
-  const park = getActivePark();
-  const b = park.trail.bridge;
-  return (
-    x >= b.westX - 0.5 &&
-    x <= b.eastX + 0.5 &&
-    Math.abs(z - b.centerZ) <= 2.2
-  );
+  return getBridgeAt(x, z) !== null;
 }
 
 /**
@@ -210,7 +221,7 @@ export function isPointOnBridge(x: number, z: number): boolean {
  */
 export function isPointInRiver(x: number, z: number): boolean {
   const park = getActivePark();
-  if (!park.water.hasRiver) return false;
+  if (getWaterMode(park) !== 'river') return false;
   if (isPointOnBridge(x, z)) return false;
   return getRiverDistance(x, z) < park.water.halfWidth;
 }
@@ -240,9 +251,9 @@ export function isPointOnSummitDeck(x: number, z: number): boolean {
  */
 export function getWalkableHeight(x: number, z: number): number {
   const park = getActivePark();
-  const b = park.trail.bridge;
+  const b = getBridgeAt(x, z);
 
-  if (isPointOnBridge(x, z)) {
+  if (b) {
     const rampLength = 4.5;
     // West approach ramp: ramps smoothly up from dry bank into deck
     if (x < b.westX + rampLength) {

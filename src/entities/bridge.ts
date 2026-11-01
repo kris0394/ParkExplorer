@@ -9,14 +9,30 @@ import { heightAt } from '../terrain/riverTerrain.ts';
 import { getActivePark } from '../data/parks.ts';
 import { clamp } from '../utils/noise.ts';
 
+import type { TrailBridge } from '../data/parkStructure.ts';
+import { getBridges } from '../data/parkStructure.ts';
+
 /**
- * Creates the complete 3D Wooden Footbridge crossing the river,
- * with approach ramps connecting flush to dry land on both riverbanks.
+ * Builds every footbridge of the active park (Task 22: a park can have none, one or several).
+ * A park without bridges gets an empty group.
  */
 export function createBridgeGroup(): THREE.Group {
-  const park = getActivePark();
-  const b = park.trail.bridge;
+  const all = new THREE.Group();
+  all.name = 'bridges';
+  const bridges = getBridges(getActivePark());
+  bridges.forEach((b, i) => {
+    const g = buildBridge(b);
+    g.name = i === 0 ? 'bridge' : `bridge-${i + 1}`;
+    all.add(g);
+  });
+  return all;
+}
 
+/**
+ * Creates one 3D footbridge crossing the river,
+ * with approach ramps connecting flush to dry land on both riverbanks.
+ */
+function buildBridge(b: TrailBridge): THREE.Group {
   const group = new THREE.Group();
   group.name = 'bridge';
 

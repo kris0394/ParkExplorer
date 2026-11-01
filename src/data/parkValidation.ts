@@ -5,6 +5,7 @@
 
 import { ParkDefinition } from './parks.ts';
 import { SPECIES_CATALOGUE } from './species.ts';
+import { getTrailPaths, getBridges, getWaterMode, jumpLabel, MAX_HOTKEY_LANDMARKS } from './parkStructure.ts';
 
 /**
  * TASK 11: checks a park's data for mistakes that do not need the 3D world
@@ -26,15 +27,41 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
   if (![park.spawn?.x, park.spawn?.y, park.spawn?.z, park.spawn?.yaw].every(finite)) say('spawn needs numbers for x, y, z and yaw');
 
   if (!(park.terrain?.mountain?.radius > park.terrain?.mountain?.plateauRadius)) say('mountain radius must be larger than plateauRadius');
-  if (!park.trail || park.trail.westNodes.length < 2) say('trail needs at least 2 west nodes');
-  if (!park.trail || park.trail.eastNodes.length < 2) say('trail needs at least 2 east nodes');
-
-  // Task 18: every real park needs its own layout. Copying another park's trail and summit position makes parks feel like clones.
-  if (!park.isPracticePark && park.trail) {
-    const mine = JSON.stringify([park.trail.westNodes, park.trail.eastNodes]);
-    const twin = allParks.find(p => p.id !== park.id && !p.isPracticePark && p.trail && JSON.stringify([p.trail.westNodes, p.trail.eastNodes]) === mine);
-    if (twin) say(`has exactly the same trail layout as "${twin.name}". Give it its own trail, bridge and summit position (see docs/ADDING_A_PARK.md, "Making a park feel different")`);
+  // Task 22: trail paths (any number, loops allowed). Older parks give westNodes and eastNodes instead.
+  const paths = park.trail ? getTrailPaths(park) : [];
+  if (paths.length === 0) say('trail needs at least one path (trail.paths, or westNodes and eastNodes)');
+  const pathIds = paths.map(p => p.id);
+  if (new Set(pathIds).size !== pathIds.length) say('trail path ids must be unique');
+  for (const p of paths) {
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.id)) say(`trail path id "${p.id}" must be lowercase words joined by hyphens`);
+    if (p.nodes.length < 2) say(`trail path "${p.id}" needs at least 2 nodes`);
+    if (p.closed && p.nodes.length < 3) say(`trail loop "${p.id}" needs at least 3 nodes`);
+    if (!p.nodes.every(n => Number.isFinite(n.x) && Number.isFinite(n.z))) say(`trail path "${p.id}" has a node without numbers for x and z`);
   }
+
+  // Task 18 (updated in Task 22): every real park needs its own layout. Copying another park's trails makes parks feel like clones.
+  if (!park.isPracticePark && paths.length > 0) {
+    const sig = (p: ParkDefinition) => JSON.stringify(getTrailPaths(p).map(t => [t.nodes, !!t.closed]));
+    const mine = sig(park);
+    const twin = allParks.find(p => p.id !== park.id && !p.isPracticePark && p.trail && sig(p) === mine);
+    if (twin) say(`has exactly the same trail layout as "${twin.name}". Give it its own trails, bridges and summit position (see docs/ADDING_A_PARK.md, "Making a park feel different")`);
+  }
+
+  // Task 22: bridges are optional (none, one or several)
+  const bridges = park.trail ? getBridges(park) : [];
+  for (const [i, b] of bridges.entries()) {
+    if (!(b.eastX > b.westX)) say(`bridge #${i + 1} ("${b.name}") needs eastX to be larger than westX`);
+    if (!(b.width > 0)) say(`bridge #${i + 1} ("${b.name}") needs a width above 0`);
+  }
+
+  // Task 22: water modes
+  const mode = getWaterMode(park);
+  if (park.water?.mode && !['river', 'dry-wash', 'none'].includes(park.water.mode)) say('water.mode must be "river", "dry-wash" or "none"');
+  if (park.water?.mode === 'river' && !park.water.hasRiver) say('water.mode "river" needs hasRiver: true');
+  if (park.water?.mode && park.water.mode !== 'river' && park.water.hasRiver) say(`water.mode "${park.water.mode}" needs hasRiver: false (hasRiver means flowing water)`);
+  if (mode !== 'none' && bridges.length === 0 && typeof park.water.refZ !== 'number') say('a park with a river or dry wash but no bridge needs water.refZ (the z the channel is measured from)');
+  if (mode === 'river' && bridges.length === 0) say('a flowing river needs at least one bridge (or use mode "dry-wash" for a ground-level crossing)');
+  if (mode !== 'dry-wash' && (park.water?.stones?.length ?? 0) > 0) say('water.stones only works with mode "dry-wash"');
 
   for (const [k, v] of Object.entries(park.vegetation?.speciesWeights ?? {})) {
     if (!finite(v) || (v as number) < 0) say(`tree weight "${k}" must be 0 or more`);
@@ -45,9 +72,11 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
   if (lm.length === 0) say('needs at least one landmark');
   const lmIds = lm.map(l => l.id);
   if (new Set(lmIds).size !== lmIds.length) say('landmark ids must be unique');
+  // Task 22: landmarks are free-form (any ids, any count). Only the spawn landmark is required.
   if (!lmIds.includes('spawn')) say('landmarks should include one with id "spawn"');
-  if (!lmIds.includes('summit')) say('landmarks should include one with id "summit"');
-  if (lm.length > 4) say('only the first 4 landmarks get a number hotkey (1-4)');
+  if (lm.length > MAX_HOTKEY_LANDMARKS) say(`only the first ${MAX_HOTKEY_LANDMARKS} landmarks get a number hotkey (1-${MAX_HOTKEY_LANDMARKS}); the rest can only be clicked`);
+  const labels = lm.map(l => jumpLabel(l));
+  if (new Set(labels).size !== labels.length) say(`two landmarks have the same Jump-to label (${labels.join(', ')}). Give one a distinct shortName`);
 
   // Real-park information (Task 13)
   if (park.npsParkCode && !park.about) say('real parks (with an npsParkCode) should have an "about" block with sourced facts');
@@ -112,6 +141,7 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
   const litterIds = litter.map(l => l.id);
   if (new Set(litterIds).size !== litterIds.length) say('litter ids must be unique');
   for (const l of litter) {
+    if (!pathIds.includes(l.trail)) say(`litter "${l.id}" refers to trail path "${l.trail}", which does not exist (paths: ${pathIds.join(', ')})`);
     if (!(l.at >= 0 && l.at <= 1)) say(`litter "${l.id}": "at" must be between 0 and 1`);
     if (!l.tip?.trim()) say(`litter "${l.id}" needs a tip`);
   }

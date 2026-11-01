@@ -18,6 +18,7 @@ import { getDistanceToTrail } from './trailMesh.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { RockInstance } from '../types/nature.ts';
 import { getActivePark } from '../data/parks.ts';
+import { getWaterMode } from '../data/parkStructure.ts';
 
 // Spatial grid for fast collision check
 const ROCK_CELL = 10;
@@ -147,8 +148,9 @@ export function createRocksSystem(): THREE.Group {
 
   const park = getActivePark();
 
-  // 1. Riverbed & Riverbank Rocks (Cluster along the river flow)
-  for (let z = -240; z <= 240; z += 6.5) {
+  // 1. Riverbed & Riverbank Rocks (Cluster along the river flow). Task 22: cobbles along a dry wash; none without a channel.
+  const waterMode = getWaterMode(park);
+  for (let z = -240; waterMode !== 'none' && z <= 240; z += 6.5) {
     const rCount = 1 + Math.floor(rand() * 3);
     for (let c = 0; c < rCount; c++) {
       const rx = getRiverCenterX(z);
@@ -162,9 +164,10 @@ export function createRocksSystem(): THREE.Group {
 
       const groundY = heightAt(x, rz);
       const waterY = getRiverWaterY(rz);
-      const isRiver = Math.abs(offset) < park.water.halfWidth;
+      const isRiver = waterMode === 'river' && Math.abs(offset) < park.water.halfWidth;
 
-      const scale = isRiver ? (0.6 + rand() * 1.1) : (1.0 + rand() * 1.8);
+      // In a dry wash the rocks are small cobbles (not blocking boulders)
+      const scale = waterMode === 'dry-wash' ? (0.45 + rand() * 0.55) : isRiver ? (0.6 + rand() * 1.1) : (1.0 + rand() * 1.8);
       const rockRadius = scale * 0.9;
 
       // River rocks protrude through water

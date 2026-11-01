@@ -10,7 +10,8 @@
 import { AVAILABLE_PARKS, setActivePark } from '../src/data/parks.ts';
 import { validateAllParks } from '../src/data/parkValidation.ts';
 import { SEASON_ORDER, setActiveSeason } from '../src/data/seasons.ts';
-import { getRiverDistance, heightAt } from '../src/terrain/riverTerrain.ts';
+import { getRiverDistance, heightAt, getBridgeAt } from '../src/terrain/riverTerrain.ts';
+import { getTrailPaths, getPathLine, getWaterMode, getBridges } from '../src/data/parkStructure.ts';
 import { getDistanceToTrail, initializeTrailPoints } from '../src/entities/trailMesh.ts';
 import { getRoadPaths } from '../src/terrain/roadTerrain.ts';
 import { buildLitterSpots, getZonesForPark, findClosedZoneAt } from '../src/entities/rangerRules.ts';
@@ -27,8 +28,42 @@ for (const park of AVAILABLE_PARKS) {
   console.log(`\n${park.name} (${park.id})`);
   setActivePark(park.id);
   initializeTrailPoints();
-  const hw = park.water.hasRiver ? park.water.halfWidth : 0;
-  const river = (x: number, z: number) => (park.water.hasRiver ? getRiverDistance(x, z) : Infinity);
+  // Task 22: a river and a dry wash both count as "the channel" (keep things out of it); 'none' has no channel
+  const waterMode = getWaterMode(park);
+  const hw = waterMode !== 'none' ? park.water.halfWidth : 0;
+  const river = (x: number, z: number) => (waterMode !== 'none' ? getRiverDistance(x, z) : Infinity);
+  const paths = getTrailPaths(park);
+  console.log(`  ${paths.length} trail path(s): ${paths.map(p => p.id + (p.closed ? ' (loop)' : '')).join(', ')}; ${getBridges(park).length} bridge(s); water: ${waterMode}`);
+
+  // Task 22: every trail path must be walkable: out of the channel (except on a bridge) and not too steep
+  for (const path of paths) {
+    const line = getPathLine(path);
+    let steepest = 0;
+    for (let i = 0; i < line.length - 1; i++) {
+      const a = line[i], b = line[i + 1];
+      const len = Math.hypot(b.x - a.x, b.z - a.z);
+      const steps = Math.max(1, Math.ceil(len / 3));
+      for (let k = 0; k <= steps; k++) {
+        const x = a.x + (b.x - a.x) * (k / steps);
+        const z = a.z + (b.z - a.z) * (k / steps);
+        if (waterMode === 'river' && river(x, z) < hw + 0.5 && !getBridgeAt(x, z)) { fail(`trail path "${path.id}" runs through the river near (${x.toFixed(0)}, ${z.toFixed(0)}) with no bridge`); break; }
+        // the final steps up to the summit deck are built as a short stairway, so they are not counted
+        const mtn = park.terrain.mountain;
+        if (Math.hypot(x - mtn.x, z - mtn.z) < park.overlook.deckRadius + 8) continue;
+        if (k > 0) {
+          const px = a.x + (b.x - a.x) * ((k - 1) / steps);
+          const pz = a.z + (b.z - a.z) * ((k - 1) / steps);
+          const step = Math.hypot(x - px, z - pz) || 1;
+          steepest = Math.max(steepest, Math.abs(heightAt(x, z) - heightAt(px, pz)) / step);
+        }
+      }
+    }
+    if (steepest > 1.0) warn(`trail path "${path.id}" is steep in places (${(steepest * 100).toFixed(0)}% grade)`);
+  }
+  if (paths.length > 0) {
+    const nearSpawn = Math.min(...paths.flatMap(p => getPathLine(p)).map(n => Math.hypot(n.x - park.spawn.x, n.z - park.spawn.z)));
+    if (nearSpawn > 25) warn(`the spawn point is ${nearSpawn.toFixed(0)} m from the nearest trail node`);
+  }
 
   const sp = park.spawn;
   if (river(sp.x, sp.z) < hw + 1) fail('spawn is in the river');

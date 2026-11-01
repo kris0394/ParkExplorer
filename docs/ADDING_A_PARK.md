@@ -18,10 +18,10 @@ All the game systems (deer, trails, closed areas, litter, water stations, hotkey
 | `terrain` and `terrain.colors` | Mountain position, height and the ground colours. Optional `noiseX` / `noiseZ` shift the pattern of the hills |
 | `layoutSeed` | Optional whole number. Changes where trees, rocks and logs are scattered, so the forest is not the same as another park's |
 | `water` | River on or off, width and name. Optional `course` changes how much the river winds (a narrow brook winds less than a wide river) |
-| `trail.westNodes` / `eastNodes` | The trail path (litter is placed along these) |
+| `trail.paths` | The trails: any number, loops (`closed: true`) and branches allowed. Older parks use `westNodes` / `eastNodes` instead (Task 22) |
 | `vegetation` | Tree and shrub counts and the mix of species |
 | `atmosphere` | Fog and sky look |
-| `landmarks` | Fast-travel points. Keep ids `spawn` and `summit`. Only the first 4 get hotkeys 1 to 4 |
+| `landmarks` | Fast-travel points. Any ids and any number; only `spawn` is required. The first 9 get hotkeys 1 to 9. Optional `shortName` is the Jump-to label |
 | `wildlife.spawns` | Where each animal starts and how far it roams. Species can be `white-tailed-deer` or `elk` |
 | `wildlife.safeDistanceOverrides` | Optional. Safe viewing distance in metres per species for this park (for example `{ elk: 46 }`). Defaults come from `src/data/species.ts` |
 | `rules.zones` | Closed areas and fragile areas (each needs a short `reason`). Add `seasons: ['winter']` to make one seasonal |
@@ -30,13 +30,14 @@ All the game systems (deer, trails, closed areas, litter, water stations, hotkey
 
 ## Making a park feel different
 Real parks must not look like copies of each other. `npm run check:parks` reports an error if two real parks share the exact same trail. Things to change for every new park:
-1. **Trail and summit position.** Move `terrain.mountain` (and `realTerrain.originX/originZ`, which must match it), write new `trail.westNodes` / `eastNodes`, and move `spawn`. Give the trail its own shape (long climb, hairpins, loop, ridge walk).
-2. **Water.** Change width and winding. A mountain brook might use `halfWidth: 2.4`, `valleyWidth: 30` and a `course` with small `amp1` / `amp2`. Keep `bridge.centerZ` and the bridge ends on the river (the river is centred near `course.baseX` at `bridge.centerZ`). Keep the valley wide enough (about 12 x `halfWidth` or more) so the land beside the bridge does not jump up steeply.
+1. **Trail and summit position.** Move `terrain.mountain` (and `realTerrain.originX/originZ`, which must match it), write new `trail.paths` (or `westNodes` / `eastNodes`), and move `spawn`. Base the layout on the real park's own features (its roads, loops, ridges, water), not on a template. Give the trail its own shape (long climb, hairpins, loop, ridge walk).
+2. **Water.** Change width and winding. A mountain brook might use `halfWidth: 2.4`, `valleyWidth: 30` and a `course` with small `amp1` / `amp2`. If the park has a bridge, keep `bridge.centerZ` and the bridge ends on the river; with no bridge set `water.refZ` instead (the river is centred near `course.baseX` at `bridge.centerZ`). Keep the valley wide enough (about 12 x `halfWidth` or more) so the land beside the bridge does not jump up steeply.
 3. **Ground and plants.** Give `terrain` its own `noiseX`, `noiseZ` and `layoutSeed`. Then change how the plants look with `vegetation.look` (leaf colours per tree kind, `treeScale`, `glades`, `shrubPalette`, `grass` colours) and use clearly different `terrain.colors` and `atmosphere` (haze colour and `fogDensity`). Colours that differ by a few shades look identical on screen, so change hue and brightness boldly. An open oak woodland, a dense spruce forest and a desert should not share one palette. A quick way to choose `noiseX` / `noiseZ` is to try a few values and look for hills near the spawn and trail of roughly 2 to 5 metres.
 3b. **Coast, sea and bare summits.** A seaside park can set `terrain.coast` (shore position, wiggle, sea level, sea floor) plus `features.sea` and `features.islands`. `vegetation.look.treeLine` leaves summits bare, `features.cairns` marks the route across bare rock, and `bridge.style: 'stone'` builds a granite bridge.
 3c. **Rock and desert scenery.** `features.pinnacles` builds balancing rock pillars (give a height range and colours), `features.succulents` scatters agave, sotol and prickly pear on dry open ground, and `features.lookoutHut` adds a stone fire-lookout hut at the summit. A narrow creek (`halfWidth` about 1.7) with a small bridge suits a dry park.
 4. **Zones, litter, wildlife, landmarks, water stations.** Place them for the new trail (they are not moved for you). Landmark heights (`y`) should be close to the ground, and `npm run check:parks` warns when they are not.
-5. **Landmark ids.** Keep `spawn`, `bridge`, `switchback` and `summit` as ids. The "Jump to" bar labels them Trailhead, Bridge, Switchback and Summit, so two buttons can never share a name.
+5. **Landmark ids and labels.** Choose landmarks that fit the real park (for example Dry Wash, Pinnacle Gallery). Give each a `shortName` so the Jump-to bar reads well; `check:parks` errors if two labels match. Keep the id `spawn`. Older parks may still use `bridge`, `switchback` and `summit`.
+5b. **Dry washes and seeps (Task 22).** For a park whose water only flows now and then, set `water.mode: 'dry-wash'` with `hasRiver: false` and `water.refZ`; add `water.stones` where the trail crosses. Make seeps with roads of `kind: 'lot'` in a water-green colour.
 
 ## Rules to keep
 - Real parks differ. Never copy something as if it were an official NPS rule, closure or alert. Mark game examples as game examples.

@@ -30,7 +30,8 @@ A browser-based 3D national park exploration and responsible-recreation simulati
 | 19 | Shenandoah scenery: Skyline Drive, parking area, stone walls, greenstone scree, summit wall, Blue Ridge ridgelines | **Done (first pass)** | Data-driven `features` block any park can use. Yellow-rope (fragile) vs red-rope (closed) warnings made clearer |
 | 20 | Third real park: Acadia (Maine) | **Done (first pass)** | Own layout and look: bare pink-granite summit above the tree line, cairns, granite boulders, a stone bridge, a coast with a sea and islands. NPS code `acad`, real Cadillac Mountain relief, sourced facts. New engine options: `terrain.coast`, `features.sea/islands/cairns`, `bridge.style`, `treeLine`, `talusFields` colours and sizes |
 | 21 | Fourth real park: Chiricahua (Arizona, the 64th national park) | **Done (first pass)** | Own layout and look: balancing rhyolite pinnacles, agave/sotol/prickly pear, open oak-pine woodland and golden grassland, an intermittent creek, a stone fire lookout on Sugarloaf Mountain, warm dry light. NPS code `chir`, sourced facts. New options: `features.pinnacles`, `features.succulents`, `features.lookoutHut` |
-| 22 | Shared ground/grass polish (the "tennis lawn" look), Shenandoah polish, then more parks and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; give each park its own layout and features. Chiricahua (Arizona, the 64th national park since 20 Oct 2026) is on the list. Revisit Shenandoah's polish at the end |
+| 22 | **Flexible park structure**: any number of trail paths (loops, branches), optional or several bridges, free-form landmarks (keys 1-9), water modes (river, dry wash, none) and seeps; Chiricahua reworked | **Done (first pass)** | See "Park structure (Task 22)" below. Older parks are unchanged (checked: identical terrain and scenery) |
+| 23 | Redesign Smokies, Shenandoah and Acadia from their real layouts (one park per package), then the shared ground/grass polish (the "tennis lawn" look), Shenandoah polish, then more parks and a full real level | Next | Follow `docs/REAL_PARK_CHECKLIST.md`; give each park its own layout and features. Chiricahua (Arizona, the 64th national park since 20 Oct 2026) is on the list. Revisit Shenandoah's polish at the end |
 
 ---
 
@@ -169,7 +170,7 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - **Real elevation:** Cadillac Mountain summit at 44.35127 N, 68.22649 W (Wikipedia and a USGS benchmark agree). Downloaded at build time like the other parks.
 
 ## 13d. Task 21: Chiricahua
-- **Layout:** parking and trailhead off the scenic drive in the north-west, a short footbridge over a creek that is often dry, then a climb through fields of rock pillars to a flat summit with a stone fire lookout in the south-east.
+- **Layout:** parking and trailhead off the scenic drive in the north-west, a dry wash crossed at ground level (no stream, no footbridge: NPS says surface water flows here only now and then), an Echo Canyon-style loop through the fields of rock pillars, small seeps near the Spring Seep area, and a spur up to a flat summit with a stone fire lookout. Landmarks: Trailhead, Dry Wash, Pinnacle Gallery, Spring Seep, Lookout (keys 1 to 5).
 - **Look:** warm, dry, very clear light; golden grassland with wide open gaps; dull-green evergreen oak and pine; agave, sotol and prickly pear; red and yellow wildflowers.
 - **Pinnacles (`features.pinnacles`):** tall lumpy rhyolite pillars with an occasional narrow neck under a wider cap, pale lichen patches, solid to walk into. Built as one merged mesh.
 - **Succulents (`features.succulents`), lookout hut (`features.lookoutHut`).**
@@ -195,3 +196,20 @@ A park is one object in `src/data/parks.ts`. The game code no longer mentions an
 - The Switchback landmark's stored height (16.5) is higher than the ground there, so fast travel drops you slightly. The checker flags it.
 - Seasons are visual and behavioural only: no rain, snowfall or wind yet. Winter trees are bare trunks, which may look sparse.
 - Photos do not record which season they were taken in yet.
+
+## Park structure (Task 22)
+Parks are no longer forced into one trailhead / bridge / switchback / summit template. Every park describes its own structure, and the game reads it through the helpers in `src/data/parkStructure.ts`.
+
+| Field | What it does |
+|---|---|
+| `trail.paths` | Any number of trail paths: `{ id, name, nodes, closed? }`. `closed: true` makes a loop. Branches are just more paths. Older parks keep `westNodes` / `eastNodes`, which the game turns into paths named `west` and `east` |
+| `trail.bridge` / `trail.bridges` | Optional. A park may have no bridge, one, or several |
+| `water.mode` | `'river'` (flowing water), `'dry-wash'` (shallow gravel channel, no water, crossed on the ground) or `'none'`. `hasRiver` still works for older parks |
+| `water.refZ` | The z the winding channel is measured from when there is no bridge |
+| `water.stones`, `water.washDepth` | Optional flat stepping stones across a dry wash, and how deep it is cut |
+| Seeps | Small wet patches: add a road with `kind: 'lot'` and a water-green `surface.paved` colour. Levelling, tree exclusion and drawing come for free |
+| `landmarks` | Any ids and any number. Keys 1 to 9 jump to the first nine. Only `spawn` is required. Optional `shortName` is the Jump-to label (otherwise the old words, then the first word of the name) |
+| `rules.litter[].trail` | The id of the path the litter lies along |
+| `features.cairns.pathIds` | Which paths get cairns (default: the path that climbs to the summit) |
+
+`npm run check:parks` lists each park's paths, bridges and water mode, errors if a river-less trail has a bad reference, if a trail runs through a river with no bridge, or if two landmarks share a Jump-to label, and warns about very steep path sections.

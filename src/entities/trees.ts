@@ -16,6 +16,7 @@ import {
 import { getDistanceToTrail } from './trailMesh.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { getActivePark } from '../data/parks.ts';
+import { getBridges } from '../data/parkStructure.ts';
 import { getSeasonDef } from '../data/seasons.ts';
 import { getActiveSeason } from '../data/seasons.ts';
 
@@ -432,8 +433,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     if (isNearRoad(x, z, 3.0)) continue;
 
     // 4. Bridge exclusion zone
-    const b = park.trail.bridge;
-    if (x >= (b.westX - 3.5) && x <= (b.eastX + 3.5) && Math.abs(z - b.centerZ) < 5.0) continue;
+    if (getBridges(park).some(b => x >= (b.westX - 3.5) && x <= (b.eastX + 3.5) && Math.abs(z - b.centerZ) < 5.0)) continue;
 
     // 5. Summit platform terrace exclusion
     if (Math.hypot(x - park.terrain.mountain.x, z - park.terrain.mountain.z) < 11.5) continue;
