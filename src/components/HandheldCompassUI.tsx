@@ -6,6 +6,7 @@
 import React from 'react';
 import { Compass, X, MapPin, Mountain, Waves, Footprints } from 'lucide-react';
 import { ParkDefinition } from '../data/parks.ts';
+import { getBridges, getWaterMode } from '../data/parkStructure.ts';
 
 export interface HandheldCompassUIProps {
   currentPark: ParkDefinition;
@@ -35,6 +36,7 @@ export const HandheldCompassUI: React.FC<HandheldCompassUIProps> = ({
   const toMapX = (x: number) => Math.max(8, Math.min(92, 50 + ((x - mapCenterX) / mapSpan) * 100));
   const toMapY = (z: number) => Math.max(8, Math.min(92, 50 + ((z - mapCenterZ) / mapSpan) * 100));
 
+  const waterMode = getWaterMode(currentPark);
   const playerDotX = toMapX(playerPos.x);
   const playerDotY = toMapY(playerPos.z);
 
@@ -141,8 +143,9 @@ export const HandheldCompassUI: React.FC<HandheldCompassUIProps> = ({
               <div className="w-12 h-12 rounded-full border border-stone-400 absolute 4 4" />
             </div>
 
-            {/* River ribbon */}
-            <div className="absolute left-[38%] top-0 bottom-0 w-2.5 bg-cyan-700/60 -skew-x-12" />
+            {/* River ribbon (water), or a sandy ribbon for a dry wash; nothing for parks without a channel */}
+            {waterMode === 'river' && <div className="absolute left-[38%] top-0 bottom-0 w-2.5 bg-cyan-700/60 -skew-x-12" />}
+            {waterMode === 'dry-wash' && <div className="absolute left-[38%] top-0 bottom-0 w-2 bg-amber-200/50 -skew-x-12" />}
 
             {/* Trailhead spawn pin */}
             <div
@@ -153,17 +156,20 @@ export const HandheldCompassUI: React.FC<HandheldCompassUIProps> = ({
               <div className="w-2 h-2 rounded-full bg-emerald-400 shadow" />
             </div>
 
-            {/* Bridge landmark pin */}
-            <div
-              className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
-              style={{
-                left: `${toMapX((currentPark.trail.bridge.westX + currentPark.trail.bridge.eastX) / 2)}%`,
-                top: `${toMapY(currentPark.trail.bridge.centerZ)}%`,
-              }}
-              title="Footbridge"
-            >
-              <div className="w-2 h-2 rounded-full bg-amber-400 shadow" />
-            </div>
+            {/* Bridge landmark pins (none, one or several) */}
+            {getBridges(currentPark).map((br, i) => (
+              <div
+                key={`bridge-${i}`}
+                className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
+                style={{
+                  left: `${toMapX((br.westX + br.eastX) / 2)}%`,
+                  top: `${toMapY(br.centerZ)}%`,
+                }}
+                title={br.name}
+              >
+                <div className="w-2 h-2 rounded-full bg-amber-400 shadow" />
+              </div>
+            ))}
 
             {/* Summit landmark pin */}
             <div

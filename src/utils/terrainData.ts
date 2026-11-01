@@ -4,6 +4,7 @@
  */
 import type { ReliefData } from './terrainBuild.ts';
 import { setReliefForPark, clearRelief } from '../terrain/realRelief.ts';
+import type { TrailPath } from '../data/parkStructure.ts';
 
 declare global {
   interface Window {
@@ -15,7 +16,7 @@ type TerrainPark = {
   id: string;
   realTerrain?: { id: string };
   terrain: { baseScale: number; heightScale: number };
-  trail: { westNodes: { x: number; z: number }[]; eastNodes: { x: number; z: number }[] };
+  trail: { paths?: TrailPath[]; westNodes?: { x: number; z: number }[]; eastNodes?: { x: number; z: number }[] };
 };
 
 const cache = new Map<string, ReliefData | null>();

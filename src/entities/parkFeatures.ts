@@ -9,7 +9,8 @@
  */
 import * as THREE from 'three';
 import { getActivePark } from '../data/parks.ts';
-import { heightAt, getRiverDistance } from '../terrain/riverTerrain.ts';
+import { heightAt, getRiverDistance, getRiverCenterX } from '../terrain/riverTerrain.ts';
+import { getBridges, getSummitApproach, getTrailPaths, getWaterMode } from '../data/parkStructure.ts';
 import { getRoadPaths, type RoadPath } from '../terrain/roadTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
 import { registerObstacle } from './rocks.ts';
@@ -229,8 +230,9 @@ function buildSummitWall(group: THREE.Group, rand: () => number): void {
   const mtn = park.terrain.mountain;
   const radius = park.overlook.deckRadius + 0.9;
   // The gap faces the end of the trail
-  const nodes = park.trail.eastNodes;
-  const end = nodes[nodes.length - 1];
+  const approach = getSummitApproach(park);
+  if (!approach) return;
+  const end = approach.end;
   const gapCentre = Math.atan2(end.z - mtn.z, end.x - mtn.x);
   const half = (sw.gapDeg * Math.PI) / 360;
   const count = Math.floor((2 * Math.PI * radius) / 0.95);
@@ -320,28 +322,33 @@ function buildCairns(group: THREE.Group, rand: () => number): void {
   const park = getActivePark();
   const cfg = park.features?.cairns;
   if (!cfg) return;
-  const curve = new THREE.CatmullRomCurve3(park.trail.eastNodes.map(n => new THREE.Vector3(n.x, 0, n.z)), false, 'centripetal', 0.5);
-  const total = curve.getLength();
-  const count = Math.floor(total / cfg.every);
+  // Task 22: cairns go on the listed paths (default: the path that climbs to the summit)
+  const approach = getSummitApproach(park);
+  const wanted = cfg.pathIds ?? (approach ? [approach.path.id] : []);
   const slabs: { x: number; y: number; z: number; sx: number; sy: number; sz: number; ry: number }[] = [];
-  let side = 1;
-  for (let i = 1; i < count; i++) {
-    const u = (i * cfg.every) / total;
-    const p = curve.getPointAt(u);
-    const t = curve.getTangentAt(u);
-    const x = p.x + -t.z * side * 2.3;
-    const z = p.z + t.x * side * 2.3;
-    side = -side;
-    const base = heightAt(x, z);
-    if (base < cfg.minHeight) continue;
-    if (getDistanceToTrail(x, z) < 1.5) continue;
-    const layers = [ [0.55, 0.22], [0.44, 0.2], [0.34, 0.18], [0.24, 0.16] ];
-    let y = base - 0.04;
-    for (const [r, h] of layers) {
-      slabs.push({ x: x + (rand() - 0.5) * 0.08, y: y + h / 2, z: z + (rand() - 0.5) * 0.08, sx: r * (0.9 + rand() * 0.2), sy: h, sz: r * (0.9 + rand() * 0.2), ry: rand() * Math.PI });
-      y += h * 0.95;
+  for (const path of getTrailPaths(park).filter(p => wanted.includes(p.id))) {
+    const curve = new THREE.CatmullRomCurve3(path.nodes.map(n => new THREE.Vector3(n.x, 0, n.z)), !!path.closed, 'centripetal', 0.5);
+    const total = curve.getLength();
+    const count = Math.floor(total / cfg.every);
+    let side = 1;
+    for (let i = 1; i < count; i++) {
+      const u = (i * cfg.every) / total;
+      const p = curve.getPointAt(u);
+      const t = curve.getTangentAt(u);
+      const x = p.x + -t.z * side * 2.3;
+      const z = p.z + t.x * side * 2.3;
+      side = -side;
+      const base = heightAt(x, z);
+      if (base < cfg.minHeight) continue;
+      if (getDistanceToTrail(x, z) < 1.5) continue;
+      const layers = [ [0.55, 0.22], [0.44, 0.2], [0.34, 0.18], [0.24, 0.16] ];
+      let y = base - 0.04;
+      for (const [r, h] of layers) {
+        slabs.push({ x: x + (rand() - 0.5) * 0.08, y: y + h / 2, z: z + (rand() - 0.5) * 0.08, sx: r * (0.9 + rand() * 0.2), sy: h, sz: r * (0.9 + rand() * 0.2), ry: rand() * Math.PI });
+        y += h * 0.95;
+      }
+      registerObstacle(x, z, 0.45);
     }
-    registerObstacle(x, z, 0.45);
   }
   if (slabs.length === 0) return;
   const mesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshLambertMaterial({ flatShading: true }), slabs.length);
@@ -358,6 +365,49 @@ function buildCairns(group: THREE.Group, rand: () => number): void {
   mesh.instanceMatrix.needsUpdate = true;
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+}
+
+/**
+ * Task 22: flat stepping stones across a dry wash (water.stones). They lie on the channel floor, so walking
+ * across at ground level still works; they simply show where the trail crosses.
+ */
+function buildWashStones(group: THREE.Group): void {
+  const park = getActivePark();
+  if (getWaterMode(park) !== 'dry-wash') return;
+  const crossings = park.water.stones ?? [];
+  if (crossings.length === 0) return;
+  const rand = mulberry32(9091 + (park.layoutSeed ?? 0));
+  const mesh = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(1, 1.1, 1, 7),
+    new THREE.MeshLambertMaterial({ flatShading: true }),
+    crossings.reduce((n, c) => n + (c.count ?? 5), 0)
+  );
+  const dummy = new THREE.Object3D();
+  const cols = [0xa59384, 0xb39a86, 0x9c8574];
+  let n = 0;
+  for (const c of crossings) {
+    const count = c.count ?? 5;
+    const cx = getRiverCenterX(c.z);
+    const half = park.water.halfWidth + 0.6;
+    for (let i = 0; i < count; i++) {
+      const t = count === 1 ? 0 : i / (count - 1);
+      const x = cx - half + t * half * 2 + (rand() - 0.5) * 0.25;
+      const z = c.z + (rand() - 0.5) * 0.5;
+      const r = 0.32 + rand() * 0.14;
+      dummy.position.set(x, heightAt(x, z) + 0.05, z);
+      dummy.rotation.set(0, rand() * Math.PI, 0);
+      dummy.scale.set(r, 0.12, r * (0.85 + rand() * 0.3));
+      dummy.updateMatrix();
+      mesh.setMatrixAt(n, dummy.matrix);
+      mesh.setColorAt(n, new THREE.Color(cols[Math.floor(rand() * cols.length)]));
+      n++;
+    }
+  }
+  mesh.count = n;
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   mesh.receiveShadow = true;
   group.add(mesh);
 }
@@ -410,8 +460,11 @@ function isClearGround(x: number, z: number, clearance: number): boolean {
   if (isNearRoad(x, z, clearance)) return false;
   const mtn = park.terrain.mountain;
   if (Math.hypot(x - mtn.x, z - mtn.z) < park.overlook.deckRadius + clearance + 2) return false;
-  const b = park.trail.bridge;
-  if (x > b.westX - 6 && x < b.eastX + 6 && Math.abs(z - b.centerZ) < 8) return false;
+  for (const b of getBridges(park)) {
+    if (x > b.westX - 6 && x < b.eastX + 6 && Math.abs(z - b.centerZ) < 8) return false;
+  }
+  // Task 22: big props never stand in a dry wash (rivers were never checked here, so older parks are unchanged)
+  if (getWaterMode(park) === 'dry-wash' && getRiverDistance(x, z) < park.water.halfWidth + 2.5) return false;
   for (const zn of park.rules.zones) {
     if (Math.hypot(x - zn.x, z - zn.z) < zn.radius + 1.5) return false;
   }
@@ -587,8 +640,9 @@ function buildLookoutHut(group: THREE.Group): void {
   const park = getActivePark();
   if (!park.features?.lookoutHut) return;
   const mtn = park.terrain.mountain;
-  const nodes = park.trail.eastNodes;
-  const end = nodes[nodes.length - 1];
+  const approach = getSummitApproach(park);
+  if (!approach) return;
+  const end = approach.end;
   // opposite side of the summit from where the trail arrives
   const dx = mtn.x - end.x;
   const dz = mtn.z - end.z;
@@ -626,6 +680,7 @@ export function createParkFeaturesGroup(): THREE.Group {
   const group = new THREE.Group();
   group.name = 'parkFeatures';
   const park = getActivePark();
+  buildWashStones(group);
   const f = park.features;
   if (!f) return group;
   const rand = mulberry32(7771 + (park.layoutSeed ?? 0));

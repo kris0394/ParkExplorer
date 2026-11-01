@@ -9,6 +9,7 @@
 import { sstep } from '../utils/noise.ts';
 import { hillStats, proceduralHills, type HillParams } from './hillStats.ts';
 import type { ReliefData } from '../utils/terrainBuild.ts';
+import { getTrailPaths, getPathLine, type TrailPath } from '../data/parkStructure.ts';
 
 interface ActiveRelief {
   parkId: string;
@@ -23,7 +24,7 @@ let active: ActiveRelief | null = null;
 type NodeList = { x: number; z: number }[];
 
 export function setReliefForPark(
-  park: { id: string; terrain: HillParams; trail: { westNodes: NodeList; eastNodes: NodeList } },
+  park: { id: string; terrain: HillParams; trail: { paths?: TrailPath[]; westNodes?: NodeList; eastNodes?: NodeList } },
   data: ReliefData | null
 ): void {
   if (!data || data.parkId !== park.id || data.reliefCm.length !== data.n * data.n) {
@@ -33,7 +34,8 @@ export function setReliefForPark(
   const grid = new Float32Array(data.n * data.n);
   for (let i = 0; i < grid.length; i++) grid[i] = data.reliefCm[i] / 100;
   const segments: number[][] = [];
-  for (const nodes of [park.trail.westNodes, park.trail.eastNodes]) {
+  for (const path of getTrailPaths(park)) {
+    const nodes = getPathLine(path);
     for (let i = 0; i < nodes.length - 1; i++) segments.push([nodes[i].x, nodes[i].z, nodes[i + 1].x, nodes[i + 1].z]);
   }
   active = { parkId: park.id, data, grid, segments, hillMean: hillStats(park.terrain).mean };

@@ -7,19 +7,21 @@ import * as THREE from 'three';
 import { heightAt } from '../terrain/riverTerrain.ts';
 import { Vec2D } from '../types/nature.ts';
 import { getActivePark } from '../data/parks.ts';
+import { getTrailPaths, type TrailPath } from '../data/parkStructure.ts';
 
 let sampledTrailPoints: Vec2D[] = [];
 
-function sampleSplinePoints(nodes: Vec2D[], stepsPerSegment = 12): Vec2D[] {
+function sampleSplinePoints(nodes: Vec2D[], stepsPerSegment = 12, closed = false): Vec2D[] {
   const points: Vec2D[] = [];
   const curve = new THREE.CatmullRomCurve3(
     nodes.map(n => new THREE.Vector3(n.x, 0, n.z)),
-    false,
+    closed,
     'centripetal',
     0.5
   );
 
-  const totalSamples = (nodes.length - 1) * stepsPerSegment;
+  // A closed loop has one more segment (the last point back to the first)
+  const totalSamples = (closed ? nodes.length : nodes.length - 1) * stepsPerSegment;
   for (let i = 0; i <= totalSamples; i++) {
     const t = i / totalSamples;
     const pt = curve.getPoint(t);
@@ -30,9 +32,8 @@ function sampleSplinePoints(nodes: Vec2D[], stepsPerSegment = 12): Vec2D[] {
 
 export function initializeTrailPoints(): void {
   const park = getActivePark();
-  const westPts = sampleSplinePoints(park.trail.westNodes, 14);
-  const eastPts = sampleSplinePoints(park.trail.eastNodes, 16);
-  sampledTrailPoints = [...westPts, ...eastPts];
+  // Task 22: every trail path (loops and branches included)
+  sampledTrailPoints = getTrailPaths(park).flatMap(p => sampleSplinePoints(p.nodes, p.steps ?? 16, !!p.closed));
 }
 
 /**
@@ -62,16 +63,18 @@ function createRibbonGeometry(
   nodes: Vec2D[],
   stepsPerSegment = 16,
   trailWidth = 2.4,
-  surface?: { center: number; mid: number; edge: number }
+  surface?: { center: number; mid: number; edge: number },
+  closed = false
 ): THREE.BufferGeometry {
   const curve = new THREE.CatmullRomCurve3(
     nodes.map(n => new THREE.Vector3(n.x, 0, n.z)),
-    false,
+    closed,
     'centripetal',
     0.5
   );
 
-  const sampleCount = (nodes.length - 1) * stepsPerSegment;
+  // A closed loop has one more segment (the last point back to the first)
+  const sampleCount = (closed ? nodes.length : nodes.length - 1) * stepsPerSegment;
   // 5 vertices across the ribbon for soft blended edges
   const lateralStops = [-0.5, -0.28, 0.0, 0.28, 0.5];
   const numAcross = lateralStops.length;
@@ -147,15 +150,13 @@ export function createTrailMeshGroup(): THREE.Group {
     polygonOffsetUnits: -2.0,
   });
 
-  const westGeo = createRibbonGeometry(park.trail.westNodes, 14, park.trail.width, park.trail.surface);
-  const westMesh = new THREE.Mesh(westGeo, material);
-  westMesh.receiveShadow = true;
-  group.add(westMesh);
-
-  const eastGeo = createRibbonGeometry(park.trail.eastNodes, 16, park.trail.width, park.trail.surface);
-  const eastMesh = new THREE.Mesh(eastGeo, material);
-  eastMesh.receiveShadow = true;
-  group.add(eastMesh);
+  getTrailPaths(park).forEach((path: TrailPath) => {
+    const geo = createRibbonGeometry(path.nodes, path.steps ?? 16, park.trail.width, park.trail.surface, !!path.closed);
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.name = `trail-${path.id}`;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+  });
 
   return group;
 }

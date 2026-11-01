@@ -9,6 +9,7 @@ import { WORLD_SETTINGS } from '../types/nature';
 import {
   heightAt,
   isPointOnBridge,
+  getBridgeAt,
   isPointInRiver,
   getWaterDepth,
   isPointOnSummitDeck,
@@ -17,6 +18,7 @@ import {
 } from '../terrain/riverTerrain.ts';
 import { createWaterShaderMaterial, createRiverWaterMesh } from '../shaders/waterShader.ts';
 import { createTrailMeshGroup } from '../entities/trailMesh.ts';
+import { getWaterMode } from '../data/parkStructure.ts';
 import { createBridgeGroup } from '../entities/bridge.ts';
 import { createSummitOverlookGroup } from '../entities/summitOverlook.ts';
 import { createRocksSystem, pushOutOfRocks } from '../entities/rocks.ts';
@@ -72,6 +74,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
   const [waterDepth, setWaterDepth] = useState(0);
   const [isWading, setIsWading] = useState(false);
   const [isOnBridge, setIsOnBridge] = useState(false);
+  const [bridgeName, setBridgeName] = useState('');
   const [isOnSummit, setIsOnSummit] = useState(false);
   const [isNearTelescope, setIsNearTelescope] = useState(false);
   const [isNearWaterStation, setIsNearWaterStation] = useState(false);
@@ -561,6 +564,8 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
     );
     terrainGeo.rotateX(-Math.PI / 2);
 
+    // Task 22: 'river' (flowing water), 'dry-wash' (gravel channel, no water) or 'none'
+    const waterMode = getWaterMode(park);
     {
       const pos = terrainGeo.attributes.position;
       for (let i = 0; i < pos.count; i++) {
@@ -607,7 +612,8 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
           col.lerp(cMulch, sstep(-0.22, -0.55, n1) * 0.65);
         }
 
-        if (park.water.hasRiver) {
+        if (waterMode !== 'none') {
+          // river bed, or the pale gravel and sand of a dry wash (Task 22)
           if (rDist < park.water.halfWidth) {
             col.lerp(cRiverbed, 0.92);
           } else if (rDist < park.water.halfWidth + 5.5) {
@@ -635,7 +641,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
             // Snow settles on flatter ground and builds up with height; none in the river
             amt *= 0.35 + 0.65 * sstep(0.7, 0.92, ny);
             amt = Math.min(0.95, amt + Math.max(0, y) * 0.006);
-            if (park.water.hasRiver && rDist < park.water.halfWidth + 0.5) amt = 0;
+            if (waterMode === 'river' && rDist < park.water.halfWidth + 0.5) amt = 0;
           }
           col.lerp(cSeason, amt);
         }
@@ -657,7 +663,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
     // 7. Water Shader
     let waterMaterial: THREE.ShaderMaterial | null = null;
     let waterMesh: THREE.Mesh | null = null;
-    if (park.water.hasRiver) {
+    if (waterMode === 'river') {
       waterMaterial = createWaterShaderMaterial(SUN_DIR);
       waterMatRef.current = waterMaterial;
       waterMesh = createRiverWaterMesh(waterMaterial);
@@ -1001,26 +1007,14 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         showToast(`Lighting: ${times[nextIdx].toUpperCase()}`);
       }
 
-      // Hotkeys 1, 2, 3, 4: Teleport to landmarks
-      if (e.code === 'Digit1' && park.landmarks[0]) {
-        const lm = park.landmarks[0];
-        handleTeleport(lm.x, lm.y, lm.z, lm.yaw);
-        showToast(`Jumped to ${lm.name}`);
-      }
-      if (e.code === 'Digit2' && park.landmarks[1]) {
-        const lm = park.landmarks[1];
-        handleTeleport(lm.x, lm.y, lm.z, lm.yaw);
-        showToast(`Jumped to ${lm.name}`);
-      }
-      if (e.code === 'Digit3' && park.landmarks[2]) {
-        const lm = park.landmarks[2];
-        handleTeleport(lm.x, lm.y, lm.z, lm.yaw);
-        showToast(`Jumped to ${lm.name}`);
-      }
-      if (e.code === 'Digit4' && park.landmarks[3]) {
-        const lm = park.landmarks[3];
-        handleTeleport(lm.x, lm.y, lm.z, lm.yaw);
-        showToast(`Jumped to ${lm.name}`);
+      // Hotkeys 1 to 9: Teleport to the park's first nine landmarks (Task 22: any number of landmarks)
+      const digitMatch = /^Digit([1-9])$/.exec(e.code);
+      if (digitMatch) {
+        const lm = park.landmarks[Number(digitMatch[1]) - 1];
+        if (lm) {
+          handleTeleport(lm.x, lm.y, lm.z, lm.yaw);
+          showToast(`Jumped to ${lm.name}`);
+        }
       }
 
       // Hotkey P: Cycle Park
@@ -1152,7 +1146,8 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         dirZ /= len;
       }
 
-      const onBridgeNow = isPointOnBridge(p.pos.x, p.pos.z);
+      const bridgeNow = getBridgeAt(p.pos.x, p.pos.z);
+      const onBridgeNow = bridgeNow !== null;
       const inRiverNow = isPointInRiver(p.pos.x, p.pos.z);
       const onSummitNow = isPointOnSummitDeck(p.pos.x, p.pos.z);
       const curWaterDepth = inRiverNow ? getWaterDepth(p.pos.x, p.pos.z) : 0;
@@ -1332,6 +1327,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         setIsWading(inRiverNow);
         setWaterDepth(curWaterDepth);
         setIsOnBridge(onBridgeNow);
+        setBridgeName(bridgeNow?.name ?? '');
         setIsOnSummit(onSummitNow);
         setIsNearTelescope(nearTele);
         setIsNearWaterStation(nearWaterStation);
@@ -1725,6 +1721,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
           waterDepth={waterDepth}
           isWading={isWading}
           isOnBridge={isOnBridge}
+          bridgeName={bridgeName}
           isOnSummit={isOnSummit}
           isNearTelescope={isNearTelescope}
           isNearWaterStation={isNearWaterStation}
