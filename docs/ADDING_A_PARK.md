@@ -39,6 +39,14 @@ Real parks must not look like copies of each other. `npm run check:parks` report
 5. **Landmark ids and labels.** Choose landmarks that fit the real park (for example Dry Wash, Pinnacle Gallery). Give each a `shortName` so the Jump-to bar reads well; `check:parks` errors if two labels match. Keep the id `spawn`. Older parks may still use `bridge`, `switchback` and `summit`.
 5b. **Dry washes and seeps (Task 22).** For a park whose water only flows now and then, set `water.mode: 'dry-wash'` with `hasRiver: false` and `water.refZ`; add `water.stones` where the trail crosses. Make seeps with roads of `kind: 'lot'` in a water-green colour.
 
+## The ground and grass look (Task 24, opt-in)
+Parks without it keep the plain, smooth green ground. A grassland or meadow park should use both settings so it does not look like a tennis lawn (Wind Cave is the example to copy).
+- `terrain.groundLook`: `patchScale` (about 0.016; smaller = bigger patches), `strength` (0 to 1), `patches` (a list of colours blended across the land, for example greens, gold, straw, tan), `speckle` (0 to 0.4 fine brightness grain), optional `soil` (bare earth showing through) and `mulch` (1 = dark forest-floor patches as in forest parks, small numbers for prairie).
+- `vegetation.look.grassland`: `density` (1 = original count; 1.8 = 80% more tufts), `radius` (metres, about 54), `heightRange` (short and tall patches, e.g. `[0.55, 1.9]`), `patchScale`, `tints` (colour multipliers: greener, golden, straw), `sway` (0 to 1) and optional `carpet` (a layer of short grass: count, radius, height, colours).
+- `features.fireTower`: a tall steel fire tower you cannot climb.
+- More tufts cost frame time. Keep `density` at 3 or less and the carpet at 6000 or fewer; `check:parks` errors above that.
+- `npm run check:parks` prints for each real park whether it has adopted the look. Smokies, Shenandoah and Acadia have a TODO note to adopt it later.
+
 ## Rules to keep
 - Real parks differ. Never copy something as if it were an official NPS rule, closure or alert. Mark game examples as game examples.
 - Keep every closure explained (`reason`) so mistakes teach.

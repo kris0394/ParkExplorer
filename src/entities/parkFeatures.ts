@@ -676,6 +676,70 @@ function buildLookoutHut(group: THREE.Group): void {
   registerObstacle(x - 1.0, z, 1.4);
 }
 
+/**
+ * Task 24: a tall steel fire tower like the one at Rankin Ridge (NPS: climbing the historic tower is not permitted, so it is
+ * a solid prop). Four slanted legs, cross braces, a small cab with a roof, and a short skirt of stones at the base.
+ */
+function buildFireTower(group: THREE.Group): void {
+  const park = getActivePark();
+  const cfg = park.features?.fireTower;
+  if (!cfg) return;
+  const h = cfg.height ?? 11;
+  const base = 2.0;   // half width at the ground
+  const top = 0.95;   // half width under the cab
+  const y0 = heightAt(cfg.x, cfg.z);
+  const steel = new THREE.MeshLambertMaterial({ color: 0x6d7378, flatShading: true });
+  const wood = new THREE.MeshLambertMaterial({ color: 0x7a5c3e, flatShading: true });
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x3f4a44, flatShading: true });
+  const glass = new THREE.MeshLambertMaterial({ color: 0x6f8a9c, flatShading: true });
+  const g = new THREE.Group();
+  const beam = (a: THREE.Vector3, b: THREE.Vector3, w: number, mat: THREE.Material): void => {
+    const len = a.distanceTo(b);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, len, w), mat);
+    m.position.copy(a).add(b).multiplyScalar(0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+    m.castShadow = true;
+    m.receiveShadow = true;
+    g.add(m);
+  };
+  const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  const bottoms = corners.map(([cx, cz]) => new THREE.Vector3(cx * base, 0, cz * base));
+  const tops = corners.map(([cx, cz]) => new THREE.Vector3(cx * top, h, cz * top));
+  for (let i = 0; i < 4; i++) beam(bottoms[i], tops[i], 0.22, steel);
+  // cross braces on each face, in four bands
+  const bands = 4;
+  for (let b = 0; b < bands; b++) {
+    const t0 = b / bands;
+    const t1 = (b + 1) / bands;
+    const at = (i: number, t: number) => bottoms[i].clone().lerp(tops[i], t);
+    for (let i = 0; i < 4; i++) {
+      const j = (i + 1) % 4;
+      beam(at(i, t0), at(j, t1), 0.1, steel);
+      beam(at(j, t0), at(i, t1), 0.1, steel);
+      beam(at(i, t1), at(j, t1), 0.12, steel);
+    }
+  }
+  // platform, cab and roof
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(top * 2 + 0.9, 0.16, top * 2 + 0.9), wood);
+  deck.position.y = h;
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(top * 2 + 0.2, 1.7, top * 2 + 0.2), wood);
+  cab.position.y = h + 0.95;
+  const win = new THREE.Mesh(new THREE.BoxGeometry(top * 2 + 0.26, 0.8, top * 2 + 0.26), glass);
+  win.position.y = h + 1.15;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(top * 1.9, 0.9, 4), roofMat);
+  roof.position.y = h + 2.25;
+  roof.rotation.y = Math.PI / 4;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.0, 5), steel);
+  pole.position.y = h + 3.0;
+  g.add(deck, cab, win, roof, pole);
+  g.traverse(o => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  g.position.set(cfg.x, y0, cfg.z);
+  group.add(g);
+  // solid legs: the tower base cannot be walked through
+  registerObstacle(cfg.x, cfg.z, 1.2);
+  for (const [cx, cz] of corners) registerObstacle(cfg.x + cx * base, cfg.z + cz * base, 0.55);
+}
+
 export function createParkFeaturesGroup(): THREE.Group {
   const group = new THREE.Group();
   group.name = 'parkFeatures';
@@ -692,6 +756,7 @@ export function createParkFeaturesGroup(): THREE.Group {
   buildPinnacles(group, rand);
   buildSucculents(group, rand);
   buildLookoutHut(group);
+  buildFireTower(group);
   buildSea(group, rand);
   if (f.distantRidges) buildDistantRidges(group);
   return group;

@@ -583,6 +583,11 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       const cRiverbed = new THREE.Color(tc.riverbed);
       const cRiverbank = new THREE.Color(tc.riverbank);
       const cRock = new THREE.Color(tc.summitRock);
+      // Task 24: optional patchy ground colour (green, gold, sage, tan patches, bare soil, speckle)
+      const gk = park.terrain.groundLook;
+      const gkPatches = gk ? gk.patches.map(c => new THREE.Color(c)) : [];
+      const gkSoil = gk?.soil ? new THREE.Color(gk.soil.color) : null;
+      const gkTmp = new THREE.Color();
       const cMulch = new THREE.Color(0x284724);
       const seasonDef = getSeasonDef();
       const cSeason = new THREE.Color(seasonDef.groundColor);
@@ -603,13 +608,27 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         col.lerp(cDryGrass, sstep(0.12, 0.62, n1 + y * 0.015) * 0.65);
         col.lerp(cSlope, sstep(0.9, 0.72, ny) * 0.88);
 
+        if (gk && gkPatches.length > 0) {
+          const big = fbm(x * gk.patchScale + 300, z * gk.patchScale - 120, 3);
+          const mid = fbm(x * gk.patchScale * 3.1 - 77, z * gk.patchScale * 3.1 + 15, 2);
+          const f = Math.min(0.9999, Math.max(0, big * 0.9 + 0.5)) * (gkPatches.length - 1);
+          const lo = Math.floor(f);
+          gkTmp.copy(gkPatches[lo]).lerp(gkPatches[Math.min(gkPatches.length - 1, lo + 1)], f - lo);
+          // flat ground takes the patch colours; steep slopes keep their own
+          col.lerp(gkTmp, gk.strength * sstep(0.7, 0.9, ny));
+          if (gkSoil && gk.soil) {
+            col.lerp(gkSoil, sstep(0.18, 0.5, mid + big * 0.3) * gk.soil.amount * sstep(0.8, 0.95, ny));
+          }
+          col.multiplyScalar(1 + (n3 - 0.0) * gk.speckle + mid * gk.speckle * 0.5);
+        }
+
         if (ny < 0.84 || rockNoise > 0.3) {
           const rockBlend = sstep(0.84, 0.68, ny) * 0.75 + sstep(0.3, 0.58, rockNoise) * 0.45;
           col.lerp(cRock, Math.min(1.0, rockBlend));
         }
 
         if (ny > 0.8 && n1 < -0.22) {
-          col.lerp(cMulch, sstep(-0.22, -0.55, n1) * 0.65);
+          col.lerp(cMulch, sstep(-0.22, -0.55, n1) * 0.65 * (gk?.mulch ?? 1)); // prairie: little dark forest-floor mulch
         }
 
         if (waterMode !== 'none') {
@@ -698,6 +717,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
     // 13. Grass Instancing
     const grassSystem = new GrassSystem();
     scene.add(grassSystem.mesh);
+    if (grassSystem.carpet) scene.add(grassSystem.carpet); // Task 24 short-grass carpet
     grassSystem.update(park.spawn.x, park.spawn.z, true);
 
     // 14. Forest Trees & Shrubs
@@ -1474,6 +1494,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         waterMaterial.uniforms.time.value = t;
       }
 
+      grassSystem.tick(t); // Task 24 wind sway (no effect for parks without the grassland look)
       grassSystem.update(pPos.x, pPos.z);
       updateMotes(t, pPos.x, pPos.z, playerRef.current.groundY);
       audioManager.updateAmbientBirds(t);
