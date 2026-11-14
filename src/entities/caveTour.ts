@@ -20,7 +20,7 @@ import { getCaveLayout, type PathNode } from '../data/parkStructure.ts';
 import { registerObstacle } from './rocks.ts';
 import { mulberry32 } from '../utils/noise.ts';
 
-interface Sample { x: number; z: number; tx: number; tz: number; nx: number; nz: number; y: number; s: number }
+interface Sample { x: number; z: number; tx: number; tz: number; nx: number; nz: number; y: number; s: number; roofY: number }
 
 export function buildCaveTour(group: THREE.Group): void {
   const park = getActivePark();
@@ -45,7 +45,7 @@ export function buildCaveTour(group: THREE.Group): void {
     const len = Math.hypot(t.x, t.z) || 1;
     const tx = t.x / len;
     const tz = t.z / len;
-    samples.push({ x: p.x, z: p.z, tx, tz, nx: -tz, nz: tx, y: heightAt(p.x, p.z), s: u * total });
+    samples.push({ x: p.x, z: p.z, tx, tz, nx: -tz, nz: tx, y: heightAt(p.x, p.z), s: u * total, roofY: 0 });
   }
 
   // --- baked lighting: lamps along the passage and in the chamber ---
@@ -101,6 +101,7 @@ export function buildCaveTour(group: THREE.Group): void {
     const yr = heightAt(rx, rz) + FLOOR_LIFT;
     const yc = sm.y + FLOOR_LIFT;
     const roofY = Math.max(yl, yr, yc) + ROOF;
+    sm.roofY = roofY;
     leftFloor.push(new THREE.Vector3(lx, yl, lz));
     rightFloor.push(new THREE.Vector3(rx, yr, rz));
     leftTop.push(new THREE.Vector3(lx, roofY, lz));
@@ -258,29 +259,77 @@ export function buildCaveTour(group: THREE.Group): void {
   root.add(bulbs);
 
   // --- the outside: a grassy limestone mound over the passage, with a timber portal at the mouth ---
-  const moundMat = new THREE.MeshLambertMaterial({ flatShading: true });
-  const spheres: { x: number; z: number; r: number; ry: number }[] = [];
-  for (let s = 5.5; s < total - 3; s += 5.0) {
-    const smp = samples[Math.min(samples.length - 1, Math.round(s))];
-    spheres.push({ x: smp.x, z: smp.z, r: 5.4, ry: 3.4 });
+  // The mound is ONE height-field surface laid over the passage and chamber (never solid balls), and it is always kept
+  // above the passage and chamber roofs, so no part of it can cut through the inside.
+  const moundMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide });
+  const ARCH = 5.4;       // half width of the mound along the passage
+  const ARCH_H = 3.8;     // height of the mound above the ground over the passage centre line
+  const RC = C.radius + 3.4; // radius of the rounded mound over the chamber
+  const CH_H = CH + 3.5;  // its height
+  const sstepLocal = (e0: number, e1: number, x: number): number => {
+    const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
+    return t * t * (3 - 2 * t);
+  };
+  // bounding box of the whole cave
+  let minX = C.x - RC, maxX = C.x + RC, minZ = C.z - RC, maxZ = C.z + RC;
+  for (const sm of samples) { minX = Math.min(minX, sm.x - ARCH); maxX = Math.max(maxX, sm.x + ARCH); minZ = Math.min(minZ, sm.z - ARCH); maxZ = Math.max(maxZ, sm.z + ARCH); }
+  minX -= 1.5; minZ -= 1.5; maxX += 1.5; maxZ += 1.5;
+  const STEP = 1.25;
+  const nxCells = Math.ceil((maxX - minX) / STEP);
+  const nzCells = Math.ceil((maxZ - minZ) / STEP);
+  const rockC = new THREE.Color(0x8d8672);
+  const turfC = new THREE.Color(0x7f9158);
+  const tmpC = new THREE.Color();
+  const gPos: number[] = [];
+  const gCol: number[] = [];
+  const gM: number[] = [];
+  for (let jz = 0; jz <= nzCells; jz++) {
+    for (let ix = 0; ix <= nxCells; ix++) {
+      const x = minX + ix * STEP;
+      const z = minZ + jz * STEP;
+      // nearest point on the passage centre line
+      let dMin = 1e9, sNear = 0, roofNear = 0;
+      for (const sm of samples) {
+        const d = Math.hypot(x - sm.x, z - sm.z);
+        if (d < dMin) { dMin = d; sNear = sm.s; roofNear = sm.roofY; }
+      }
+      const taper = sstepLocal(0.0, 5.0, sNear);
+      let m = ARCH_H * Math.sqrt(Math.max(0, 1 - (dMin / ARCH) * (dMin / ARCH))) * taper;
+      const dc = Math.hypot(x - C.x, z - C.z);
+      m = Math.max(m, CH_H * Math.sqrt(Math.max(0, 1 - (dc / RC) * (dc / RC))));
+      const ground = heightAt(x, z);
+      let yAbs = ground + 0.03 + m;
+      // keep it above the roofs: over the passage, and over the chamber
+      // (one grid step of extra margin, so a surface triangle can never dip into the passage between two grid points)
+      if (dMin < HW + 0.5 + STEP * 1.3) yAbs = Math.max(yAbs, roofNear + 0.2);
+      if (dc < C.radius + 0.5 + STEP * 1.3) yAbs = Math.max(yAbs, chamberFloorY + CH + 0.2);
+      const above = yAbs - ground - 0.03;
+      gM.push(above);
+      gPos.push(x, yAbs, z);
+      tmpC.copy(rockC).lerp(turfC, Math.min(1, above * 0.45 + rand() * 0.1)).multiplyScalar(0.9 + rand() * 0.2);
+      gCol.push(tmpC.r, tmpC.g, tmpC.b);
+    }
   }
-  spheres.push({ x: C.x, z: C.z, r: C.radius + 3.2, ry: 8.0 });
-  const mound = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 9), moundMat, spheres.length);
-  const earth = [0x8f8a76, 0x9a9480, 0x86876a, 0x8d8f6b];
-  spheres.forEach((sp, i) => {
-    const y = heightAt(sp.x, sp.z);
-    dummy.position.set(sp.x, y + 0.2, sp.z);
-    dummy.rotation.set(0, rand() * 6.28, 0);
-    dummy.scale.set(sp.r, sp.ry, sp.r);
-    dummy.updateMatrix();
-    mound.setMatrixAt(i, dummy.matrix);
-    mound.setColorAt(i, new THREE.Color(earth[i % earth.length]));
-  });
-  mound.instanceMatrix.needsUpdate = true;
-  if (mound.instanceColor) mound.instanceColor.needsUpdate = true;
-  mound.castShadow = true;
-  mound.receiveShadow = true;
-  root.add(mound);
+  const gIdx: number[] = [];
+  const W = nxCells + 1;
+  for (let jz = 0; jz < nzCells; jz++) {
+    for (let ix = 0; ix < nxCells; ix++) {
+      const i00 = jz * W + ix, i10 = i00 + 1, i01 = i00 + W, i11 = i01 + 1;
+      // only where the mound actually rises above the ground
+      if (Math.max(gM[i00], gM[i10], gM[i01], gM[i11]) < 0.05) continue;
+      gIdx.push(i00, i01, i10, i10, i01, i11);
+    }
+  }
+  const moundGeo = new THREE.BufferGeometry();
+  moundGeo.setAttribute('position', new THREE.Float32BufferAttribute(gPos, 3));
+  moundGeo.setAttribute('color', new THREE.Float32BufferAttribute(gCol, 3));
+  moundGeo.setIndex(gIdx);
+  moundGeo.computeVertexNormals();
+  const moundMesh = new THREE.Mesh(moundGeo, moundMat);
+  moundMesh.name = 'cave-mound-arch';
+  moundMesh.castShadow = true;
+  moundMesh.receiveShadow = true;
+  root.add(moundMesh);
 
   // timber portal (two posts and a lintel) and a sign board at the mouth
   const wood = new THREE.MeshLambertMaterial({ color: 0x6b4a30, flatShading: true });
