@@ -131,7 +131,7 @@ export class DeerEntity {
   get visualHeight(): number {
     if (this.isBear) return 1.1;
     if (this.isBison) return this.isBuck ? 1.9 : 1.6;
-    if (this.isPrairieDog) return 0.35;
+    if (this.isPrairieDog) return 0.25;
     if (this.isElk) return this.isBuck ? 2.7 : 2.1;
     return this.isFawn ? 0.8 : this.isBuck ? 1.55 : 1.35;
   }
@@ -189,7 +189,7 @@ export class DeerEntity {
     const noseMat = new THREE.MeshLambertMaterial({ color: 0x161311 });
     const eyeMat = new THREE.MeshStandardMaterial({ color: 0x060504, roughness: 0.15 });
 
-    const scale = isPD ? 0.3 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
+    const scale = isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
     this.bodyBaseY = stocky ? 0.66 : 1.15;
     // Elk: darker neck and mane, cream rump patch, short tail
     const maneMat = new THREE.MeshLambertMaterial({ color: 0x4a3524 });

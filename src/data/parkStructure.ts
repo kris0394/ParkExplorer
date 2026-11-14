@@ -188,5 +188,69 @@ export function getPrairieDogMounds(town: { x: number; z: number; radius: number
   return out;
 }
 
+/**
+ * Task 26: a walk-in cave tour. The passage is described once, in local metres (mouth at the origin, the passage running
+ * toward -z), and placed in the world from the park's `features.caveTour` { x, z, yaw }.
+ */
+export interface CaveLayout {
+  mouth: PathNode;
+  /** Direction the mouth faces (world), as a unit vector. */
+  facing: PathNode;
+  /** Centre line of the passage in world coordinates (ends at the edge of the chamber). */
+  nodes: PathNode[];
+  chamber: { x: number; z: number; radius: number };
+  /** Half width of the passage. */
+  halfWidth: number;
+  /** Roof height above the floor. */
+  roof: number;
+}
+
+const CAVE_LOCAL: [number, number][] = [[0, 0], [0, -6], [4, -13], [9, -19], [10, -27], [5, -34], [-2, -39]];
+const CAVE_CHAMBER_LOCAL = { x: -6, z: -46, radius: 6.5 };
+const caveCache = new WeakMap<object, CaveLayout>();
+
+export function getCaveLayout(cfg: { x: number; z: number; yaw?: number }): CaveLayout {
+  const hit = caveCache.get(cfg);
+  if (hit) return hit;
+  const yaw = cfg.yaw ?? 0;
+  const fx = Math.sin(yaw);
+  const fz = Math.cos(yaw);
+  const rx = Math.cos(yaw);
+  const rz = -Math.sin(yaw);
+  const toWorld = (lx: number, lz: number): PathNode => ({ x: cfg.x + lx * rx + lz * fx, z: cfg.z + lx * rz + lz * fz });
+  const nodes = CAVE_LOCAL.map(([lx, lz]) => toWorld(lx, lz));
+  const chamberC = toWorld(CAVE_CHAMBER_LOCAL.x, CAVE_CHAMBER_LOCAL.z);
+  const last = nodes[nodes.length - 1];
+  const dx = last.x - chamberC.x;
+  const dz = last.z - chamberC.z;
+  const d = Math.hypot(dx, dz) || 1;
+  nodes.push({ x: chamberC.x + (dx / d) * (CAVE_CHAMBER_LOCAL.radius - 0.3), z: chamberC.z + (dz / d) * (CAVE_CHAMBER_LOCAL.radius - 0.3) });
+  const layout: CaveLayout = {
+    mouth: { x: cfg.x, z: cfg.z },
+    facing: { x: fx, z: fz },
+    nodes,
+    chamber: { x: chamberC.x, z: chamberC.z, radius: CAVE_CHAMBER_LOCAL.radius },
+    halfWidth: 1.7,
+    roof: 2.9,
+  };
+  caveCache.set(cfg, layout);
+  return layout;
+}
+
+/** Distance from a point to the cave's footprint (the passage centre line or the chamber), 0 or less when inside. */
+export function distanceToCave(layout: CaveLayout, x: number, z: number): number {
+  let best = Math.hypot(x - layout.chamber.x, z - layout.chamber.z) - layout.chamber.radius;
+  for (let i = 0; i < layout.nodes.length - 1; i++) {
+    const a = layout.nodes[i];
+    const b = layout.nodes[i + 1];
+    const abx = b.x - a.x;
+    const abz = b.z - a.z;
+    const len2 = abx * abx + abz * abz || 1;
+    const t = Math.max(0, Math.min(1, ((x - a.x) * abx + (z - a.z) * abz) / len2));
+    best = Math.min(best, Math.hypot(x - (a.x + abx * t), z - (a.z + abz * t)) - layout.halfWidth);
+  }
+  return best;
+}
+
 /** Number keys 1 to 9 jump to the first nine landmarks. */
 export const MAX_HOTKEY_LANDMARKS = 9;
