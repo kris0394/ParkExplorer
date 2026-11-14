@@ -311,6 +311,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
   const treeScale = look?.treeScale ?? 1;
   const glades = look?.glades ?? 0;
   const gladeCut = 0.44 - 0.93 * glades; // glade noise above this = open ground
+  const groves = look?.groves ?? [];
   const coastSeaY = park.terrain.coast?.seaY;
   const DECIDUOUS = ['broadleaf', 'oak', 'birch', 'poplar'];
   const SNOW_WHITE = new THREE.Color(0xeef3f6);
@@ -418,8 +419,18 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
 
   while (placed < treeCount && tries < treeCount * 14) {
     tries++;
-    const x = (rand() - 0.5) * (worldSize - 60);
-    const z = (rand() - 0.5) * (worldSize - 60);
+    let x = (rand() - 0.5) * (worldSize - 60);
+    let z = (rand() - 0.5) * (worldSize - 60);
+    // Task 25: parks with groves put a share of their trees inside those woods (parks without groves are unchanged)
+    let inGrove = false;
+    if (groves.length > 0 && rand() < 0.4) {
+      const g = groves[Math.floor(rand() * groves.length)];
+      const ga = rand() * Math.PI * 2;
+      const gr = Math.sqrt(rand()) * g.radius;
+      x = g.x + Math.cos(ga) * gr;
+      z = g.z + Math.sin(ga) * gr;
+      inGrove = true;
+    }
 
     // --- TREE PLACEMENT EXCLUSION RULES ---
     // 1. Spawn clearing exclusion
@@ -443,11 +454,13 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     if (slopeAt(x, z) > 0.88) continue;
 
     // 7. Forest density noise
-    const density = fbm(x * 0.012 + 7, z * 0.012 + 3, 3);
-    if (rand() > sstep(-0.35, 0.35, density) * 0.95 + 0.05) continue;
+    if (!inGrove) {
+      const density = fbm(x * 0.012 + 7, z * 0.012 + 3, 3);
+      if (rand() > sstep(-0.35, 0.35, density) * 0.95 + 0.05) continue;
 
-    // Open sunny glades between woods (parks with look.glades)
-    if (glades > 0 && fbm(x * 0.011 + 200, z * 0.011 - 90, 3) > gladeCut) continue;
+      // Open sunny glades between woods (parks with look.glades)
+      if (glades > 0 && fbm(x * 0.011 + 200, z * 0.011 - 90, 3) > gladeCut) continue;
+    }
 
     const h = heightAt(x, z);
     // Bare granite summits above the tree line, and no trees on the beach or under water (Task 19/20)
@@ -586,5 +599,80 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     if (shrubMesh.instanceColor) shrubMesh.instanceColor.needsUpdate = true;
     shrubMesh.receiveShadow = true;
     scene.add(shrubMesh);
+  }
+
+  // --- Task 25: ground cover (bush clumps and wildflower patches) so open land does not look bare ---
+  const gc = look?.groundCover;
+  if (gc) {
+    const crand = mulberry32(99173 + (park.layoutSeed ?? 0));
+    const items: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
+    const okSpot = (x: number, z: number, trailGap: number): boolean => {
+      if (Math.hypot(x - park.spawn.x, z - park.spawn.z) < 6.0) return false;
+      if (getRiverDistance(x, z) < park.water.halfWidth + 1.2) return false;
+      if (getDistanceToTrail(x, z) < trailGap) return false;
+      if (isNearRoad(x, z, 2.0)) return false;
+      if (isPointOnBridge(x, z) || isPointOnSummitDeck(x, z)) return false;
+      if (slopeAt(x, z) > 0.8) return false;
+      const gh = heightAt(x, z);
+      if (coastSeaY !== undefined && gh < coastSeaY + 0.9) return false;
+      return true;
+    };
+    const push = (x: number, z: number, sx: number, sy: number, hex: number, bright: number): void => {
+      dummy.position.set(x, heightAt(x, z) - 0.04, z);
+      dummy.rotation.set(0, crand() * Math.PI * 2, 0);
+      dummy.scale.set(sx, sy, sx);
+      dummy.updateMatrix();
+      items.push({ matrix: dummy.matrix.clone(), color: new THREE.Color(hex).multiplyScalar(bright) });
+    };
+    // Bush clumps: three to seven bushes of mixed size packed together
+    for (let c = 0, tries = 0; c < gc.clumps && tries < gc.clumps * 12; tries++) {
+      const cx = (crand() - 0.5) * (worldSize - 60);
+      const cz = (crand() - 0.5) * (worldSize - 60);
+      if (!okSpot(cx, cz, 2.4)) continue;
+      c++;
+      const n = 3 + Math.floor(crand() * 5);
+      const big = 0.6 + crand() * 1.1;
+      for (let i = 0; i < n; i++) {
+        const ox = cx + (crand() - 0.5) * 4.2;
+        const oz = cz + (crand() - 0.5) * 4.2;
+        if (!okSpot(ox, oz, 1.8)) continue;
+        const s = big * (0.55 + crand() * 0.8);
+        push(ox, oz, s, s * (0.7 + crand() * 0.5), gc.clumpPalette[Math.floor(crand() * gc.clumpPalette.length)], 0.85 + crand() * 0.3);
+      }
+    }
+    // Wildflower patches: many small bright bushes in one or two colours
+    for (let c = 0, tries = 0; c < gc.flowerPatches && tries < gc.flowerPatches * 12; tries++) {
+      const cx = (crand() - 0.5) * (worldSize - 60);
+      const cz = (crand() - 0.5) * (worldSize - 60);
+      if (!okSpot(cx, cz, 2.0)) continue;
+      c++;
+      const colA = gc.flowerPalette[Math.floor(crand() * gc.flowerPalette.length)];
+      const colB = gc.flowerPalette[Math.floor(crand() * gc.flowerPalette.length)];
+      const n = 10 + Math.floor(crand() * 10);
+      for (let i = 0; i < n; i++) {
+        const a2 = crand() * Math.PI * 2;
+        const r2 = Math.sqrt(crand()) * 3.2;
+        const ox = cx + Math.cos(a2) * r2;
+        const oz = cz + Math.sin(a2) * r2;
+        if (!okSpot(ox, oz, 1.4)) continue;
+        const s = 0.22 + crand() * 0.22;
+        push(ox, oz, s, s * 0.9, crand() < 0.6 ? colA : colB, 0.9 + crand() * 0.3);
+      }
+    }
+    if (items.length > 0) {
+      const gcMesh = new THREE.InstancedMesh(
+        makeShrubGeometry(),
+        new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
+        items.length
+      );
+      items.forEach((it, i) => {
+        gcMesh.setMatrixAt(i, it.matrix);
+        gcMesh.setColorAt(i, it.color);
+      });
+      gcMesh.instanceMatrix.needsUpdate = true;
+      if (gcMesh.instanceColor) gcMesh.instanceColor.needsUpdate = true;
+      gcMesh.receiveShadow = true;
+      scene.add(gcMesh);
+    }
   }
 }

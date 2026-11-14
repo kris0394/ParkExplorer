@@ -8,6 +8,7 @@ import { DeerEntity } from './deer.ts';
 import { getActivePark } from '../data/parks.ts';
 import { getSafeDistanceM } from '../data/species.ts';
 import { getSeasonDef } from '../data/seasons.ts';
+import { getPrairieDogMounds } from '../data/parkStructure.ts';
 
 export class WildlifeManager {
   public group: THREE.Group;
@@ -46,7 +47,7 @@ export class WildlifeManager {
     park.wildlife.spawns.forEach((cfg, idx) => {
       // Bears are far less active in winter, so none are shown then
       if (cfg.species === 'black-bear' && !getSeasonDef().bear.active) return;
-      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : 'deer';
+      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : cfg.species === 'bison' ? 'bison' : cfg.species === 'prairie-dog' ? 'pdog' : 'deer';
       const deer = new DeerEntity({
         id: `${prefix}_${idx}`,
         species: cfg.species,
@@ -60,6 +61,27 @@ export class WildlifeManager {
       this.deerList.push(deer);
       this.group.add(deer.group);
     });
+
+    // Task 25: prairie dogs sit on the mounds of the park's prairie dog town
+    const town = park.features?.prairieDogTown;
+    if (town) {
+      const mounds = getPrairieDogMounds(town);
+      const dogs = Math.min(mounds.length, town.dogs ?? Math.ceil(mounds.length / 2));
+      for (let i = 0; i < dogs; i++) {
+        const m = mounds[i * Math.floor(mounds.length / Math.max(1, dogs))] ?? mounds[i];
+        const pd = new DeerEntity({
+          id: `pdog_town_${i}`,
+          species: 'prairie-dog',
+          safeDistanceM: getSafeDistanceM('prairie-dog', park),
+          isBuck: false,
+          spawnX: m.x,
+          spawnZ: m.z,
+          roamRadius: 3,
+        });
+        this.deerList.push(pd);
+        this.group.add(pd.group);
+      }
+    }
   }
 
   public update(
@@ -83,6 +105,7 @@ export class WildlifeManager {
 
     for (const deer of this.deerList) {
       deer.update(dt, playerPos, isSprinting, isCrouching);
+      if (deer.isHidden) continue; // a prairie dog down its burrow cannot be disturbed or seen
       const before = this.prevStates.get(deer.id);
       if (deer.state === 'FLEE' && before !== undefined && before !== 'FLEE') {
         this.totalStartles += 1;

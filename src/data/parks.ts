@@ -37,7 +37,7 @@ export interface ParkLitter {
 }
 
 export interface ParkWildlifeSpawn {
-  species: 'white-tailed-deer' | 'elk' | 'black-bear';
+  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog';
   isBuck: boolean;
   isFawn?: boolean;
   x: number;
@@ -119,6 +119,10 @@ export interface ParkFeatures {
   lookoutHut?: boolean;
   /** Task 24: a tall steel fire tower (you cannot climb it) at the given spot, as at Rankin Ridge. */
   fireTower?: { x: number; z: number; height?: number };
+  /** Task 25: a small stone-and-timber cave entrance building with a railed hole, as at Wind Cave's natural entrance. */
+  naturalEntrance?: { x: number; z: number; yaw?: number };
+  /** Task 25: a prairie dog town: bare dirt mounds with burrow holes. Prairie dogs themselves come from wildlife.spawns. */
+  prairieDogTown?: { x: number; z: number; radius: number; mounds: number; /** How many prairie dogs live on the mounds (default: one for every second mound). */ dogs?: number };
   /** Trail cairns (small stacks of stones) on bare ground above this height, one every `every` metres. */
   cairns?: { minHeight: number; every: number; /** Which trail paths get cairns (default: the path that climbs to the summit). */ pathIds?: string[] };
   /** The sea (needs terrain.coast) and rocky islands out in it. */
@@ -309,6 +313,20 @@ export interface ParkDefinition {
         sway: number;
         /** A carpet of short grass underfoot. */
         carpet?: { count: number; radius: number; height: number; root: number; tip: number; tipDry: number };
+      };
+      /**
+       * Task 25: dense stands of trees (woods) inside open land. Each grove gets extra trees; the open-glade rule is ignored inside it.
+       */
+      groves?: { x: number; z: number; radius: number }[];
+      /**
+       * Task 25: scattered bushes and wildflowers so open ground does not look bare: clumps of shrubs (sagebrush, chokecherry...)
+       * and small patches of wildflowers.
+       */
+      groundCover?: {
+        clumps: number;
+        flowerPatches: number;
+        clumpPalette: number[];
+        flowerPalette: number[];
       };
       /** Task 23: treeless grassy meadows (like the Smokies' grassy balds). No trees or fallen logs grow inside. */
       balds?: { x: number; z: number; radius: number }[];
@@ -2459,6 +2477,17 @@ export const WIND_CAVE: ParkDefinition = {
         ],
       },
       {
+        // A short gravel path from the visitor center parking lot to the cave's natural entrance
+        id: 'natural-entrance-path',
+        name: 'Path to the Natural Entrance',
+        nodes: [
+          { x: -62.0, z: -88.0 },
+          { x: -66.0, z: -78.0 },
+          { x: -72.0, z: -68.0 },
+          { x: -76.0, z: -60.5 },
+        ],
+      },
+      {
         // A few steps to the viewing deck by the tower
         id: 'summit-spur',
         name: 'Path to the Viewpoint',
@@ -2481,8 +2510,8 @@ export const WIND_CAVE: ParkDefinition = {
     signSubheading: 'HIGHEST POINT IN THE PARK',
   },
   vegetation: {
-    treeCount: 260,   // mostly open prairie, with ponderosa pine on the ridge
-    shrubCount: 900,
+    treeCount: 380,   // mostly open prairie, with ponderosa pine woods on the ridge
+    shrubCount: 1600,
     speciesWeights: {
       conifer: 0.4,
       pine: 9.0,      // ponderosa pine
@@ -2495,6 +2524,18 @@ export const WIND_CAVE: ParkDefinition = {
     look: {
       treeScale: 1.0,
       glades: 0.6,
+      // Task 25: real pine woods along the lower trail, and bushes and wildflowers scattered over the prairie
+      groves: [
+        { x: -14, z: 2, radius: 22 },
+        { x: 4, z: -12, radius: 15 },
+        { x: 70, z: 20, radius: 12 },
+      ],
+      groundCover: {
+        clumps: 420,
+        flowerPatches: 150,
+        clumpPalette: [0x8a9a78, 0x7f9373, 0x9aa686, 0x6f8a55, 0x5d7a45, 0x9a5a3a],
+        flowerPalette: [0xc86aa0, 0xe8c83a, 0xf0efe0, 0x9a70c8],
+      },
       palettes: {
         pine: [0x3f6a3c, 0x4d7a45, 0x35603a, 0x57804a],
         conifer: [0x4f7358, 0x5a7f62],
@@ -2542,10 +2583,10 @@ export const WIND_CAVE: ParkDefinition = {
       id: 'pine-woods',
       name: 'Ponderosa Pine Woods',
       shortName: 'Pine Woods',
-      description: 'The lower trail winds through ponderosa pines with grass and low shrubs beneath.',
-      x: -26,
-      y: 0.3,
-      z: 12,
+      description: 'Higher up the loop, the trail winds through ponderosa pines with grass and bushes beneath.',
+      x: -4,
+      y: 1.5,
+      z: -4,
       yaw: Math.PI * 0.8,
     },
     {
@@ -2568,6 +2609,36 @@ export const WIND_CAVE: ParkDefinition = {
       z: -30,
       yaw: Math.PI * 0.3,
     },
+    {
+      id: 'natural-entrance',
+      name: 'Wind Cave Natural Entrance',
+      shortName: 'Cave Entrance',
+      description: 'The cave\'s natural entrance is only about ten inches wide. The wind that gave the cave its name blows in or out depending on the air pressure.',
+      x: -70,
+      y: -0.6,
+      z: -62,
+      yaw: Math.PI * 0.5,
+    },
+    {
+      id: 'prairie-dog-town',
+      name: 'Prairie Dog Town',
+      shortName: 'Prairie Dogs',
+      description: 'A viewpoint at the edge of a prairie dog town. Watch the sentinels stand up, and keep your distance.',
+      x: -20,
+      y: -0.3,
+      z: -78,
+      yaw: Math.PI,
+    },
+    {
+      id: 'bison-flats',
+      name: 'Bison Flats',
+      shortName: 'Bison',
+      description: 'Wide open prairie where a bison herd grazes. Bison look calm but are unpredictable, so stay far back.',
+      x: 8,
+      y: -0.6,
+      z: -84,
+      yaw: -Math.PI / 2,
+    },
   ],
   wildlife: {
     spawns: [
@@ -2579,9 +2650,16 @@ export const WIND_CAVE: ParkDefinition = {
       { species: 'elk', isBuck: false, isFawn: false, x: 90.0, z: 48.0, roamRadius: 10.0 },
       { species: 'elk', isBuck: false, isFawn: false, x: 102.0, z: 50.0, roamRadius: 10.0 },
       { species: 'elk', isBuck: false, isFawn: false, x: 94.0, z: 56.0, roamRadius: 8.0 },
+      // A bison herd on the flat prairie in the north, well away from the trails (the real herd is several hundred strong)
+      { species: 'bison', isBuck: true, isFawn: false, x: 66.0, z: -98.0, roamRadius: 9.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 72.0, z: -92.0, roamRadius: 10.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 60.0, z: -92.0, roamRadius: 10.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 76.0, z: -102.0, roamRadius: 9.0 },
+      { species: 'bison', isBuck: true, isFawn: false, x: 54.0, z: -100.0, roamRadius: 9.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 68.0, z: -108.0, roamRadius: 8.0 },
     ],
-    // Wind Cave asks visitors to stay at least 25 yards (23 m) from all wildlife
-    safeDistanceOverrides: { elk: 23 },
+    // Wind Cave asks visitors to stay at least 25 yards (23 m) from all wildlife and strongly recommends more room for bison
+    safeDistanceOverrides: { elk: 23, bison: 46, 'prairie-dog': 23 },
   },
   features: {
     roads: [
@@ -2620,13 +2698,55 @@ export const WIND_CAVE: ParkDefinition = {
           { x: -66, z: 42 },
         ],
       },
+      {
+        // Task 25: Highway 385 runs along the north of the map, past the prairie dog town and Bison Flats
+        id: 'highway-385',
+        name: 'Highway 385',
+        kind: 'road',
+        width: 7.0,
+        nodes: [
+          { x: -170, z: -124 },
+          { x: -90, z: -120 },
+          { x: 0, z: -114 },
+          { x: 100, z: -120 },
+          { x: 180, z: -130 },
+        ],
+      },
+      {
+        id: 'visitor-center-road',
+        name: 'Visitor Center Road',
+        kind: 'drive',
+        levelFrom: 'highway-385',
+        width: 5.5,
+        nodes: [
+          { x: -60, z: -118 },
+          { x: -60, z: -100 },
+        ],
+      },
+      {
+        id: 'visitor-center-lot',
+        name: 'Visitor Center Parking',
+        kind: 'lot',
+        levelFrom: 'highway-385',
+        width: 12.0,
+        nodes: [
+          { x: -70, z: -94 },
+          { x: -50, z: -94 },
+        ],
+      },
     ],
     cars: [
+      { x: -66.0, z: -91.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+      { x: -58.0, z: -97.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: -52.0, z: -91.0, yaw: Math.PI / 2, color: 0x9a2a2a },
       { x: -62.0, z: 31.0, yaw: Math.PI, color: 0x9a2a2a },
       { x: -62.0, z: 38.0, yaw: 0, color: 0xd9d6cc },
       { x: -69.0, z: 40.0, yaw: Math.PI, color: 0x2f4a6b },
     ],
     fireTower: { x: 38, z: -34, height: 14 },
+    // Task 25: the natural entrance of the cave and a prairie dog town (the real ones are elsewhere in the park; placed together here for the game)
+    naturalEntrance: { x: -76, z: -58, yaw: Math.PI * 0.5 },
+    prairieDogTown: { x: -20, z: -104, radius: 11, mounds: 15, dogs: 9 },
     distantRidges: true,
   },
   rules: {
@@ -2658,12 +2778,12 @@ export const WIND_CAVE: ParkDefinition = {
   },
   about: {
     designNote:
-      'A game-scale landscape of the Rankin Ridge area, following the NPS description of the Rankin Ridge Nature Trail: a one-mile loop from the parking lot to the historic fire tower. The prairie, ponderosa pines and elk are real kinds of features here, but bison, prairie dogs and the cave are not in the game, and this map is not a survey: real distances, trails and layouts differ. The elevation numbers are commonly published figures and were not checked against an NPS page. This is the first park to use the new ground and grass look.',
+      'A game-scale landscape of the Rankin Ridge area, following the NPS description of the Rankin Ridge Nature Trail: a one-mile loop from the parking lot to the historic fire tower. The prairie, ponderosa pines, elk, bison, prairie dogs and the cave\'s natural entrance are real features of the park, but in reality they are spread across the park (the Rankin Ridge trail, Highway 385 with its prairie dog towns, and the visitor center and natural entrance are miles apart); the game packs them into one small map. The inside of the cave can only be visited on a ranger-guided tour and is not in the game. This map is not a survey: real distances, trails and layouts differ. The elevation numbers are commonly published figures and were not checked against an NPS page. This is the first park to use the new ground and grass look.',
     wildlifeGuidance: {
       text:
         'Wind Cave requires visitors to stay at least 25 yards (23 meters) from all wildlife, and strongly recommends staying farther away from bison.',
       caveat:
-        'The game has deer and elk but no bison. Always check the park\'s current page and signs.',
+        'The game uses 46 m for bison because the park strongly recommends staying farther away from them. Always check the park\'s current page and signs.',
       sourceUrl: 'https://www.nps.gov/wica/planyourvisit/hiking.htm',
       sourceLabel: 'nps.gov: Hiking (Wind Cave)',
     },
@@ -2699,9 +2819,23 @@ export const WIND_CAVE: ParkDefinition = {
       {
         id: 'wildlife',
         title: 'Hoofed neighbours',
-        text: 'Deer, bison, elk and pronghorn live throughout the park, along with large prairie dog towns, coyotes, bobcats, mountain lions and eagles.',
-        sourceUrl: 'https://www.nps.gov/im/ngpn/wica.htm',
-        sourceLabel: 'nps.gov: Inventory and Monitoring (Wind Cave)',
+        text: 'Several hundred bison and many other animals call Wind Cave home, including elk, pronghorn and prairie dogs. The park is one of the smallest, at over 33,000 acres.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/view-wildlife-wica.htm',
+        sourceLabel: 'nps.gov: Watch Wind Cave Wildlife',
+      },
+      {
+        id: 'natural-entrance',
+        title: 'A hole that breathes',
+        text: 'Despite its length and complexity, Wind Cave has very few natural entrances. The largest and best known is only about ten inches wide. Wind blows into the cave when the air pressure outside rises and out when it falls, and some days you can hear it.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/wind-cave-natural-entrance.htm',
+        sourceLabel: 'nps.gov: Visit Wind Cave\'s Natural Entrance',
+      },
+      {
+        id: 'prairie-dog-towns',
+        title: 'Prairie dog towns',
+        text: 'Most of the park\'s prairie dog towns are along park roads, especially Highway 385. Bison and pronghorn like to graze among the prairie dogs because the grass there is more tender, and bison wallow in the bare dirt at burrow entrances.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/view-wildlife-wica.htm',
+        sourceLabel: 'nps.gov: Watch Wind Cave Wildlife',
       },
     ],
     checkedOn: '2026-11-01',

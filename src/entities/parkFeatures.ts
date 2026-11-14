@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { getActivePark } from '../data/parks.ts';
 import { heightAt, getRiverDistance, getRiverCenterX } from '../terrain/riverTerrain.ts';
-import { getBridges, getSummitApproach, getTrailPaths, getWaterMode } from '../data/parkStructure.ts';
+import { getBridges, getSummitApproach, getTrailPaths, getWaterMode, getPrairieDogMounds } from '../data/parkStructure.ts';
 import { getRoadPaths, type RoadPath } from '../terrain/roadTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
 import { registerObstacle } from './rocks.ts';
@@ -740,11 +740,131 @@ function buildFireTower(group: THREE.Group): void {
   for (const [cx, cz] of corners) registerObstacle(cfg.x + cx * base, cfg.z + cz * base, 0.55);
 }
 
+/**
+ * Task 25: Wind Cave's natural entrance. The real entrance is a hole only about ten inches wide; visitors view it from a
+ * railing, and tours go in through a nearby building. This is a small stone-and-timber building with a gabled roof and a
+ * dark door, plus a stone-ringed hole with a wooden rail and a sign.
+ */
+function buildNaturalEntrance(group: THREE.Group): void {
+  const park = getActivePark();
+  const cfg = park.features?.naturalEntrance;
+  if (!cfg) return;
+  const y0 = heightAt(cfg.x, cfg.z);
+  const stone = new THREE.MeshLambertMaterial({ color: 0xa79b86, flatShading: true });
+  const stoneDark = new THREE.MeshLambertMaterial({ color: 0x7d735f, flatShading: true });
+  const wood = new THREE.MeshLambertMaterial({ color: 0x6b4a30, flatShading: true });
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x4a3b30, flatShading: true });
+  const hole = new THREE.MeshBasicMaterial({ color: 0x050403 });
+  const g = new THREE.Group();
+  g.position.set(cfg.x, y0, cfg.z);
+  g.rotation.y = cfg.yaw ?? 0;
+
+  // building (door faces +z in the group's own space)
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.4, 3.2), stone);
+  walls.position.set(-3.6, 1.2, 0);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.9, 0.12), wood);
+  door.position.set(-3.6, 0.95, 1.62);
+  const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.1, 0.1), stoneDark);
+  doorFrame.position.set(-3.6, 1.05, 1.6);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(3.4, 1.3, 4), roofMat);
+  roof.position.set(-3.6, 3.05, 0);
+  roof.rotation.y = Math.PI / 4;
+  roof.scale.set(1.0, 1.0, 0.8);
+  g.add(walls, doorFrame, door, roof);
+
+  // the natural entrance: a stone-ringed hole with a rail
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.9, 0.3, 9), stone);
+  ring.position.set(0, 0.15, 0);
+  const dark = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.02, 10), hole);
+  dark.position.set(0, 0.31, 0);
+  g.add(ring, dark);
+  const railR = 1.55;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.0, 0.12), wood);
+    post.position.set(Math.cos(a) * railR, 0.5, Math.sin(a) * railR);
+    g.add(post);
+    const b = ((i + 1) / 8) * Math.PI * 2;
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 2 * railR * Math.sin(Math.PI / 8)), wood);
+    rail.position.set(Math.cos((a + b) / 2) * railR * Math.cos(Math.PI / 8), 0.95, Math.sin((a + b) / 2) * railR * Math.cos(Math.PI / 8));
+    rail.rotation.y = -((a + b) / 2) + Math.PI / 2;
+    g.add(rail);
+  }
+  // sign board
+  const signPost = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.4, 0.12), wood);
+  signPost.position.set(2.4, 0.7, 0.8);
+  const signBoard = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 0.07), new THREE.MeshLambertMaterial({ color: 0x5a3f2a }));
+  signBoard.position.set(2.4, 1.3, 0.8);
+  g.add(signPost, signBoard);
+  g.traverse(o => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  group.add(g);
+
+  // solid building and rail posts
+  const cosY = Math.cos(cfg.yaw ?? 0);
+  const sinY = Math.sin(cfg.yaw ?? 0);
+  const toWorld = (lx: number, lz: number): [number, number] => [cfg.x + lx * cosY + lz * sinY, cfg.z - lx * sinY + lz * cosY];
+  for (const [lx, lz, r] of [[-3.6, 0, 1.8], [-4.6, 0, 1.6], [-2.6, 0, 1.6], [0, 0, 1.0]] as [number, number, number][]) {
+    const [wx, wz] = toWorld(lx, lz);
+    registerObstacle(wx, wz, r);
+  }
+}
+
+/**
+ * Task 25: a prairie dog town: bare dirt mounds with dark burrow holes, plus a few patches of trampled earth.
+ * The prairie dogs themselves are spawned on these same mounds by the wildlife manager.
+ */
+function buildPrairieDogTown(group: THREE.Group): void {
+  const park = getActivePark();
+  const town = park.features?.prairieDogTown;
+  if (!town) return;
+  const mounds = getPrairieDogMounds(town);
+  const dirt = new THREE.InstancedMesh(
+    new THREE.ConeGeometry(1, 1, 9),
+    new THREE.MeshLambertMaterial({ flatShading: true }),
+    mounds.length * 2
+  );
+  const holes = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 8), new THREE.MeshBasicMaterial({ color: 0x0b0806 }), mounds.length);
+  const dummy = new THREE.Object3D();
+  const cols = [0xb89c70, 0xa88c62, 0xc4a87c];
+  let n = 0;
+  mounds.forEach((m, i) => {
+    const y = heightAt(m.x, m.z);
+    // the mound
+    dummy.position.set(m.x, y + 0.08 * m.size, m.z);
+    dummy.rotation.set(0, i * 1.7, 0);
+    dummy.scale.set(0.95 * m.size, 0.28 * m.size, 0.95 * m.size);
+    dummy.updateMatrix();
+    dirt.setMatrixAt(n, dummy.matrix);
+    dirt.setColorAt(n, new THREE.Color(cols[i % cols.length]));
+    n++;
+    // a flat patch of bare earth beside it
+    dummy.position.set(m.x + 0.9 * m.size, y + 0.01, m.z - 0.7 * m.size);
+    dummy.scale.set(1.7 * m.size, 0.05, 1.4 * m.size);
+    dummy.updateMatrix();
+    dirt.setMatrixAt(n, dummy.matrix);
+    dirt.setColorAt(n, new THREE.Color(cols[(i + 1) % cols.length]));
+    n++;
+    dummy.position.set(m.x, y + 0.2 * m.size, m.z);
+    dummy.scale.set(m.size, 1, m.size);
+    dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix();
+    holes.setMatrixAt(i, dummy.matrix);
+  });
+  dirt.count = n;
+  dirt.instanceMatrix.needsUpdate = true;
+  if (dirt.instanceColor) dirt.instanceColor.needsUpdate = true;
+  holes.instanceMatrix.needsUpdate = true;
+  dirt.receiveShadow = true;
+  group.add(dirt, holes);
+}
+
 export function createParkFeaturesGroup(): THREE.Group {
   const group = new THREE.Group();
   group.name = 'parkFeatures';
   const park = getActivePark();
   buildWashStones(group);
+  buildNaturalEntrance(group);
+  buildPrairieDogTown(group);
   const f = park.features;
   if (!f) return group;
   const rand = mulberry32(7771 + (park.layoutSeed ?? 0));

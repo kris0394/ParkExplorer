@@ -14,6 +14,8 @@
  * This file only holds plain data helpers (no 3D code), so the validator and scripts can use it too.
  */
 
+import { mulberry32 } from '../utils/noise.ts';
+
 export type PathNode = { x: number; z: number };
 
 /** One walkable trail. Loops set closed: true (the last node then joins back to the first). */
@@ -164,6 +166,26 @@ export function isInBald(
   const balds = park.vegetation.look?.balds;
   if (!balds) return false;
   return balds.some(b => Math.hypot(x - b.x, z - b.z) < b.radius + margin);
+}
+
+/**
+ * Task 25: the mound positions of a prairie dog town (always the same for the same town, so the mound scenery and the
+ * prairie dogs that sit on them agree).
+ */
+export function getPrairieDogMounds(town: { x: number; z: number; radius: number; mounds: number }): { x: number; z: number; size: number }[] {
+  const rand = mulberry32(4242 + Math.round(town.x * 3 + town.z * 7));
+  const out: { x: number; z: number; size: number }[] = [];
+  for (let i = 0, tries = 0; i < town.mounds && tries < town.mounds * 30; tries++) {
+    const a = rand() * Math.PI * 2;
+    const r = Math.sqrt(rand()) * town.radius;
+    const x = town.x + Math.cos(a) * r;
+    const z = town.z + Math.sin(a) * r;
+    // keep mounds a little apart
+    if (out.some(m => Math.hypot(m.x - x, m.z - z) < 2.6)) continue;
+    out.push({ x, z, size: 0.7 + rand() * 0.7 });
+    i++;
+  }
+  return out;
 }
 
 /** Number keys 1 to 9 jump to the first nine landmarks. */

@@ -91,7 +91,7 @@ SPECIES_CATALOGUE['elk'] = {
     {
       id: 'distance',
       unlock: 'responsible',
-      text: 'The park asks visitors to stay at least 50 yards (about 46 m) from elk, or any distance that changes the animal\'s behavior. The game uses 46 m for elk.',
+      text: 'The Smokies ask visitors to stay at least 50 yards (about 46 m) from elk, or any distance that changes the animal\'s behavior, and the game uses 46 m there. Wind Cave asks for at least 25 yards (23 m) from all wildlife, so the game uses 23 m for elk in that park.',
     },
     {
       id: 'antlers',
@@ -144,6 +144,75 @@ SPECIES_CATALOGUE['black-bear'] = {
       id: 'habitat',
       unlock: 'allVariants',
       text: 'The Smokies are one of the largest protected areas in the eastern United States where black bears live in wild, natural surroundings, and they use all elevations of the park.',
+    },
+  ],
+};
+
+SPECIES_CATALOGUE['bison'] = {
+  id: 'bison',
+  name: 'American Bison',
+  scientific: 'Bison bison',
+  safeDistanceM: 46,
+  blurb:
+    'The great grazer of the prairie. Bison can look calm, but they are unpredictable and dangerous, so they are watched from much farther away than deer.',
+  variants: ['Bull bison', 'Cow bison'],
+  facts: [
+    {
+      id: 'dangerous',
+      unlock: 'responsible',
+      text: 'Wind Cave requires at least 25 yards (23 m) from all wildlife but strongly recommends staying farther from bison. Bison may look tame, yet they are unpredictable, may charge without warning, and are more aggressive during calving and mating season from May through August. The game uses 46 m for bison.',
+    },
+    {
+      id: 'calves',
+      unlock: 'identified',
+      text: 'Bison calves are born orange or red and turn brown when they are about two months old.',
+    },
+    {
+      id: 'herd',
+      unlock: 'identified',
+      text: 'Several hundred bison live in Wind Cave National Park. They often cross the highways, causing what visitors call a "bison jam".',
+    },
+    {
+      id: 'wallow',
+      unlock: 'photographed',
+      text: 'Bison like to graze among prairie dogs because the grass there is more tender and nutritious, and they wallow in the bare dirt at the burrow entrances.',
+    },
+    {
+      id: 'sizes',
+      unlock: 'allVariants',
+      text: 'Bulls often lounge by themselves or in small groups, while cows stay with their calves in bigger herds.',
+    },
+  ],
+};
+
+SPECIES_CATALOGUE['prairie-dog'] = {
+  id: 'prairie-dog',
+  name: 'Black-tailed Prairie Dog',
+  scientific: 'Cynomys ludovicianus',
+  safeDistanceM: 23,
+  blurb:
+    'A small, social burrowing rodent that lives in big groups called towns. It is watched from a distance, never fed.',
+  variants: ['Adult prairie dog'],
+  facts: [
+    {
+      id: 'towns',
+      unlock: 'identified',
+      text: 'Prairie dogs live in large groups known as towns so that many pairs of eyes can watch for predators such as badgers, coyotes and birds of prey. They are active all year and do not hibernate.',
+    },
+    {
+      id: 'neighbors',
+      unlock: 'identified',
+      text: 'Burrowing owls and rattlesnakes use prairie dog burrows for shelter, and prairie dogs provide food or shelter for much of Wind Cave\'s wildlife.',
+    },
+    {
+      id: 'no-feeding',
+      unlock: 'responsible',
+      text: 'Feeding prairie dogs and other wildlife is illegal in all national parks. Burrows also attract rattlesnakes, black widow spiders and fleas that may carry plague, so enjoy towns from a safe distance.',
+    },
+    {
+      id: 'sentinel',
+      unlock: 'photographed',
+      text: 'Prairie dogs stand up on their hind legs to look around, and dive into their burrows when something worrying comes near.',
     },
   ],
 };
