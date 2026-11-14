@@ -90,7 +90,8 @@ export class BinocularsSystem {
     let bestDist = 0;
 
     for (const a of animals) {
-      const visualH = a.pos.y + (a.isBear ? 0.75 : a.isElk ? 1.6 : a.isFawn ? 0.75 : 1.1);
+      if (a.isHidden) continue;
+      const visualH = a.pos.y + (a.isBear ? 0.75 : a.isBison ? 1.1 : a.isPrairieDog ? 0.2 : a.isElk ? 1.6 : a.isFawn ? 0.75 : 1.1);
       this.toAnimal.set(a.pos.x - this.camPos.x, visualH - this.camPos.y, a.pos.z - this.camPos.z);
       const dist = this.toAnimal.length();
       if (dist > BINOCULAR_RULES.searchRange || dist < 0.5) continue;

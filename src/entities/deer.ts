@@ -12,7 +12,7 @@ import { pushOutOfRocks } from './rocks.ts';
 
 export type DeerState = 'IDLE' | 'WANDER' | 'FEED' | 'ALERT' | 'FLEE' | 'APPROACH';
 
-export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear';
+export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog';
 
 export interface DeerConfig {
   id: string;
@@ -48,6 +48,8 @@ export class DeerEntity {
   public retreatEvents = 0;
   public runEvents = 0;
   private approachTimer = 0;
+  /** Prairie dogs: seconds left down the burrow. */
+  private hideTimer = 0;
   private minApproachDist = Infinity;
   private approachCooldown = 20;
   /** Height of the body above the ground (deer 1.15, bears sit much lower). */
@@ -86,17 +88,39 @@ export class DeerEntity {
     return this.species === 'black-bear';
   }
 
+  /** Task 25: American bison (Wind Cave). */
+  get isBison(): boolean {
+    return this.species === 'bison';
+  }
+
+  /** Task 25: black-tailed prairie dog (Wind Cave). */
+  get isPrairieDog(): boolean {
+    return this.species === 'prairie-dog';
+  }
+
+  /** Big herd animals (elk and bison) tolerate people from farther away and bolt later. */
+  get isHerd(): boolean {
+    return this.species === 'elk' || this.species === 'bison';
+  }
+
+  /** True while a prairie dog is down its burrow (it cannot be seen or disturbed). */
+  get isHidden(): boolean {
+    return this.hideTimer > 0;
+  }
+
   /** True while a curious bear is walking toward the player. */
   get isApproaching(): boolean {
     return this.state === 'APPROACH';
   }
 
   get speciesName(): string {
-    return this.isBear ? 'Black Bear' : this.isElk ? 'Elk' : 'White-tailed Deer';
+    return this.isBear ? 'Black Bear' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
   }
 
   get detailLabel(): string {
     if (this.isBear) return 'Adult black bear';
+    if (this.isBison) return this.isBuck ? 'Bull bison' : 'Cow bison';
+    if (this.isPrairieDog) return 'Adult prairie dog';
     if (this.isElk) return this.isBuck ? 'Bull elk (antlered)' : 'Cow elk';
     if (this.isFawn) return 'Spotted fawn';
     if (this.isBuck) return 'Adult buck (antlered)';
@@ -106,6 +130,8 @@ export class DeerEntity {
   /** Approximate shoulder-to-antler height in metres, used for binocular and photo framing. */
   get visualHeight(): number {
     if (this.isBear) return 1.1;
+    if (this.isBison) return this.isBuck ? 1.9 : 1.6;
+    if (this.isPrairieDog) return 0.35;
     if (this.isElk) return this.isBuck ? 2.7 : 2.1;
     return this.isFawn ? 0.8 : this.isBuck ? 1.55 : 1.35;
   }
@@ -113,16 +139,16 @@ export class DeerEntity {
   constructor(config: DeerConfig) {
     this.id = config.id;
     this.species = config.species ?? 'white-tailed-deer';
-    this.safeDistanceM = config.safeDistanceM ?? (config.species === 'elk' || config.species === 'black-bear' ? 46 : 23);
+    this.safeDistanceM = config.safeDistanceM ?? (config.species === 'elk' || config.species === 'black-bear' || config.species === 'bison' ? 46 : 23);
     this.isBuck = config.isBuck;
     this.isFawn = this.species === 'white-tailed-deer' ? Boolean(config.isFawn) : false;
+    this.group = new THREE.Group();
     this.pos = new THREE.Vector3(config.spawnX, heightAt(config.spawnX, config.spawnZ), config.spawnZ);
     this.homePos = new THREE.Vector2(config.spawnX, config.spawnZ);
     this.targetPos = new THREE.Vector2(config.spawnX, config.spawnZ);
     this.roamRadius = config.roamRadius;
     this.yaw = Math.random() * Math.PI * 2;
 
-    this.group = new THREE.Group();
     this.group.name = `deer_${config.id}`;
     this.buildMesh();
     this.updatePosition();
@@ -136,7 +162,14 @@ export class DeerEntity {
     // Distinct palettes for Buck vs Doe vs Fawn
     const isElk = this.isElk;
     const isBear = this.isBear;
-    const furColor = isBear
+    const isBison = this.isBison;
+    const isPD = this.isPrairieDog;
+    const stocky = isBear || isBison || isPD; // short, heavy legs and a thick neck
+    const furColor = isBison
+      ? 0x3f2d21 // dark brown bison
+      : isPD
+      ? 0xb48a5a // sandy tan prairie dog
+      : isBear
       ? 0x241d19 // black bear
       : isElk
       ? this.isBuck
@@ -149,15 +182,15 @@ export class DeerEntity {
       : 0xb07548; // sleek warm golden-tan doe
 
     const furMat = new THREE.MeshLambertMaterial({ color: furColor });
-    const bellyMat = new THREE.MeshLambertMaterial({ color: isBear ? furColor : 0xf5eee6 }); // white underbelly (bears: same black fur)
+    const bellyMat = new THREE.MeshLambertMaterial({ color: isBear || isBison ? furColor : isPD ? 0xe3cfa8 : 0xf5eee6 }); // white underbelly (bears and bison: same fur; prairie dogs: cream)
     const tanMat = new THREE.MeshLambertMaterial({ color: 0x9a7a55 }); // bear muzzle
     const hoofMat = new THREE.MeshLambertMaterial({ color: 0x1f1b17 });
     const antlerMat = new THREE.MeshStandardMaterial({ color: 0xe0d6c5, roughness: 0.75, metalness: 0.1 });
     const noseMat = new THREE.MeshLambertMaterial({ color: 0x161311 });
     const eyeMat = new THREE.MeshStandardMaterial({ color: 0x060504, roughness: 0.15 });
 
-    const scale = isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
-    this.bodyBaseY = isBear ? 0.66 : 1.15;
+    const scale = isPD ? 0.3 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
+    this.bodyBaseY = stocky ? 0.66 : 1.15;
     // Elk: darker neck and mane, cream rump patch, short tail
     const maneMat = new THREE.MeshLambertMaterial({ color: 0x4a3524 });
     const neckFurMat = isElk ? maneMat : furMat;
@@ -165,7 +198,7 @@ export class DeerEntity {
     root.scale.set(scale, scale, scale);
 
     // 1. Torso / Body (barrel with white underbelly)
-    const bodyGeo = isBear ? new THREE.CylinderGeometry(0.38, 0.43, 1.15, 8) : new THREE.CylinderGeometry(0.30, 0.33, 1.20, 8);
+    const bodyGeo = stocky ? new THREE.CylinderGeometry(0.38, 0.43, 1.15, 8) : new THREE.CylinderGeometry(0.30, 0.33, 1.20, 8);
     bodyGeo.rotateX(Math.PI / 2);
     this.bodyMesh = new THREE.Mesh(bodyGeo, furMat);
     this.bodyMesh.position.set(0, this.bodyBaseY, 0);
@@ -206,8 +239,8 @@ export class DeerEntity {
     this.neckPivot.position.set(0, 0.16, 0.48);
 
     // Neck cylinder extending forward-upward
-    const neckLen = isBear ? 0.30 : 0.62;
-    const neckGeo = isBear ? new THREE.CylinderGeometry(0.20, 0.29, neckLen, 8) : new THREE.CylinderGeometry(0.14, 0.21, neckLen, 8);
+    const neckLen = stocky ? 0.30 : 0.62;
+    const neckGeo = stocky ? new THREE.CylinderGeometry(0.20, 0.29, neckLen, 8) : new THREE.CylinderGeometry(0.14, 0.21, neckLen, 8);
     neckGeo.translate(0, neckLen / 2, 0);
     const neckMesh = new THREE.Mesh(neckGeo, neckFurMat);
     neckMesh.castShadow = true;
@@ -224,7 +257,7 @@ export class DeerEntity {
     this.headPivot.position.set(0, neckLen, 0);
 
     // Skull
-    const headGeo = isBear ? new THREE.BoxGeometry(0.27, 0.25, 0.26) : new THREE.BoxGeometry(0.20, 0.20, 0.28);
+    const headGeo = stocky ? new THREE.BoxGeometry(0.27, 0.25, 0.26) : new THREE.BoxGeometry(0.20, 0.20, 0.28);
     headGeo.translate(0, 0.02, 0.08);
     const headMesh = new THREE.Mesh(headGeo, furMat);
     headMesh.castShadow = true;
@@ -234,9 +267,9 @@ export class DeerEntity {
     this.muzzlePivot = new THREE.Group();
     this.muzzlePivot.position.set(0, -0.04, 0.22);
 
-    const muzzleGeo = isBear ? new THREE.BoxGeometry(0.15, 0.12, 0.17) : new THREE.BoxGeometry(0.12, 0.12, 0.24);
-    muzzleGeo.translate(0, 0, isBear ? 0.07 : 0.10);
-    const muzzleMesh = new THREE.Mesh(muzzleGeo, isBear ? tanMat : furMat);
+    const muzzleGeo = stocky ? new THREE.BoxGeometry(0.15, 0.12, 0.17) : new THREE.BoxGeometry(0.12, 0.12, 0.24);
+    muzzleGeo.translate(0, 0, stocky ? 0.07 : 0.10);
+    const muzzleMesh = new THREE.Mesh(muzzleGeo, isBear || isPD ? tanMat : furMat);
     this.muzzlePivot.add(muzzleMesh);
 
     // Dark nose tip
@@ -268,24 +301,24 @@ export class DeerEntity {
     }
 
     // Expressive ears (bears: small and round)
-    const earGeo = isBear ? new THREE.SphereGeometry(0.065, 6, 6) : new THREE.ConeGeometry(0.062, 0.23, 5);
-    if (!isBear) {
+    const earGeo = stocky ? new THREE.SphereGeometry(isPD ? 0.045 : 0.065, 6, 6) : new THREE.ConeGeometry(0.062, 0.23, 5);
+    if (!stocky) {
       earGeo.rotateZ(Math.PI / 2);
       earGeo.translate(0, 0.09, 0);
     }
 
     this.leftEar = new THREE.Mesh(earGeo, furMat);
-    this.leftEar.position.set(isBear ? -0.11 : -0.09, isBear ? 0.15 : 0.13, -0.03);
+    this.leftEar.position.set(stocky ? -0.11 : -0.09, stocky ? 0.15 : 0.13, -0.03);
     this.leftEar.rotation.set(-0.25, 0.35, 0.55);
     this.headPivot.add(this.leftEar);
 
     this.rightEar = new THREE.Mesh(earGeo.clone(), furMat);
-    this.rightEar.position.set(isBear ? 0.11 : 0.09, isBear ? 0.15 : 0.13, -0.03);
+    this.rightEar.position.set(stocky ? 0.11 : 0.09, stocky ? 0.15 : 0.13, -0.03);
     this.rightEar.rotation.set(-0.25, -0.35, -0.55);
     this.headPivot.add(this.rightEar);
 
     // Antlers (Only for Buck! Does and Fawns have graceful, sleek heads)
-    if (this.isBuck && !isBear) {
+    if (this.isBuck && !stocky) {
       for (const side of [-1, 1]) {
         const antlerGroup = new THREE.Group();
         antlerGroup.position.set(side * 0.065, 0.15, 0.01);
@@ -332,6 +365,40 @@ export class DeerEntity {
       }
     }
 
+    if (isBison) {
+      // Shaggy dark shoulder hump and mane, short curved horns, beard and a tufted tail
+      const dark = new THREE.MeshLambertMaterial({ color: 0x2b1e15 });
+      const hornMat = new THREE.MeshLambertMaterial({ color: 0x1d1814 });
+      const humpGeo = new THREE.SphereGeometry(0.40, 8, 6);
+      humpGeo.scale(1.05, 0.85, 1.15);
+      const hump = new THREE.Mesh(humpGeo, dark);
+      hump.position.set(0, 0.34, 0.30);
+      hump.castShadow = true;
+      this.bodyMesh.add(hump);
+      const maneGeo = new THREE.SphereGeometry(0.34, 8, 6);
+      maneGeo.scale(1.0, 1.05, 1.0);
+      const mane = new THREE.Mesh(maneGeo, dark);
+      mane.position.set(0, 0.08, 0.28);
+      this.neckPivot.add(mane);
+      const beard = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.30, 0.12), dark);
+      beard.position.set(0, -0.12, 0.13);
+      this.headPivot.add(beard);
+      for (const side of [-1, 1]) {
+        const hornGeo = new THREE.ConeGeometry(0.045, 0.30, 6);
+        hornGeo.translate(0, 0.15, 0);
+        const horn = new THREE.Mesh(hornGeo, hornMat);
+        horn.position.set(side * 0.14, 0.12, 0.02);
+        horn.rotation.z = side * -0.9;
+        this.headPivot.add(horn);
+      }
+      // lighter, shorter-haired rear half
+      const rearGeo = new THREE.CylinderGeometry(0.31, 0.33, 0.62, 8);
+      rearGeo.rotateX(Math.PI / 2);
+      const rear = new THREE.Mesh(rearGeo, new THREE.MeshLambertMaterial({ color: 0x6a4d34 }));
+      rear.position.set(0, -0.02, -0.34);
+      this.bodyMesh.add(rear);
+    }
+
     this.neckPivot.add(this.headPivot);
     this.bodyMesh.add(this.neckPivot);
 
@@ -341,6 +408,8 @@ export class DeerEntity {
     this.tailPivot.rotation.x = -1.2;
     if (isElk) this.tailPivot.scale.set(0.5, 0.5, 0.5);
     if (isBear) this.tailPivot.scale.set(0.4, 0.35, 0.4);
+    if (isBison) this.tailPivot.scale.set(0.55, 0.9, 0.55);
+    if (isPD) this.tailPivot.scale.set(0.5, 0.6, 0.5);
 
     const tailGeo = new THREE.BoxGeometry(0.11, 0.30, 0.08);
     tailGeo.translate(0, -0.13, 0);
@@ -352,25 +421,25 @@ export class DeerEntity {
     const createLeg = (isFront: boolean, isLeft: boolean): THREE.Group => {
       const hipGroup = new THREE.Group();
       const zOffset = isFront ? 0.40 : -0.44;
-      const xOffset = (isLeft ? -1 : 1) * (isBear ? 0.27 : 0.21);
+      const xOffset = (isLeft ? -1 : 1) * (stocky ? 0.27 : 0.21);
       hipGroup.position.set(xOffset, this.bodyBaseY, zOffset);
 
-      const upperH = isBear ? 0.30 : 0.58;
-      const upperGeo = isBear ? new THREE.CylinderGeometry(0.115, 0.085, upperH, 6) : new THREE.CylinderGeometry(0.065, 0.048, upperH, 6);
+      const upperH = stocky ? 0.30 : 0.58;
+      const upperGeo = stocky ? new THREE.CylinderGeometry(0.115, 0.085, upperH, 6) : new THREE.CylinderGeometry(0.065, 0.048, upperH, 6);
       upperGeo.translate(0, -upperH / 2, 0);
       const upperMesh = new THREE.Mesh(upperGeo, furMat);
       upperMesh.castShadow = true;
       hipGroup.add(upperMesh);
 
-      const lowerH = isBear ? 0.28 : 0.58;
-      const lowerGeo = isBear ? new THREE.CylinderGeometry(0.075, 0.062, lowerH, 6) : new THREE.CylinderGeometry(0.042, 0.032, lowerH, 6);
+      const lowerH = stocky ? 0.28 : 0.58;
+      const lowerGeo = stocky ? new THREE.CylinderGeometry(0.075, 0.062, lowerH, 6) : new THREE.CylinderGeometry(0.042, 0.032, lowerH, 6);
       lowerGeo.translate(0, -lowerH / 2, 0);
       const lowerMesh = new THREE.Mesh(lowerGeo, furMat);
       lowerMesh.position.set(0, -upperH, 0);
       lowerMesh.castShadow = true;
       hipGroup.add(lowerMesh);
 
-      const hoofGeo = isBear ? new THREE.BoxGeometry(0.13, 0.08, 0.17) : new THREE.BoxGeometry(0.075, 0.08, 0.10);
+      const hoofGeo = stocky ? new THREE.BoxGeometry(0.13, 0.08, 0.17) : new THREE.BoxGeometry(0.075, 0.08, 0.10);
       hoofGeo.translate(0, -0.04, 0.02);
       const hoofMesh = new THREE.Mesh(hoofGeo, hoofMat);
       hoofMesh.position.set(0, -upperH - lowerH, 0);
@@ -409,7 +478,7 @@ export class DeerEntity {
 
     const roll = Math.random();
     // Season shifts how often deer wander (winter: conserve energy, autumn: restless)
-    const wander = this.isBear ? 0.18 : getSeasonDef().deer.wanderChance;
+    const wander = this.isBear ? 0.18 : this.isPrairieDog ? 0.12 : getSeasonDef().deer.wanderChance;
     const idleEnd = 1 - wander;
     if (roll < 0.70) {
       // Primary state: feeding / nibbling grass
@@ -424,7 +493,7 @@ export class DeerEntity {
       this.state = 'WANDER';
       this.stateTimer = 4.0 + Math.random() * 5.0;
       const angle = Math.random() * Math.PI * 2;
-      const dist = (this.isBear ? 4.0 : 3.0) + Math.random() * (this.isBear ? 9.0 : 6.0);
+      const dist = (this.isBear ? 4.0 : this.isPrairieDog ? 1.0 : 3.0) + Math.random() * (this.isBear ? 9.0 : this.isPrairieDog ? 3.0 : 6.0);
       const tx = this.homePos.x + Math.cos(angle) * dist;
       const tz = this.homePos.y + Math.sin(angle) * dist;
       if (getRiverDistance(tx, tz) > 7.0 && getDistanceToTrail(tx, tz) > 1.8) {
@@ -436,6 +505,27 @@ export class DeerEntity {
   public update(dt: number, playerPos: THREE.Vector3, isPlayerSprinting: boolean, isPlayerCrouching: boolean): void {
     const distToPlayer = Math.hypot(this.pos.x - playerPos.x, this.pos.z - playerPos.z);
 
+    // Prairie dogs dive down their burrow when something comes close, and pop up again later
+    if (this.isPrairieDog) {
+      if (this.hideTimer > 0) {
+        this.hideTimer -= dt;
+        if (this.hideTimer <= 0 && distToPlayer > 14) {
+          this.hideTimer = 0;
+          this.group.visible = true;
+          this.state = 'ALERT';
+          this.stateTimer = 4.0;
+        } else if (this.hideTimer <= 0) {
+          this.hideTimer = 3.0; // still too close: stay down a little longer
+        }
+        return;
+      }
+      if (this.state === 'FLEE' && Math.hypot(this.pos.x - this.homePos.x, this.pos.z - this.homePos.y) < 0.9) {
+        this.hideTimer = 7.0 + Math.random() * 7.0;
+        this.group.visible = false;
+        return;
+      }
+    }
+
     if (this.isBear) {
       this.updateBearBehavior(dt, playerPos, isPlayerSprinting, isPlayerCrouching, distToPlayer);
     } else {
@@ -443,10 +533,14 @@ export class DeerEntity {
       // When visitors are on trails or walking quietly, deer tolerate people down to 3.8m (2.2m if crouching!)
       // Only if the player sprints / rushes right at them do they get startled.
       // Elk are bigger and tougher: they notice you from farther away and only bolt when really crowded.
-      const fleeDistance = this.isElk
+      const fleeDistance = this.isPrairieDog
+        ? (isPlayerSprinting ? 12.0 : isPlayerCrouching ? 3.5 : 7.0)
+        : this.isHerd
         ? (isPlayerSprinting ? 14.0 : isPlayerCrouching ? 5.0 : 8.0)
         : (isPlayerSprinting ? 10.0 : isPlayerCrouching ? 2.2 : 3.8);
-      const baseAlert = this.isElk
+      const baseAlert = this.isPrairieDog
+        ? (isPlayerSprinting ? 26.0 : isPlayerCrouching ? 9.0 : 16.0)
+        : this.isHerd
         ? (isPlayerSprinting ? 32.0 : isPlayerCrouching ? 14.0 : 22.0)
         : (isPlayerSprinting ? 18.0 : isPlayerCrouching ? 4.5 : 7.5);
       const alertDistance = baseAlert * getSeasonDef().deer.alertMult;
@@ -456,8 +550,10 @@ export class DeerEntity {
           this.state = 'FLEE';
           this.stateTimer = 3.8;
           const fleeAngle = Math.atan2(this.pos.z - playerPos.z, this.pos.x - playerPos.x) + (Math.random() - 0.5) * 0.4;
-          const fleeDist = (this.isElk ? 24.0 : 16.0) + Math.random() * 8.0;
+          const fleeDist = (this.isElk ? 24.0 : this.isBison ? 14.0 : 16.0) + Math.random() * 8.0;
           this.targetPos.set(this.pos.x + Math.cos(fleeAngle) * fleeDist, this.pos.z + Math.sin(fleeAngle) * fleeDist);
+          // Prairie dogs run back to their burrow and dive in
+          if (this.isPrairieDog) this.targetPos.copy(this.homePos);
         }
       } else if (distToPlayer < alertDistance && this.state !== 'FLEE') {
         if (this.state !== 'ALERT') {
@@ -478,11 +574,11 @@ export class DeerEntity {
     // Movement
     let moveSpeed = 0;
     if (this.state === 'WANDER') {
-      moveSpeed = this.isBear ? 1.2 : this.isElk ? 1.0 : 1.1;
+      moveSpeed = this.isBear ? 1.2 : this.isHerd ? 1.0 : 1.1;
     } else if (this.state === 'APPROACH') {
       moveSpeed = 1.5;
     } else if (this.state === 'FLEE') {
-      moveSpeed = this.isBear ? 5.5 : this.isElk ? 7.5 : 6.5;
+      moveSpeed = this.isBear ? 5.5 : this.isBison ? 6.0 : this.isElk ? 7.5 : 6.5;
     }
 
     if (moveSpeed > 0) {
@@ -506,6 +602,12 @@ export class DeerEntity {
 
         this.walkPhase += dt * (moveSpeed * 3.8);
       } else {
+        if (this.isPrairieDog && this.state === 'FLEE') {
+          // reached its burrow: dive in and stay down for a while
+          this.hideTimer = 7.0 + Math.random() * 7.0;
+          this.group.visible = false;
+          return;
+        }
         this.state = 'FEED';
         this.stateTimer = 7.0 + Math.random() * 6.0;
       }
@@ -624,8 +726,9 @@ export class DeerEntity {
     }
 
     // Bears sometimes rise onto their hind legs to look and smell. This is curiosity, not aggression.
-    if (this.isBear) {
-      const rise = this.state === 'ALERT' ? -0.55 : 0;
+    if (this.isBear || this.isPrairieDog) {
+      // Prairie dogs stand up tall like sentinels when something draws their attention
+      const rise = this.state === 'ALERT' ? (this.isPrairieDog ? -1.0 : -0.55) : 0;
       this.bodyMesh.rotation.x += (rise - this.bodyMesh.rotation.x) * 0.06;
     }
 

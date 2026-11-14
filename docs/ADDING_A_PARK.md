@@ -44,6 +44,10 @@ Parks without it keep the plain, smooth green ground. A grassland or meadow park
 - `terrain.groundLook`: `patchScale` (about 0.016; smaller = bigger patches), `strength` (0 to 1), `patches` (a list of colours blended across the land, for example greens, gold, straw, tan), `speckle` (0 to 0.4 fine brightness grain), optional `soil` (bare earth showing through) and `mulch` (1 = dark forest-floor patches as in forest parks, small numbers for prairie).
 - `vegetation.look.grassland`: `density` (1 = original count; 1.8 = 80% more tufts), `radius` (metres, about 54), `heightRange` (short and tall patches, e.g. `[0.55, 1.9]`), `patchScale`, `tints` (colour multipliers: greener, golden, straw), `sway` (0 to 1) and optional `carpet` (a layer of short grass: count, radius, height, colours).
 - `features.fireTower`: a tall steel fire tower you cannot climb.
+- `vegetation.look.groves`: circles `{ x, z, radius }` of dense woods inside open land (40% of the trees are placed in them, ignoring the open-glade rule).
+- `vegetation.look.groundCover`: `clumps` (bush clumps), `flowerPatches`, `clumpPalette` (sage, green, rust...) and `flowerPalette` colours.
+- `features.naturalEntrance`: a small stone-and-timber cave entrance building with a railed hole. `features.prairieDogTown`: `{ x, z, radius, mounds, dogs? }` dirt mounds; the prairie dogs are spawned on them automatically.
+- Species ids for `wildlife.spawns`: `white-tailed-deer`, `elk`, `black-bear`, `bison`, `prairie-dog` (add facts and safe distance in `src/data/species.ts`).
 - More tufts cost frame time. Keep `density` at 3 or less and the carpet at 6000 or fewer; `check:parks` errors above that.
 - `npm run check:parks` prints for each real park whether it has adopted the look. Smokies, Shenandoah and Acadia have a TODO note to adopt it later.
 
