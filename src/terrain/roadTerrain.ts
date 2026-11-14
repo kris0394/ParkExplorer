@@ -15,6 +15,7 @@ import { getActivePark, type ParkRoad } from '../data/parks.ts';
 import { sstep } from '../utils/noise.ts';
 import { proceduralBaseHeight } from './riverTerrain.ts';
 import { getActiveReliefData } from './realRelief.ts';
+import { getCaveLayout, distanceToCave } from '../data/parkStructure.ts';
 
 export interface RoadPath {
   road: ParkRoad;
@@ -138,6 +139,12 @@ export function applyRoads(x: number, z: number, baseH: number): number {
 
 /** True if the point is on or within `margin` metres of a paved surface (used to keep trees, rocks and grass off roads). */
 export function isNearRoad(x: number, z: number, margin: number): boolean {
+  // Task 26: trees, rocks, grass and bushes also stay off a cave tour's mound
+  const caveCfg = getActivePark().features?.caveTour;
+  if (caveCfg) {
+    const cave = getCaveLayout(caveCfg);
+    if (Math.abs(x - cave.mouth.x) < 90 && Math.abs(z - cave.mouth.z) < 90 && distanceToCave(cave, x, z) < 5.6 + margin) return true;
+  }
   const paths = getRoadPaths();
   if (paths.length === 0) return false;
   for (const rp of paths) {

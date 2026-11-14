@@ -47,6 +47,7 @@ Parks without it keep the plain, smooth green ground. A grassland or meadow park
 - `vegetation.look.groves`: circles `{ x, z, radius }` of dense woods inside open land (40% of the trees are placed in them, ignoring the open-glade rule).
 - `vegetation.look.groundCover`: `clumps` (bush clumps), `flowerPatches`, `clumpPalette` (sage, green, rust...) and `flowerPalette` colours.
 - `features.naturalEntrance`: a small stone-and-timber cave entrance building with a railed hole. `features.prairieDogTown`: `{ x, z, radius, mounds, dogs? }` dirt mounds; the prairie dogs are spawned on them automatically.
+- `features.caveTour`: `{ x, z, yaw }` a walk-in cave (the mouth is at x, z and faces yaw). Fixed shape: a winding passage and a chamber with boxwork, popcorn and frostwork, lit by baked lamps. Trees, rocks and grass stay off its mound. Use only for parks where the NPS describes cave tours, and say in the park note that the game cave is invented.
 - Species ids for `wildlife.spawns`: `white-tailed-deer`, `elk`, `black-bear`, `bison`, `prairie-dog` (add facts and safe distance in `src/data/species.ts`).
 - More tufts cost frame time. Keep `density` at 3 or less and the carpet at 6000 or fewer; `check:parks` errors above that.
 - `npm run check:parks` prints for each real park whether it has adopted the look. Smokies, Shenandoah and Acadia have a TODO note to adopt it later.

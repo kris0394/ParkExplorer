@@ -121,6 +121,8 @@ export interface ParkFeatures {
   fireTower?: { x: number; z: number; height?: number };
   /** Task 25: a small stone-and-timber cave entrance building with a railed hole, as at Wind Cave's natural entrance. */
   naturalEntrance?: { x: number; z: number; yaw?: number };
+  /** Task 26: a walk-in cave tour (a rocky mound with a dark passage, boxwork and frostwork, and a chamber). The mouth is at x, z and faces the direction given by yaw. */
+  caveTour?: { x: number; z: number; yaw?: number };
   /** Task 25: a prairie dog town: bare dirt mounds with burrow holes. Prairie dogs themselves come from wildlife.spawns. */
   prairieDogTown?: { x: number; z: number; radius: number; mounds: number; /** How many prairie dogs live on the mounds (default: one for every second mound). */ dogs?: number };
   /** Trail cairns (small stacks of stones) on bare ground above this height, one every `every` metres. */
@@ -2620,6 +2622,16 @@ export const WIND_CAVE: ParkDefinition = {
       yaw: Math.PI * 0.5,
     },
     {
+      id: 'cave-tour',
+      name: 'Cave Tour Entrance',
+      shortName: 'Cave Tour',
+      description: 'A game version of a cave tour: walk into the dark passage and look for boxwork (thin honeycomb fins of calcite), popcorn and frostwork. In real life visitors see the inside of Wind Cave on ranger-guided tours.',
+      x: -51.5,
+      y: 0.4,
+      z: -72.5,
+      yaw: -2.62,
+    },
+    {
       id: 'prairie-dog-town',
       name: 'Prairie Dog Town',
       shortName: 'Prairie Dogs',
@@ -2746,6 +2758,8 @@ export const WIND_CAVE: ParkDefinition = {
     fireTower: { x: 38, z: -34, height: 14 },
     // Task 25: the natural entrance of the cave and a prairie dog town (the real ones are elsewhere in the park; placed together here for the game)
     naturalEntrance: { x: -76, z: -58, yaw: Math.PI * 0.5 },
+    // Task 26: a walk-in cave tour (a game version: the real cave is only open on ranger-guided tours)
+    caveTour: { x: -50, z: -70, yaw: -2.62 },
     prairieDogTown: { x: -20, z: -104, radius: 11, mounds: 15, dogs: 9 },
     distantRidges: true,
   },
@@ -2778,7 +2792,7 @@ export const WIND_CAVE: ParkDefinition = {
   },
   about: {
     designNote:
-      'A game-scale landscape of the Rankin Ridge area, following the NPS description of the Rankin Ridge Nature Trail: a one-mile loop from the parking lot to the historic fire tower. The prairie, ponderosa pines, elk, bison, prairie dogs and the cave\'s natural entrance are real features of the park, but in reality they are spread across the park (the Rankin Ridge trail, Highway 385 with its prairie dog towns, and the visitor center and natural entrance are miles apart); the game packs them into one small map. The inside of the cave can only be visited on a ranger-guided tour and is not in the game. This map is not a survey: real distances, trails and layouts differ. The elevation numbers are commonly published figures and were not checked against an NPS page. This is the first park to use the new ground and grass look.',
+      'A game-scale landscape of the Rankin Ridge area, following the NPS description of the Rankin Ridge Nature Trail: a one-mile loop from the parking lot to the historic fire tower. The prairie, ponderosa pines, elk, bison, prairie dogs and the cave\'s natural entrance are real features of the park, but in reality they are spread across the park (the Rankin Ridge trail, Highway 385 with its prairie dog towns, and the visitor center and natural entrance are miles apart); the game packs them into one small map. The cave tour in the game is an invented, much shorter passage built to show the kinds of formations the park describes; in real life visitors explore the cave on ranger-guided tours. This map is not a survey: real distances, trails and layouts differ. The elevation numbers are commonly published figures and were not checked against an NPS page. This is the first park to use the new ground and grass look.',
     wildlifeGuidance: {
       text:
         'Wind Cave requires visitors to stay at least 25 yards (23 meters) from all wildlife, and strongly recommends staying farther away from bison.',
@@ -2829,6 +2843,20 @@ export const WIND_CAVE: ParkDefinition = {
         text: 'Despite its length and complexity, Wind Cave has very few natural entrances. The largest and best known is only about ten inches wide. Wind blows into the cave when the air pressure outside rises and out when it falls, and some days you can hear it.',
         sourceUrl: 'https://www.nps.gov/thingstodo/wind-cave-natural-entrance.htm',
         sourceLabel: 'nps.gov: Visit Wind Cave\'s Natural Entrance',
+      },
+      {
+        id: 'boxwork',
+        title: 'Boxwork: the cave\'s signature',
+        text: 'Boxwork, thin honeycomb-shaped blades of calcite that stick out from the walls and ceilings, is what Wind Cave is most famous for. Boxwork exists in small amounts in other caves, but perhaps nowhere else is it so well formed and so abundant.',
+        sourceUrl: 'https://www.nps.gov/wica/learn/nature/cave-formations-speleothems.htm',
+        sourceLabel: 'nps.gov: Cave Formations (Speleothems)',
+      },
+      {
+        id: 'frostwork-popcorn',
+        title: 'Frostwork and popcorn',
+        text: 'Frostwork is made of delicate needle-like growths of calcite or aragonite, and cave popcorn is made of small, rounded growths. Both can be seen along the cave tours, sometimes on top of boxwork.',
+        sourceUrl: 'https://www.nps.gov/wica/learn/nature/cave-formations-speleothems.htm',
+        sourceLabel: 'nps.gov: Cave Formations (Speleothems)',
       },
       {
         id: 'prairie-dog-towns',

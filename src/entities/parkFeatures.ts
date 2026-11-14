@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { getActivePark } from '../data/parks.ts';
 import { heightAt, getRiverDistance, getRiverCenterX } from '../terrain/riverTerrain.ts';
+import { buildCaveTour } from './caveTour.ts';
 import { getBridges, getSummitApproach, getTrailPaths, getWaterMode, getPrairieDogMounds } from '../data/parkStructure.ts';
 import { getRoadPaths, type RoadPath } from '../terrain/roadTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
@@ -684,8 +685,10 @@ function buildFireTower(group: THREE.Group): void {
   const park = getActivePark();
   const cfg = park.features?.fireTower;
   if (!cfg) return;
-  const h = cfg.height ?? 11;
+  // the platform is h above the HIGHEST leg, so it stays level
   const base = 2.0;   // half width at the ground
+  const legGround = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([cx, cz]) => heightAt(cfg.x + cx * 2.0, cfg.z + cz * 2.0));
+  const h = (cfg.height ?? 11) + (Math.max(...legGround) - heightAt(cfg.x, cfg.z));
   const top = 0.95;   // half width under the cab
   const y0 = heightAt(cfg.x, cfg.z);
   const steel = new THREE.MeshLambertMaterial({ color: 0x6d7378, flatShading: true });
@@ -703,7 +706,16 @@ function buildFireTower(group: THREE.Group): void {
     g.add(m);
   };
   const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
-  const bottoms = corners.map(([cx, cz]) => new THREE.Vector3(cx * base, 0, cz * base));
+  // Each leg starts at the ground under it (the ridge slopes), a little below the surface, so no leg floats
+  const bottoms = corners.map(([cx, cz]) => new THREE.Vector3(cx * base, heightAt(cfg.x + cx * base, cfg.z + cz * base) - y0 - 0.35, cz * base));
+  const footMat = new THREE.MeshLambertMaterial({ color: 0x9a948a, flatShading: true });
+  for (const b of bottoms) {
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.7, 0.75), footMat);
+    foot.position.set(b.x, b.y + 0.3, b.z);
+    foot.castShadow = true;
+    foot.receiveShadow = true;
+    g.add(foot);
+  }
   const tops = corners.map(([cx, cz]) => new THREE.Vector3(cx * top, h, cz * top));
   for (let i = 0; i < 4; i++) beam(bottoms[i], tops[i], 0.22, steel);
   // cross braces on each face, in four bands
@@ -864,6 +876,7 @@ export function createParkFeaturesGroup(): THREE.Group {
   const park = getActivePark();
   buildWashStones(group);
   buildNaturalEntrance(group);
+  buildCaveTour(group);
   buildPrairieDogTown(group);
   const f = park.features;
   if (!f) return group;
