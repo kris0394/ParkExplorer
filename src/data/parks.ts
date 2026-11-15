@@ -91,6 +91,36 @@ export interface ParkRoad {
   walls?: { side: 1 | -1; from: number; to: number }[];
 }
 
+/**
+ * Task 25: eroded "badlands" relief (opt-in). A steep, gullied wall (the Badlands Wall) rises from the prairie, a rugged belt
+ * of buttes and benches falls away behind it to a low basin, and trail paths whose nodes have a `y` are cut or built up
+ * so they stay walkable. Leave out for every other park (their ground is unchanged).
+ */
+export interface BadlandsConfig {
+  /** The crest line of the wall, west to east (z grows to the south). Land north of it is prairie, south of it is badlands. */
+  wall: { x: number; z: number }[];
+  /** Height of the crest above the prairie (m). */
+  crestHeight: number;
+  /** Distance in front of the crest over which the steep north face rises (m). */
+  faceWidth: number;
+  /** Width of the broken, bench-like top behind the crest before the land falls away (m). */
+  topWidth: number;
+  /** Distance over which the land then falls to the basin (m). */
+  backWidth: number;
+  /** How far below the prairie the basin floor lies (m). */
+  basinDrop: number;
+  /** Low gaps in the crest (the Door, the Window, the Notch canyon). x is along the wall; depth 0 to 1 is how much of the crest is cut away. */
+  gaps: { x: number; depth: number; width: number }[];
+  /** 0 to 1: how deeply the faces are gullied and how sharp the ridges are. */
+  ruggedness: number;
+  /** Height of one rock layer (m). Slopes break into benches this tall. 0 = none. */
+  terraceStep: number;
+  /** Steepness of the banks cut beside a pinned trail (1 = 45 degrees). Default 0.9. */
+  bankSlope?: number;
+  /** Banded rock colours and how thick a band is (m). */
+  strata: { colors: number[]; bandHeight: number; strength: number };
+}
+
 /** Optional scenery that makes one park look like itself (everything here is optional). */
 export interface ParkFeatures {
   roads?: ParkRoad[];
@@ -123,6 +153,8 @@ export interface ParkFeatures {
   naturalEntrance?: { x: number; z: number; yaw?: number };
   /** Task 26: a walk-in cave tour (a rocky mound with a dark passage, boxwork and frostwork, and a chamber). The mouth is at x, z and faces the direction given by yaw. */
   caveTour?: { x: number; z: number; yaw?: number };
+  /** Task 25: a notched log ladder up a steep step in a trail (Badlands Notch Trail). The foot is at x, z and it climbs toward yaw (0 = south) for `run` metres. Its height comes from the ground. */
+  logLadder?: { x: number; z: number; yaw: number; run: number }[];
   /** Task 25: a prairie dog town: bare dirt mounds with burrow holes. Prairie dogs themselves come from wildlife.spawns. */
   prairieDogTown?: { x: number; z: number; radius: number; mounds: number; /** How many prairie dogs live on the mounds (default: one for every second mound). */ dogs?: number };
   /** Trail cairns (small stacks of stones) on bare ground above this height, one every `every` metres. */
@@ -218,6 +250,8 @@ export interface ParkDefinition {
       /** How much dark forest-floor mulch shows (1 = as in forest parks, 0 = none). Prairie parks use a small number. */
       mulch?: number;
     };
+    /** Task 25: eroded badlands relief and banded rock colours (opt-in; see BadlandsConfig). */
+    badlands?: BadlandsConfig;
     colors: {
       valley: number;
       meadow: number;
@@ -2871,6 +2905,471 @@ export const WIND_CAVE: ParkDefinition = {
   waterStations: TRAILHEAD_AND_SUMMIT_WATER({ x: -60, z: 34 }, { x: 30, z: -30 }),
 };
 
+/**
+ * Task 25: Badlands National Park (South Dakota). Laid out from the NPS pages for the Door, Window, Notch and Castle
+ * trails and the NPS park map description (the Badlands Loop Road runs along the north side of the Badlands Wall).
+ * Game-scale, not a survey: see about.designNote.
+ */
+export const BADLANDS: ParkDefinition = {
+  id: 'badlands',
+  npsParkCode: 'badl',
+  layoutSeed: 47,
+  name: 'Badlands',
+  subtitle: 'Walls of Layered Stone',
+  parkServiceUnit: 'National Park',
+  state: 'South Dakota',
+  region: 'Great Plains',
+  description: 'In South Dakota, a long wall of banded, gullied rock rises out of mixed-grass prairie. Walk through the Door, look out from the Window, and climb the log ladder on the Notch Trail to a view over the White River Valley.',
+  elevationRange: { min: 745, max: 1000 },
+  spawn: { x: -6.0, y: 0.4, z: -68.0, yaw: Math.PI }, // in the Door and Window parking area, facing the Wall
+  terrain: {
+    baseScale: 0.004,
+    heightScale: 2.6, // the prairie only rolls gently
+    noiseX: -35,
+    noiseZ: 60,
+    // The Notch viewpoint sits on a butte (the "mountain" here): the flat deck is at this height above the parking area
+    mountain: {
+      x: -50.0,
+      z: 18.0,
+      height: 8.0,
+      radius: 30.0,
+      plateauRadius: 6.0,
+      name: 'The Notch',
+    },
+    badlands: {
+      wall: [
+        { x: -240, z: -14 }, { x: -170, z: -24 }, { x: -100, z: -16 }, { x: -40, z: -20 },
+        { x: 30, z: -14 }, { x: 100, z: -24 }, { x: 170, z: -12 }, { x: 240, z: -20 },
+      ],
+      crestHeight: 16.0,
+      faceWidth: 24.0,
+      topWidth: 10.0,
+      backWidth: 90.0,
+      basinDrop: 30.0,
+      gaps: [
+        { x: -8, depth: 0.88, width: 8 },   // the Door
+        { x: 35, depth: 0.66, width: 10 },  // the Window
+        { x: -60, depth: 0.6, width: 13 },  // the Notch Trail canyon
+      ],
+      ruggedness: 0.9,
+      terraceStep: 2.2,
+      bankSlope: 0.95,
+      strata: {
+        colors: [0xd8c8a2, 0xb99a6e, 0xc9a08a, 0xcfc6b0, 0xc9a65a, 0xa68a72, 0xe0d9c6, 0xb27a62, 0xd2b455],
+        bandHeight: 1.5,
+        strength: 0.95,
+      },
+    },
+    // the prairie: dry mixed-grass tones with bare soil showing through
+    groundLook: {
+      patchScale: 0.016,
+      strength: 0.85,
+      patches: [0x8d9a52, 0xa4a95a, 0xc2b266, 0xd0bd78, 0xa99560, 0x929a68],
+      speckle: 0.22,
+      soil: { color: 0xb09a6c, amount: 0.4 },
+      mulch: 0.05,
+    },
+    colors: {
+      valley: 0x8d9a56,
+      meadow: 0xa5aa5a,
+      dryGrass: 0xcdb96d,
+      steepSlope: 0xb59a76,
+      summitRock: 0xc9b08c,
+      riverbed: 0xb8a583,
+      riverbank: 0xa89874,
+    },
+  },
+  water: {
+    // The NPS pages for these trails mention no stream, so this map has none.
+    hasRiver: false,
+    mode: 'none',
+    name: 'No stream here',
+    surfaceY: -1.0,
+    halfWidth: 3.0,
+    bankWidth: 5.0,
+    valleyWidth: 30.0,
+    gradient: 0.003,
+    deepColor: 0x1f4448,
+    shallowColor: 0x3d746b,
+    skyReflectColor: 0xa8c6d8,
+  },
+  trail: {
+    name: 'Door, Window, Notch and Castle Trails',
+    width: 2.0,
+    surface: { center: 0xc4b392, mid: 0xad9d7c, edge: 0x9a9a62 }, // pale, dusty path
+    paths: [
+      {
+        // NPS: an accessible boardwalk leads through a break in the Badlands Wall ("the Door") to a view; the maintained trail ends there
+        id: 'door-trail',
+        name: 'Door Trail',
+        boardwalk: true,
+        width: 2.2,
+        steps: 70,
+        surface: { center: 0x8a7658, mid: 0x7a6849, edge: 0x6c5b42 },
+        nodes: [
+          { x: -4, z: -58, y: 0.4 },
+          { x: -3, z: -48, y: 0.4 },
+          { x: -5, z: -39, y: 0.4 },
+          { x: -7, z: -31, y: 1.0 },
+          { x: -8, z: -23, y: 2.0 },
+          { x: -8, z: -16, y: 2.4 },
+          { x: -7, z: -9, y: 2.4 },
+        ],
+      },
+      {
+        // NPS: a short boardwalk to a natural window in the Badlands Wall, with a view of an eroded canyon
+        id: 'window-trail',
+        name: 'Window Trail',
+        boardwalk: true,
+        width: 2.2,
+        steps: 70,
+        surface: { center: 0x8a7658, mid: 0x7a6849, edge: 0x6c5b42 },
+        nodes: [
+          { x: 0, z: -58, y: 0.4 },
+          { x: 9, z: -53, y: 0.4 },
+          { x: 18, z: -47, y: 0.4 },
+          { x: 26, z: -39, y: 1.0 },
+          { x: 32, z: -30, y: 2.4 },
+          { x: 35, z: -22, y: 3.5 },
+          { x: 36, z: -16, y: 3.6 },
+        ],
+      },
+      {
+        // NPS: begins at the south end of the Door and Window parking area, meanders through a canyon, climbs a log ladder,
+        // then follows a ledge to "the Notch" for a view of the White River Valley
+        id: 'notch-trail',
+        name: 'Notch Trail',
+        steps: 24,
+        width: 1.8,
+        nodes: [
+          { x: -8, z: -58, y: 0.4 },
+          { x: -20, z: -55, y: 0.4 },
+          { x: -33, z: -51, y: 0.4 },
+          { x: -44, z: -46, y: 0.4 },
+          { x: -52, z: -40, y: 1.2 },  // the mouth of the canyon
+          { x: -58, z: -33, y: 2.2 },
+          { x: -56, z: -26, y: 3.2 },
+          { x: -60, z: -20, y: 4.2 },
+          { x: -63, z: -14, y: 5.0 },  // foot of the log ladder
+          { x: -63, z: -8.6, y: 8.6 }, // top of the log ladder
+          { x: -60, z: -3, y: 8.6 },   // the ledge
+          { x: -56, z: 3, y: 8.6 },
+          { x: -53, z: 10, y: 8.2 },
+          { x: -50, z: 18, y: 8.0 },   // the Notch viewpoint
+        ],
+      },
+      {
+        // NPS: the longest trail starts at the same parking area and runs five miles one way to the Fossil Exhibit Trail;
+        // only its first stretch fits on this map
+        id: 'castle-trail',
+        name: 'Castle Trail',
+        steps: 20,
+        nodes: [
+          { x: 4, z: -60, y: 0.4 },
+          { x: 22, z: -64, y: 0.4 },
+          { x: 48, z: -62, y: 0.4 },
+          { x: 76, z: -58, y: 0.4 },
+          { x: 104, z: -58, y: 0.4 },
+          { x: 132, z: -54, y: 0.4 },
+          { x: 158, z: -52, y: 0.4 },
+          { x: 184, z: -50, y: 0.4 },
+        ],
+      },
+    ],
+  },
+  overlook: {
+    name: 'The Notch',
+    elevationLabel: 'The end of the Notch Trail',
+    deckRadius: 4.2,
+    hasBench: false,
+    hasTelescope: false,
+    signHeading: 'THE NOTCH',
+    signSubheading: 'WHITE RIVER VALLEY VIEW',
+  },
+  vegetation: {
+    treeCount: 70,
+    shrubCount: 900,
+    speciesWeights: {
+      conifer: 4.0, // junipers
+      pine: 0.6,
+      broadleaf: 0.1,
+      oak: 0.0,
+      birch: 0.0,
+      poplar: 0.0,
+      snag: 0.3,
+    },
+    look: {
+      treeScale: 0.85,
+      glades: 0.9,
+      palettes: {
+        conifer: [0x5f7a5a, 0x6c8466, 0x587258],
+        pine: [0x4f7048, 0x5d7e52],
+      },
+      groundCover: {
+        clumps: 260,
+        flowerPatches: 70,
+        clumpPalette: [0x9aa37c, 0x88976c, 0xa9ae8a, 0x7d8f5f, 0xb4a778],
+        flowerPalette: [0xe8c83a, 0xf0efe0, 0xb48ad0],
+      },
+      shrubPalette: [0x929d68, 0x808f5c, 0xa4a470, 0x77885a],
+      grass: { root: 0x56662f, stalk: 0x9aab55, dry: 0xd6c47e, fern: 0x7b9340, flowerA: 0xe8c83a, flowerB: 0xf0efe0 },
+      grassland: {
+        density: 1.5,
+        radius: 50,
+        heightRange: [0.5, 1.6],
+        patchScale: 0.03,
+        tints: [0xc4d890, 0xfff0c0, 0xe6d8a4],
+        sway: 0.9,
+        carpet: { count: 2400, radius: 20, height: 0.26, root: 0x56662f, tip: 0x9aab55, tipDry: 0xd0bd72 },
+      },
+    },
+  },
+  atmosphere: {
+    fogColor: 0xe6ddc8,
+    fogDensity: 0.0036, // dry, clear air
+    hemiSky: 0xdbe6f0,
+    hemiGround: 0xb09a72,
+    sunColor: 0xfff0d0,
+    sunIntensity: 3.2,
+    skyHorizon: 0xece4d0,
+    skyMid: 0x8dbbe2,
+    skyZenith: 0x3478c4,
+    skySun: 0xffe6b0,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Door and Window Parking Area',
+      shortName: 'Parking Area',
+      description: 'One parking area serves the Door, Window, Notch and Castle trails. The Notch Trail starts at its south end.',
+      x: -6, y: 0.5, z: -68, yaw: Math.PI,
+    },
+    {
+      id: 'the-door',
+      name: 'The Door',
+      shortName: 'Door',
+      description: 'A boardwalk leads through a break in the Badlands Wall known as "the Door", to a view of the Badlands. Past the end of the boardwalk, travel is at your own risk. Watch for drop-offs.',
+      x: -8, y: 2.4, z: -14, yaw: Math.PI,
+    },
+    {
+      id: 'the-window',
+      name: 'The Window',
+      shortName: 'Window',
+      description: 'A short boardwalk ends at a view through the Wall over an intricately eroded canyon. Please stay on the trail.',
+      x: 36, y: 3.6, z: -16, yaw: Math.PI,
+    },
+    {
+      id: 'notch-canyon',
+      name: 'Notch Trail Canyon',
+      shortName: 'Canyon',
+      description: 'The Notch Trail meanders up a narrow canyon between banded walls of rock.',
+      x: -57, y: 2.7, z: -30, yaw: Math.PI,
+    },
+    {
+      id: 'log-ladder',
+      name: 'The Log Ladder',
+      shortName: 'Ladder',
+      description: 'The trail climbs a log ladder out of the canyon. The Notch Trail is not recommended for anyone with a fear of heights, and it is treacherous during or after heavy rain or snow.',
+      x: -63, y: 5.0, z: -15.5, yaw: Math.PI,
+    },
+    {
+      id: 'summit',
+      name: 'The Notch',
+      shortName: 'Notch',
+      description: 'After the ledge, the trail ends at "the Notch", a dramatic view of the White River Valley. Watch for drop-offs.',
+      x: -50, y: 8.0, z: 16, yaw: Math.PI,
+    },
+    {
+      id: 'castle-trail',
+      name: 'Castle Trail',
+      shortName: 'Castle',
+      description: 'The longest trail in the park starts at this parking area and runs five miles one way to the Fossil Exhibit Trail. Only its first stretch is on this map.',
+      x: 120, y: 0.4, z: -56, yaw: Math.PI * 0.5,
+    },
+    {
+      id: 'prairie-dogs',
+      name: 'Prairie Dog Town',
+      shortName: 'Prairie Dogs',
+      description: 'A small prairie dog town on the mixed-grass prairie. Keep your distance, and never feed them.',
+      x: -112, y: 1.0, z: -70, yaw: Math.PI * 1.5,
+    },
+    {
+      id: 'bison-prairie',
+      name: 'Bison on the Prairie',
+      shortName: 'Bison',
+      description: 'Open mixed-grass prairie north of the Loop Road, where bison graze. Stay far back.',
+      x: 96, y: 0.8, z: -122, yaw: Math.PI * 0.5,
+    },
+  ],
+  wildlife: {
+    spawns: [
+      // bison herd on the prairie north of the road (the real herd is much larger)
+      { species: 'bison', isBuck: true, isFawn: false, x: 150.0, z: -170.0, roamRadius: 10.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 158.0, z: -162.0, roamRadius: 10.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 144.0, z: -160.0, roamRadius: 9.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 164.0, z: -176.0, roamRadius: 9.0 },
+      { species: 'bison', isBuck: true, isFawn: false, x: 136.0, z: -176.0, roamRadius: 9.0 },
+      // deer out on the prairie to the east
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 200.0, z: -90.0, roamRadius: 14.0 },
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: 210.0, z: -82.0, roamRadius: 14.0 },
+    ],
+    // Badlands asks visitors to keep at least 100 feet (30.5 m) from ALL wildlife
+    safeDistanceOverrides: { 'white-tailed-deer': 30.5, bison: 30.5, 'prairie-dog': 30.5 },
+  },
+  features: {
+    roads: [
+      {
+        // The Badlands Loop Road (SR 240) runs along the north side of the Wall
+        id: 'loop-road',
+        name: 'Badlands Loop Road (SR 240)',
+        kind: 'road',
+        width: 7.5,
+        nodes: [
+          { x: -260, z: -100 },
+          { x: -130, z: -108 },
+          { x: -6, z: -106 },
+          { x: 120, z: -110 },
+          { x: 260, z: -100 },
+        ],
+      },
+      {
+        id: 'parking-drive',
+        name: 'Parking Area Entrance',
+        kind: 'drive',
+        levelFrom: 'loop-road',
+        width: 6.0,
+        nodes: [
+          { x: -6, z: -106 },
+          { x: -6, z: -96 },
+          { x: -6, z: -88 },
+        ],
+      },
+      {
+        id: 'door-window-lot',
+        name: 'Door and Window Parking Area',
+        kind: 'lot',
+        levelFrom: 'loop-road',
+        width: 13.0,
+        nodes: [
+          { x: -6, z: -86 },
+          { x: -6, z: -61 },
+        ],
+      },
+    ],
+    cars: [
+      { x: -9.0, z: -80.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+      { x: -3.0, z: -74.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: -10.0, z: -66.0, yaw: Math.PI / 2, color: 0x9a2a2a },
+    ],
+    logLadder: [{ x: -63, z: -14, yaw: 0, run: 5.4 }],
+    // hoodoo-like spires standing on the rugged slopes behind the Wall
+    pinnacles: [
+      { x: 60, z: 42, radius: 55, innerRadius: 8, count: 16, minHeight: 2.5, maxHeight: 7, colors: [0xd0bd98, 0xc2a584, 0xd9ccb0, 0xb99a7c] },
+      { x: -105, z: 36, radius: 55, innerRadius: 8, count: 14, minHeight: 2.5, maxHeight: 6.5, colors: [0xd0bd98, 0xc2a584, 0xd9ccb0, 0xb99a7c] },
+      { x: 0, z: 85, radius: 70, innerRadius: 6, count: 18, minHeight: 3, maxHeight: 8, colors: [0xd0bd98, 0xbf9f86, 0xd9ccb0, 0xb99a7c] },
+    ],
+    prairieDogTown: { x: -118, z: -72, radius: 10, mounds: 14, dogs: 8 },
+    distantRidges: true,
+  },
+  rules: {
+    zones: [
+      {
+        id: 'fossil-slope',
+        kind: 'sensitive',
+        name: 'Fossil-bearing Slope',
+        x: 62,
+        z: -42,
+        radius: 8,
+        reason: 'Fossils, plants, animals, artifacts and rocks must stay as you find them. Collecting them is illegal. (In the game this is an example area. Badlands is an open-hike park, so walking off trail is allowed, at your own risk.)',
+      },
+    ],
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'castle-trail', 'bottle-1': 'door-trail', 'wrapper-1': 'window-trail', 'peel-1': 'notch-trail', 'bag-1': 'castle-trail' } as Record<string, string>)[l.id] ?? 'castle-trail',
+    })),
+  },
+  about: {
+    designNote:
+      'A game-scale map of the Door and Window parking area and the trails that start from it. It follows what the NPS pages say: the Door and Window trails are short boardwalks through and into the Badlands Wall; the Notch Trail starts at the south end of the same parking area, meanders through a canyon, climbs a log ladder and follows a ledge to the Notch; the Castle Trail also starts there and runs five miles one way (only its first stretch fits here); the Badlands Loop Road runs along the north side of the Wall. Distances, heights and the exact positions of the trails and the Wall are game placements, not a survey. The Window is shown as a low gap in the Wall, not as a hole. The bison herd, prairie dog town and deer are real kinds of Badlands wildlife, but they are packed close to the trails here (in reality, for example, the best-known prairie dog town is far to the west along Sage Creek Rim Road). Bighorn sheep, pronghorn and black-footed ferrets are real Badlands animals but are not modelled yet. This map has no drinking water, because the NPS lists none for this trailhead. The Badlands Wall, the overlooks along the Loop Road and the Cedar Pass area are only partly shown. The elevation range is taken from the NPS map description (Ben Reifel Visitor Center 745 m; Sheep Mountain Table about 1,000 m) and is not the height of anything you can reach in the game.',
+    wildlifeGuidance: {
+      text:
+        'Badlands asks visitors to keep a distance of at least 100 feet from all wildlife. If wildlife reacts to your presence at all, you are too close.',
+      caveat:
+        'The game uses 30.5 m (100 ft) for every animal in this park. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://www.nps.gov/thingstodo/hiking-badl.htm',
+      sourceLabel: 'nps.gov: Hiking the Badlands',
+    },
+    facts: [
+      {
+        id: 'open-hike',
+        title: 'An open-hike park',
+        text: 'Badlands has an Open Hike Policy: visitors may hike off trail. The rock formations are often easier to climb up than down, and cell service is not readily available in the backcountry.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/hiking-badl.htm',
+        sourceLabel: 'nps.gov: Hiking the Badlands',
+      },
+      {
+        id: 'water',
+        title: 'Carry water',
+        text: 'The park recommends two quarts of water per person for every two hours of hiking, plus a hat, sunglasses, sunscreen and sturdy shoes to protect your feet from cactus spines and snake bites.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/hiking-badl.htm',
+        sourceLabel: 'nps.gov: Hiking the Badlands',
+      },
+      {
+        id: 'door-window',
+        title: 'The Door and the Window',
+        text: 'The Door Trail is an accessible boardwalk through a break in the Badlands Wall; past its end, the maintained trail stops and travel is at your own risk. The Window Trail is a short walk to a natural window in the Wall with a view of an intricately eroded canyon.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/hiking-badl.htm',
+        sourceLabel: 'nps.gov: Hiking the Badlands',
+      },
+      {
+        id: 'notch',
+        title: 'The Notch Trail',
+        text: 'The Notch Trail is the park\'s most popular trail, and it sees the most injuries. It climbs a log ladder and follows a ledge to the Notch, and is treacherous during or after heavy rain or snow.',
+        sourceUrl: 'https://www.nps.gov/places/notch-trail.htm',
+        sourceLabel: 'nps.gov: Notch Trailhead',
+      },
+      {
+        id: 'castle',
+        title: 'The Castle Trail',
+        text: 'The longest trail in the park begins at the Door and Window parking area and travels five miles one way to the Fossil Exhibit Trail. It is relatively level and passes along some badlands formations.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/hiking-badl.htm',
+        sourceLabel: 'nps.gov: Hiking the Badlands',
+      },
+      {
+        id: 'leave-it',
+        title: 'Leave it as you find it',
+        text: 'All park resources (fossils, plants, animals, artifacts and rocks) are to remain as you find them. Collecting them is illegal, so every visitor gets the same sense of discovery.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/hiking-badl.htm',
+        sourceLabel: 'nps.gov: Hiking the Badlands',
+      },
+      {
+        id: 'loop-road',
+        title: 'The Loop Road',
+        text: 'Badlands Loop Road enters at the Northeast Entrance, passes Big Badlands Overlook and reaches the Ben Reifel Visitor Center (elevation 2,443 feet, 745 meters). West of there it passes a string of overlooks, from White River Valley Overlook to Pinnacles Overlook.',
+        sourceUrl: 'https://www.nps.gov/npgallery/GetAsset/0dcec1e820334c6c902e0598aa07e7e7/alttext.txt',
+        sourceLabel: 'nps.gov: Badlands park map description',
+      },
+      {
+        id: 'prairie-and-wildlife',
+        title: 'Prairie and its animals',
+        text: 'The park\'s 244,000 acres protect an expanse of mixed-grass prairie where bison, bighorn sheep, prairie dogs and black-footed ferrets live today.',
+        sourceUrl: 'https://home.nps.gov/badl',
+        sourceLabel: 'nps.gov: Badlands National Park',
+      },
+      {
+        id: 'prairie-dogs',
+        title: 'A keystone species',
+        text: 'Prairie dogs are a keystone species, meaning many plants and animals depend on them. They are also food for the endangered black-footed ferret. Park biologists try to prevent plague outbreaks by feeding prairie dogs an oral vaccine, and after testing flavors they found the prairie dogs like peanut butter best.',
+        sourceUrl: 'https://home.nps.gov/articles/prairie-dogs.htm',
+        sourceLabel: 'nps.gov: Prairie Dogs: Pipsqueaks of the Prairie',
+      },
+    ],
+    checkedOn: '2026-11-15',
+  },
+  // No drinking water is listed at this trailhead on the NPS pages, so the map has none (carry your own, as the park advises)
+  waterStations: [],
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
@@ -2878,6 +3377,7 @@ export const AVAILABLE_PARKS: ParkDefinition[] = [
   ACADIA,
   CHIRICAHUA,
   WIND_CAVE,
+  BADLANDS,
   PROTOTYPE_PARK,
 ];
 

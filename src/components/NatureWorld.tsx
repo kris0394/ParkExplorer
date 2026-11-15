@@ -19,6 +19,7 @@ import {
 import { createWaterShaderMaterial, createRiverWaterMesh } from '../shaders/waterShader.ts';
 import { createTrailMeshGroup } from '../entities/trailMesh.ts';
 import { getWaterMode } from '../data/parkStructure.ts';
+import { badlandsBelt, strataBand } from '../terrain/badlandsRelief.ts';
 import { createBridgeGroup } from '../entities/bridge.ts';
 import { createSummitOverlookGroup } from '../entities/summitOverlook.ts';
 import { createRocksSystem, pushOutOfRocks } from '../entities/rocks.ts';
@@ -591,6 +592,8 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       const cMulch = new THREE.Color(0x284724);
       const seasonDef = getSeasonDef();
       const cSeason = new THREE.Color(seasonDef.groundColor);
+      const bd = park.terrain.badlands; // Task 25: banded badlands rock
+      const cStrata = new THREE.Color();
       const col = new THREE.Color();
 
       for (let i = 0; i < pos.count; i++) {
@@ -651,6 +654,15 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
         if (y > 20.0) {
           const tSummit = sstep(20.0, park.terrain.mountain.height, y);
           col.lerp(cRock, tSummit * 0.75);
+        }
+
+        // Task 25: banded layers of badlands rock (tan, rose, cream, grey, ochre) on the wall, benches and basin
+        if (bd) {
+          const bw = badlandsBelt(bd, x, z);
+          if (bw > 0) {
+            cStrata.set(strataBand(bd, x, y, z));
+            col.lerp(cStrata, bw * bd.strata.strength * (0.8 + 0.2 * sstep(0.95, 0.6, ny)));
+          }
         }
 
         // Task 10: season tint (autumn warmth, spring freshness, winter snow)

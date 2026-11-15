@@ -16,7 +16,8 @@
 
 import { mulberry32 } from '../utils/noise.ts';
 
-export type PathNode = { x: number; z: number };
+/** A trail point. `y` is optional: parks with a `terrain.badlands` block can pin the ground height under a trail (Task 25). */
+export type PathNode = { x: number; z: number; y?: number };
 
 /** One walkable trail. Loops set closed: true (the last node then joins back to the first). */
 export interface TrailPath {
@@ -26,6 +27,12 @@ export interface TrailPath {
   closed?: boolean;
   /** Smoothness of the drawn ribbon (points per segment). Default 16. */
   steps?: number;
+  /** Task 25: this path's own surface colours (default: the park's trail surface). */
+  surface?: { center: number; mid: number; edge: number };
+  /** Task 25: draw this path as a raised wooden boardwalk with planks (Badlands Door and Window trails). */
+  boardwalk?: boolean;
+  /** Task 25: this path's own width in metres (default: the park's trail width). */
+  width?: number;
 }
 
 export interface TrailBridge {

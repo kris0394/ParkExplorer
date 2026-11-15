@@ -870,6 +870,46 @@ function buildPrairieDogTown(group: THREE.Group): void {
   group.add(dirt, holes);
 }
 
+/** Task 25: the Notch Trail's log ladder: two log rails and notched cross-logs leaning up a steep step in the trail. */
+function buildLogLadders(group: THREE.Group): void {
+  const ladders = getActivePark().features?.logLadder ?? [];
+  if (ladders.length === 0) return;
+  const wood = new THREE.MeshLambertMaterial({ color: 0x7a5b3a });
+  const rungWood = new THREE.MeshLambertMaterial({ color: 0x8c6a45 });
+  const up = new THREE.Vector3(0, 1, 0);
+  for (const l of ladders) {
+    const dx = Math.sin(l.yaw);
+    const dz = Math.cos(l.yaw);
+    const px = -dz; // sideways (perpendicular to the climb)
+    const pz = dx;
+    const x1 = l.x + dx * l.run;
+    const z1 = l.z + dz * l.run;
+    const y0 = heightAt(l.x, l.z) + 0.12;
+    const y1 = heightAt(x1, z1) + 0.12;
+    const dir = new THREE.Vector3(x1 - l.x, y1 - y0, z1 - l.z);
+    const len = dir.length();
+    dir.normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(up, dir);
+    for (const side of [-0.42, 0.42]) {
+      const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, len, 8), wood);
+      rail.position.set(l.x + (x1 - l.x) / 2 + px * side, y0 + (y1 - y0) / 2 + 0.05, l.z + (z1 - l.z) / 2 + pz * side);
+      rail.quaternion.copy(q);
+      rail.castShadow = true;
+      group.add(rail);
+    }
+    const rungs = Math.max(3, Math.floor(len / 0.42));
+    // cross-logs lie sideways (along the perpendicular), so rotate a cylinder from Y to that direction
+    const rungQ = new THREE.Quaternion().setFromUnitVectors(up, new THREE.Vector3(px, 0, pz));
+    for (let i = 1; i < rungs; i++) {
+      const t = i / rungs;
+      const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.96, 7), rungWood);
+      rung.position.set(l.x + (x1 - l.x) * t, y0 + (y1 - y0) * t + 0.1, l.z + (z1 - l.z) * t);
+      rung.quaternion.copy(rungQ);
+      group.add(rung);
+    }
+  }
+}
+
 export function createParkFeaturesGroup(): THREE.Group {
   const group = new THREE.Group();
   group.name = 'parkFeatures';
@@ -878,6 +918,7 @@ export function createParkFeaturesGroup(): THREE.Group {
   buildNaturalEntrance(group);
   buildCaveTour(group);
   buildPrairieDogTown(group);
+  buildLogLadders(group);
   const f = park.features;
   if (!f) return group;
   const rand = mulberry32(7771 + (park.layoutSeed ?? 0));

@@ -7,6 +7,7 @@ import { fbm, sstep, clamp } from '../utils/noise.ts';
 import { getActivePark } from '../data/parks.ts';
 import { rollingHills } from './realRelief.ts';
 import { applyRoads } from './roadTerrain.ts';
+import { applyBadlands } from './badlandsRelief.ts';
 import { getBridges, getWaterMode, getWaterRefZ, type TrailBridge } from '../data/parkStructure.ts';
 
 /**
@@ -81,6 +82,15 @@ export function proceduralBaseHeight(x: number, z: number): number {
               fbm(x * 0.022, z * 0.022, 3) * 2.4 +
               fbm(x * 0.055 + 13, z * 0.055 - 71, 3) * 1.05 + // natural micro hummocks and knolls
               fbm(x * 0.12, z * 0.12, 2) * 0.32;
+
+  // Task 25: badlands parks build their own wall, benches, basin and Notch butte (the ordinary mountain cone is not used).
+  // The spawn clearing still levels the prairie around the parking area, then the relief is built on top of it.
+  const badlands = park.terrain.badlands;
+  if (badlands) {
+    const dSp = Math.hypot(x - park.spawn.x, z - park.spawn.z);
+    const wSp = 1.0 - sstep(26.0, 100.0, dSp); // a wide, flat prairie around the parking area
+    return applyBadlands(badlands, x, z, baseH * (1.0 - wSp) + park.spawn.y * wSp);
+  }
 
   // 2. Mountain Peak from park definition
   const mtn = park.terrain.mountain;
