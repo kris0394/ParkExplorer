@@ -12,7 +12,7 @@ import { pushOutOfRocks } from './rocks.ts';
 
 export type DeerState = 'IDLE' | 'WANDER' | 'FEED' | 'ALERT' | 'FLEE' | 'APPROACH';
 
-export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep';
+export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn';
 
 export interface DeerConfig {
   id: string;
@@ -103,6 +103,11 @@ export class DeerEntity {
     return this.species === 'bighorn-sheep';
   }
 
+  /** Task 25b: pronghorn (Badlands). A "buck" is a buck with pronged horns; does have small straight horns. */
+  get isPronghorn(): boolean {
+    return this.species === 'pronghorn';
+  }
+
   /** Big herd animals (elk and bison) tolerate people from farther away and bolt later. */
   get isHerd(): boolean {
     return this.species === 'elk' || this.species === 'bison';
@@ -119,13 +124,14 @@ export class DeerEntity {
   }
 
   get speciesName(): string {
-    return this.isBear ? 'Black Bear' : this.isBighorn ? 'Bighorn Sheep' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
+    return this.isBear ? 'Black Bear' : this.isBighorn ? 'Bighorn Sheep' : this.isPronghorn ? 'Pronghorn' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
   }
 
   get detailLabel(): string {
     if (this.isBear) return 'Adult black bear';
     if (this.isBison) return this.isBuck ? 'Bull bison' : 'Cow bison';
     if (this.isBighorn) return this.isBuck ? 'Bighorn ram (curled horns)' : 'Bighorn ewe';
+    if (this.isPronghorn) return this.isBuck ? 'Pronghorn buck (pronged horns)' : 'Pronghorn doe';
     if (this.isPrairieDog) return 'Adult prairie dog';
     if (this.isElk) return this.isBuck ? 'Bull elk (antlered)' : 'Cow elk';
     if (this.isFawn) return 'Spotted fawn';
@@ -138,6 +144,7 @@ export class DeerEntity {
     if (this.isBear) return 1.1;
     if (this.isBison) return this.isBuck ? 1.9 : 1.6;
     if (this.isBighorn) return this.isBuck ? 1.2 : 1.0;
+    if (this.isPronghorn) return this.isBuck ? 1.25 : 1.15;
     if (this.isPrairieDog) return 0.25;
     if (this.isElk) return this.isBuck ? 2.7 : 2.1;
     return this.isFawn ? 0.8 : this.isBuck ? 1.55 : 1.35;
@@ -172,8 +179,13 @@ export class DeerEntity {
     const isBison = this.isBison;
     const isPD = this.isPrairieDog;
     const isSheep = this.isBighorn;
+    const isPronghorn = this.isPronghorn;
     const stocky = isBear || isBison || isPD || isSheep; // short, heavy legs and a thick neck
-    const furColor = isSheep
+    const furColor = isPronghorn
+      ? this.isBuck
+        ? 0xb3703d // tan-rust buck
+        : 0xbe7e48 // slightly paler doe
+      : isSheep
       ? this.isBuck
         ? 0x8a6a4b // brown ram
         : 0x967a5a // lighter ewe
@@ -201,7 +213,7 @@ export class DeerEntity {
     const noseMat = new THREE.MeshLambertMaterial({ color: 0x161311 });
     const eyeMat = new THREE.MeshStandardMaterial({ color: 0x060504, roughness: 0.15 });
 
-    const scale = isSheep ? (this.isBuck ? 1.0 : 0.84) : isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
+    const scale = isPronghorn ? (this.isBuck ? 0.96 : 0.9) : isSheep ? (this.isBuck ? 1.0 : 0.84) : isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
     this.bodyBaseY = stocky ? 0.66 : 1.15;
     // Elk: darker neck and mane, cream rump patch, short tail
     const maneMat = new THREE.MeshLambertMaterial({ color: 0x4a3524 });
@@ -236,6 +248,17 @@ export class DeerEntity {
         spotMesh.position.set(side, 0.25, z);
         this.bodyMesh.add(spotMesh);
       }
+    }
+
+    if (isPronghorn) {
+      // Pronghorn: a large white rump patch (white patches on rump, side, belly and throat)
+      const rumpMat = new THREE.MeshLambertMaterial({ color: 0xf6f0e6 });
+      const rump = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.42, 0.10), rumpMat);
+      rump.position.set(0, 0.06, -0.60);
+      this.bodyMesh.add(rump);
+      const flank = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.16, 0.50), rumpMat); // white band low on the side
+      flank.position.set(0, -0.10, 0.0);
+      this.bodyMesh.add(flank);
     }
 
     if (isSheep) {
@@ -338,7 +361,7 @@ export class DeerEntity {
     this.headPivot.add(this.rightEar);
 
     // Antlers (Only for Buck! Does and Fawns have graceful, sleek heads)
-    if (this.isBuck && !stocky) {
+    if (this.isBuck && !stocky && !isPronghorn) {
       for (const side of [-1, 1]) {
         const antlerGroup = new THREE.Group();
         antlerGroup.position.set(side * 0.065, 0.15, 0.01);
@@ -382,6 +405,32 @@ export class DeerEntity {
         }
 
         this.headPivot.add(antlerGroup);
+      }
+    }
+
+    if (isPronghorn) {
+      // Black horns: bucks have tall horns with a forward prong (up to a foot long); does only small straight spikes.
+      const hornMat = new THREE.MeshLambertMaterial({ color: 0x231d18 });
+      const blackMat = new THREE.MeshLambertMaterial({ color: 0x1b1613 });
+      const h = this.isBuck ? 0.34 : 0.1;
+      for (const side of [-1, 1]) {
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(this.isBuck ? 0.02 : 0.014, this.isBuck ? 0.032 : 0.022, h, 6), hornMat);
+        shaft.geometry.translate(0, h / 2, 0);
+        shaft.position.set(side * 0.07, 0.14, 0.0);
+        shaft.rotation.z = side * -0.12;
+        shaft.rotation.x = -0.12;
+        this.headPivot.add(shaft);
+        if (this.isBuck) {
+          const prong = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 0.12, 5), hornMat);
+          prong.geometry.translate(0, 0.06, 0);
+          prong.position.set(side * 0.075, 0.27, 0.0);
+          prong.rotation.x = 0.9; // splits forward
+          this.headPivot.add(prong);
+          // black cheek patch on the buck
+          const cheek = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.09, 0.10), blackMat);
+          cheek.position.set(side * 0.105, -0.01, 0.12);
+          this.headPivot.add(cheek);
+        }
       }
     }
 
@@ -449,6 +498,7 @@ export class DeerEntity {
     if (isBear) this.tailPivot.scale.set(0.4, 0.35, 0.4);
     if (isBison) this.tailPivot.scale.set(0.55, 0.9, 0.55);
     if (isSheep) this.tailPivot.scale.set(0.35, 0.3, 0.35);
+    if (isPronghorn) this.tailPivot.scale.set(0.3, 0.3, 0.3);
     if (isPD) this.tailPivot.scale.set(0.5, 0.6, 0.5);
 
     const tailGeo = new THREE.BoxGeometry(0.11, 0.30, 0.08);
@@ -590,7 +640,7 @@ export class DeerEntity {
           this.state = 'FLEE';
           this.stateTimer = 3.8;
           const fleeAngle = Math.atan2(this.pos.z - playerPos.z, this.pos.x - playerPos.x) + (Math.random() - 0.5) * 0.4;
-          const fleeDist = (this.isElk ? 24.0 : this.isBison ? 14.0 : 16.0) + Math.random() * 8.0;
+          const fleeDist = (this.isElk ? 24.0 : this.isBison ? 14.0 : this.isPronghorn ? 30.0 : 16.0) + Math.random() * 8.0;
           this.targetPos.set(this.pos.x + Math.cos(fleeAngle) * fleeDist, this.pos.z + Math.sin(fleeAngle) * fleeDist);
           // Prairie dogs run back to their burrow and dive in
           if (this.isPrairieDog) this.targetPos.copy(this.homePos);
@@ -618,7 +668,7 @@ export class DeerEntity {
     } else if (this.state === 'APPROACH') {
       moveSpeed = 1.5;
     } else if (this.state === 'FLEE') {
-      moveSpeed = this.isBear ? 5.5 : this.isBison ? 6.0 : this.isElk ? 7.5 : 6.5;
+      moveSpeed = this.isBear ? 5.5 : this.isBison ? 6.0 : this.isElk ? 7.5 : this.isPronghorn ? 9.5 : 6.5; // pronghorn: the fastest animal here
     }
 
     if (moveSpeed > 0) {

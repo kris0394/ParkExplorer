@@ -249,6 +249,38 @@ SPECIES_CATALOGUE['bighorn-sheep'] = {
   ],
 };
 
+SPECIES_CATALOGUE['pronghorn'] = {
+  id: 'pronghorn',
+  name: 'Pronghorn',
+  scientific: 'Antilocapra americana',
+  safeDistanceM: 30.5,
+  blurb:
+    'A slim, tan-and-white animal of open prairie, often called "antelope". Fast and shy: it will bolt long before you get close.',
+  variants: ['Pronghorn buck (pronged horns)', 'Pronghorn doe'],
+  facts: [
+    {
+      id: 'not-antelope',
+      unlock: 'identified',
+      text: 'The pronghorn is sometimes called the "pronghorn antelope", but it is not a true antelope. It shows some of the same traits as the true antelopes of Asia and Africa.',
+    },
+    {
+      id: 'markings',
+      unlock: 'photographed',
+      text: 'Pronghorn have white patches of fur on the rump, side, belly and throat. Males grow pronged horns up to a foot long, which give the animal its name, while females grow much smaller, straight horns.',
+    },
+    {
+      id: 'speed',
+      unlock: 'responsible',
+      text: 'The pronghorn\'s most amazing trait is speed: it can run at about 55 miles per hour. It uses the open space of the prairie to evade predators, which is why it is so shy of people.',
+    },
+    {
+      id: 'where',
+      unlock: 'allVariants',
+      text: 'In Badlands, pronghorn are most often seen in unbroken grassland. In the North Unit they live north of the Badlands Loop Road (SR 240) and in the Buffalo Gap National Grassland next to the park.',
+    },
+  ],
+};
+
 export function getSpeciesIdFromName(name: string): string {
   for (const sp of Object.values(SPECIES_CATALOGUE)) {
     if (sp.name === name) return sp.id;

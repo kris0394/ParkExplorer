@@ -37,7 +37,7 @@ export interface ParkLitter {
 }
 
 export interface ParkWildlifeSpawn {
-  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep';
+  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn';
   isBuck: boolean;
   isFawn?: boolean;
   x: number;
@@ -3213,19 +3213,27 @@ export const BADLANDS: ParkDefinition = {
       { species: 'bison', isBuck: false, isFawn: false, x: 144.0, z: -160.0, roamRadius: 9.0 },
       { species: 'bison', isBuck: false, isFawn: false, x: 164.0, z: -176.0, roamRadius: 9.0 },
       { species: 'bison', isBuck: true, isFawn: false, x: 136.0, z: -176.0, roamRadius: 9.0 },
-      // bighorn sheep on the high benches of the Wall, away from the trails: a herd of ewes and lambs, and bachelor rams in separate groups
+      // bighorn sheep. NPS: they come down to the grasslands to feed, then retreat to the cliffs. Ewes and rams live in separate groups.
+      // Grazing on the prairie below the Wall, in view of the parking area and the trails (all at least 33 m from any trail):
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 72.0, z: -96.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 78.0, z: -99.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 66.0, z: -98.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: -46.0, z: -92.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: -40.0, z: -98.0, roamRadius: 5.0 },
+      // and two that have already retreated to high benches on top of the Wall (you have to look for these)
       { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 72.0, z: -12.0, roamRadius: 5.0 },
-      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 77.0, z: -9.0, roamRadius: 5.0 },
-      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 68.0, z: -9.0, roamRadius: 5.0 },
-      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: -108.0, z: -6.0, roamRadius: 5.0 },
-      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: -113.0, z: -4.0, roamRadius: 5.0 },
       { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: 126.0, z: -6.0, roamRadius: 5.0 },
+      // pronghorn on the open grassland north of the Loop Road (NPS: that is where they are most often seen)
+      { species: 'pronghorn', isBuck: true, isFawn: false, x: 30.0, z: -152.0, roamRadius: 9.0 },
+      { species: 'pronghorn', isBuck: false, isFawn: false, x: 38.0, z: -146.0, roamRadius: 9.0 },
+      { species: 'pronghorn', isBuck: false, isFawn: false, x: 22.0, z: -158.0, roamRadius: 9.0 },
+      { species: 'pronghorn', isBuck: false, isFawn: false, x: 42.0, z: -160.0, roamRadius: 9.0 },
       // deer out on the prairie to the east
       { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 200.0, z: -90.0, roamRadius: 14.0 },
       { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: 210.0, z: -82.0, roamRadius: 14.0 },
     ],
     // Badlands asks visitors to keep at least 100 feet (30.5 m) from ALL wildlife
-    safeDistanceOverrides: { 'white-tailed-deer': 30.5, bison: 30.5, 'prairie-dog': 30.5, 'bighorn-sheep': 30.5 },
+    safeDistanceOverrides: { 'white-tailed-deer': 30.5, bison: 30.5, 'prairie-dog': 30.5, 'bighorn-sheep': 30.5, pronghorn: 30.5 },
   },
   features: {
     roads: [
@@ -3305,7 +3313,7 @@ export const BADLANDS: ParkDefinition = {
   },
   about: {
     designNote:
-      'A game-scale map of the Door and Window parking area and the trails that start from it. It follows what the NPS pages say: the Door and Window trails are short boardwalks through and into the Badlands Wall; the Notch Trail starts at the south end of the same parking area, meanders through a canyon, climbs a log ladder and follows a ledge to the Notch; the Castle Trail also starts there and runs five miles one way (only its first stretch fits here); the Badlands Loop Road runs along the north side of the Wall. Distances, heights and the exact positions of the trails and the Wall are game placements, not a survey. The Window is built as a rock frame (two rock jambs and a lintel) that you walk through, because the game\'s ground cannot hold a hole; its size and exact spot are game choices. The railings follow the NPS note that the Window boardwalk ends at a viewpoint with railings. The bison herd, prairie dog town and deer are real kinds of Badlands wildlife, but they are packed close to the trails here (in reality, for example, the best-known prairie dog town is far to the west along Sage Creek Rim Road). Bighorn sheep, bison, deer and prairie dogs are modelled (a herd of ewes and separate groups of rams, as the NPS describes). Pronghorn and black-footed ferrets are real Badlands animals but are not modelled yet. This map has no drinking water, because the NPS lists none for this trailhead. The Badlands Wall, the overlooks along the Loop Road and the Cedar Pass area are only partly shown. The elevation range is taken from the NPS map description (Ben Reifel Visitor Center 745 m; Sheep Mountain Table about 1,000 m) and is not the height of anything you can reach in the game.',
+      'A game-scale map of the Door and Window parking area and the trails that start from it. It follows what the NPS pages say: the Door and Window trails are short boardwalks through and into the Badlands Wall; the Notch Trail starts at the south end of the same parking area, meanders through a canyon, climbs a log ladder and follows a ledge to the Notch; the Castle Trail also starts there and runs five miles one way (only its first stretch fits here); the Badlands Loop Road runs along the north side of the Wall. Distances, heights and the exact positions of the trails and the Wall are game placements, not a survey. The Window is built as a rock frame (two rock jambs and a lintel) that you walk through, because the game\'s ground cannot hold a hole; its size and exact spot are game choices. The railings follow the NPS note that the Window boardwalk ends at a viewpoint with railings. The bison herd, prairie dog town and deer are real kinds of Badlands wildlife, but they are packed close to the trails here (in reality, for example, the best-known prairie dog town is far to the west along Sage Creek Rim Road). Bighorn sheep, bison, deer and prairie dogs are modelled (ewes and rams in separate groups, as the NPS describes; most graze on the prairie below the Wall, and a couple wait on the cliffs). Pronghorn are modelled too (shy and fast, on the grassland north of the Loop Road, where the NPS says they live). Black-footed ferrets are a real Badlands animal but are not modelled yet. This map has no drinking water, because the NPS lists none for this trailhead. The Badlands Wall, the overlooks along the Loop Road and the Cedar Pass area are only partly shown. The elevation range is taken from the NPS map description (Ben Reifel Visitor Center 745 m; Sheep Mountain Table about 1,000 m) and is not the height of anything you can reach in the game.',
     wildlifeGuidance: {
       text:
         'Badlands asks visitors to keep a distance of at least 100 feet from all wildlife. If wildlife reacts to your presence at all, you are too close.',
@@ -3377,6 +3385,13 @@ export const BADLANDS: ParkDefinition = {
         text: 'Bighorn sheep drop down to grasslands to eat quickly, then retreat to cliffs away from predators. Badlands received its herd in 1964, when twenty-two bighorn were moved from Pike\'s Peak, Colorado; the park now has about 250.',
         sourceUrl: 'https://www.nps.gov/articles/000/bighorn-sheep-badl.htm',
         sourceLabel: 'nps.gov: Bighorn Sheep in the Badlands',
+      },
+      {
+        id: 'pronghorn',
+        title: 'Fastest on the prairie',
+        text: 'Pronghorn, sometimes called "pronghorn antelope", are not true antelope. They can run about 55 miles per hour, and in Badlands they are most often seen in unbroken grassland, north of the Loop Road in the North Unit.',
+        sourceUrl: 'https://www.nps.gov/articles/000/pronghorn.htm',
+        sourceLabel: 'nps.gov: Pronghorn (Badlands)',
       },
       {
         id: 'prairie-dogs',
