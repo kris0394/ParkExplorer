@@ -15,6 +15,7 @@ import {
 } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
+import { isBareBadlands } from '../terrain/badlandsRelief.ts';
 import { getActivePark } from '../data/parks.ts';
 import { isInBald } from '../data/parkStructure.ts';
 
@@ -55,6 +56,7 @@ export function createForestFloorSystem(): THREE.Group {
     if (getDistanceToTrail(x, z) < 3.2) continue;
     if (isNearRoad(x, z, 2.5)) continue;
     if (isInBald(park, x, z)) continue; // treeless meadow (Task 23)
+    if (isBareBadlands(x, z)) continue; // bare banded rock (Task 25)
     if (getRiverDistance(x, z) < (park.water.halfWidth + 1.8)) continue;
     if (isPointOnBridge(x, z) || isPointOnSummitDeck(x, z)) continue;
     if (slopeAt(x, z) > 0.75) continue;

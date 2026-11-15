@@ -163,7 +163,7 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
   }
 
   // Water
-  if ((park.waterStations ?? []).length === 0) say('needs at least one water station');
+  if (!Array.isArray(park.waterStations)) say('needs waterStations (an empty list is fine for a park with no drinking water)');
   for (const w of park.waterStations ?? []) {
     if (!(w.radius > 0)) say(`water station "${w.id}" needs a radius above 0`);
   }

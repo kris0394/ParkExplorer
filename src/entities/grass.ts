@@ -16,6 +16,7 @@ import {
 } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
+import { isBareBadlands } from '../terrain/badlandsRelief.ts';
 import { getActivePark } from '../data/parks.ts';
 
 const BASE_GRASS_COUNT = 2200;
@@ -245,7 +246,7 @@ export class GrassSystem {
     const park = getActivePark();
     const inRiver = getRiverDistance(wx, wz) < (park.water.halfWidth + 0.8);
     const onTrail = getDistanceToTrail(wx, wz) < 1.45 || isNearRoad(wx, wz, 0.9);
-    return inRiver || onTrail || isPointOnBridge(wx, wz) || isPointOnSummitDeck(wx, wz) || slopeAt(wx, wz) > 0.82;
+    return inRiver || onTrail || isPointOnBridge(wx, wz) || isPointOnSummitDeck(wx, wz) || slopeAt(wx, wz) > 0.82 || isBareBadlands(wx, wz);
   }
 
   public update(playerX: number, playerZ: number, force = false): void {
@@ -289,7 +290,7 @@ export class GrassSystem {
       const onBridge = isPointOnBridge(wx, wz);
       const onSummit = isPointOnSummitDeck(wx, wz);
       const slope = slopeAt(wx, wz);
-      const onCliff = slope > 0.82;
+      const onCliff = slope > 0.82 || isBareBadlands(wx, wz); // Task 25: no grass on bare banded rock
 
       if (inRiver || onTrail || onBridge || onSummit || onCliff || edgeFade <= 0.01) {
         this.dummy.position.set(wx, -999, wz);

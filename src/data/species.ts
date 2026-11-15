@@ -160,7 +160,7 @@ SPECIES_CATALOGUE['bison'] = {
     {
       id: 'dangerous',
       unlock: 'responsible',
-      text: 'Wind Cave requires at least 25 yards (23 m) from all wildlife but strongly recommends staying farther from bison. Bison may look tame, yet they are unpredictable, may charge without warning, and are more aggressive during calving and mating season from May through August. The game uses 46 m for bison.',
+      text: 'Parks ask visitors to keep well back from wildlife: Wind Cave requires at least 25 yards (23 m) and strongly recommends more room for bison, and Badlands asks for at least 100 feet (30 m) from all wildlife. Wind Cave notes that bison may look tame, yet they are unpredictable, may charge without warning, and are more aggressive during calving and mating season from May through August. The game uses each park\'s own distance (Wind Cave bison: 46 m).',
     },
     {
       id: 'calves',
@@ -202,7 +202,7 @@ SPECIES_CATALOGUE['prairie-dog'] = {
     {
       id: 'neighbors',
       unlock: 'identified',
-      text: 'Burrowing owls and rattlesnakes use prairie dog burrows for shelter, and prairie dogs provide food or shelter for much of Wind Cave\'s wildlife.',
+      text: 'Burrowing owls and rattlesnakes use prairie dog burrows for shelter, and prairie dogs provide food or shelter for much of the prairie\'s wildlife.',
     },
     {
       id: 'no-feeding',

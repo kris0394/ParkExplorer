@@ -64,7 +64,8 @@ function createRibbonGeometry(
   stepsPerSegment = 16,
   trailWidth = 2.4,
   surface?: { center: number; mid: number; edge: number },
-  closed = false
+  closed = false,
+  boardwalk = false
 ): THREE.BufferGeometry {
   const curve = new THREE.CatmullRomCurve3(
     nodes.map(n => new THREE.Vector3(n.x, 0, n.z)),
@@ -86,10 +87,14 @@ function createRibbonGeometry(
   const cCenter = new THREE.Color(surface?.center ?? 0x8a7153); // packed gravel/dirt
   const cMid = new THREE.Color(surface?.mid ?? 0x766649);       // worn loam
   const cEdge = new THREE.Color(surface?.edge ?? 0x566042);     // mossy transition into grass
+  let walked = 0; // metres along the path (for boardwalk planks)
+  let prevPt: THREE.Vector3 | null = null;
 
   for (let s = 0; s <= sampleCount; s++) {
     const t = s / sampleCount;
     const pt = curve.getPoint(t);
+    if (prevPt) walked += pt.distanceTo(prevPt);
+    prevPt = pt;
     const tangent = curve.getTangent(t).normalize();
     const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
 
@@ -98,7 +103,7 @@ function createRibbonGeometry(
       const offset = normal.clone().multiplyScalar(stop * trailWidth);
       const vx = pt.x + offset.x;
       const vz = pt.z + offset.z;
-      const vy = heightAt(vx, vz) + 0.035;
+      const vy = heightAt(vx, vz) + (boardwalk ? 0.09 : 0.035);
 
       positions.push(vx, vy, vz);
 
@@ -108,6 +113,13 @@ function createRibbonGeometry(
         col.lerp(cMid, distFromCenter / 0.56);
       } else {
         col.copy(cMid).lerp(cEdge, (distFromCenter - 0.56) / 0.44);
+      }
+      if (boardwalk) {
+        // a wooden boardwalk: planks about 0.4 m wide, alternately lighter and darker, with no grassy edge
+        col.copy(cCenter);
+        const plank = Math.floor(walked / 0.4);
+        col.multiplyScalar(plank % 2 === 0 ? 1.0 : 0.86);
+        if (distFromCenter > 0.9) col.multiplyScalar(0.8); // dark rail edge
       }
       colors.push(col.r, col.g, col.b);
     }
@@ -151,7 +163,7 @@ export function createTrailMeshGroup(): THREE.Group {
   });
 
   getTrailPaths(park).forEach((path: TrailPath) => {
-    const geo = createRibbonGeometry(path.nodes, path.steps ?? 16, park.trail.width, park.trail.surface, !!path.closed);
+    const geo = createRibbonGeometry(path.nodes, path.steps ?? 16, path.width ?? park.trail.width, path.surface ?? park.trail.surface, !!path.closed, !!path.boardwalk);
     const mesh = new THREE.Mesh(geo, material);
     mesh.name = `trail-${path.id}`;
     mesh.receiveShadow = true;

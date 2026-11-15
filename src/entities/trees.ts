@@ -15,6 +15,7 @@ import {
 } from '../terrain/riverTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
+import { isBareBadlands } from '../terrain/badlandsRelief.ts';
 import { getActivePark } from '../data/parks.ts';
 import { getBridges, isInBald } from '../data/parkStructure.ts';
 import { getSeasonDef } from '../data/seasons.ts';
@@ -443,6 +444,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     if (getDistanceToTrail(x, z) < 3.2) continue;
     if (isNearRoad(x, z, 3.0)) continue;
     if (isInBald(park, x, z)) continue; // treeless meadow (Task 23)
+    if (isBareBadlands(x, z)) continue; // bare banded rock (Task 25)
 
     // 4. Bridge exclusion zone
     if (getBridges(park).some(b => x >= (b.westX - 3.5) && x <= (b.eastX + 3.5) && Math.abs(z - b.centerZ) < 5.0)) continue;
@@ -561,6 +563,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
     if (getRiverDistance(x, z) < (park.water.halfWidth + 1.2)) continue;
     if (getDistanceToTrail(x, z) < 1.6) continue;
     if (isNearRoad(x, z, 2.0)) continue;
+    if (isBareBadlands(x, z)) continue; // bare banded rock (Task 25)
     if (isPointOnBridge(x, z) || isPointOnSummitDeck(x, z)) continue;
     if (slopeAt(x, z) > 0.95) continue;
 
@@ -611,6 +614,7 @@ export function createForestSystem(scene: THREE.Scene, worldSize = 600): void {
       if (getRiverDistance(x, z) < park.water.halfWidth + 1.2) return false;
       if (getDistanceToTrail(x, z) < trailGap) return false;
       if (isNearRoad(x, z, 2.0)) return false;
+      if (isBareBadlands(x, z)) return false; // bare banded rock (Task 25)
       if (isPointOnBridge(x, z) || isPointOnSummitDeck(x, z)) return false;
       if (slopeAt(x, z) > 0.8) return false;
       const gh = heightAt(x, z);
