@@ -20,6 +20,7 @@ import { createWaterShaderMaterial, createRiverWaterMesh } from '../shaders/wate
 import { createTrailMeshGroup } from '../entities/trailMesh.ts';
 import { getWaterMode } from '../data/parkStructure.ts';
 import { badlandsBelt, strataBand } from '../terrain/badlandsRelief.ts';
+import { climbEffort, steepWalkDrain } from '../utils/exertion.ts';
 import { createBridgeGroup } from '../entities/bridge.ts';
 import { createSummitOverlookGroup } from '../entities/summitOverlook.ts';
 import { createRocksSystem, pushOutOfRocks } from '../entities/rocks.ts';
@@ -1202,6 +1203,14 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       }
       isNearWaterStationRef.current = nearWaterStation;
 
+      // Task 25: how steeply are we climbing? Uphill work costs extra stamina and water.
+      const gx = (heightAt(p.pos.x + 1, p.pos.z) - heightAt(p.pos.x - 1, p.pos.z)) / 2;
+      const gz = (heightAt(p.pos.x, p.pos.z + 1) - heightAt(p.pos.x, p.pos.z - 1)) / 2;
+      const slopeAlong = gx * dirX + gz * dirZ;
+      const climbGrade = wantsMove && !inRiverNow ? Math.max(0, slopeAlong) : 0;
+      const effort = climbEffort(climbGrade);
+      const steepDrain = steepWalkDrain(climbGrade);
+
       const sprintHeld = keys.has('ShiftLeft') || keys.has('ShiftRight');
       const sprinting = sprintHeld && wantsMove && !p.exhausted && p.stamina > 0 && !inRiverNow;
 
@@ -1224,11 +1233,20 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       }
 
       if (sprinting) {
-        p.stamina -= WORLD_SETTINGS.staminaDrain * dehydratedDrain * dt;
+        p.stamina -= WORLD_SETTINGS.staminaDrain * dehydratedDrain * effort * dt;
         p.regenTimer = WORLD_SETTINGS.staminaRegenDelay;
         if (p.stamina <= 0) {
           p.stamina = 0;
           p.exhausted = true;
+        }
+      } else if (steepDrain > 0 && !p.exhausted) {
+        // walking up a very steep slope tires you out, and you do not recover while you keep climbing
+        p.stamina -= steepDrain * dehydratedDrain * dt;
+        p.regenTimer = WORLD_SETTINGS.staminaRegenDelay;
+        if (p.stamina <= 0) {
+          p.stamina = 0;
+          p.exhausted = true;
+          showToast('Out of breath on the climb. Rest a moment on level ground.');
         }
       } else {
         p.regenTimer -= dt;
@@ -1242,11 +1260,8 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       }
 
       // Update Hydration Drainage (Task 7)
-      progress.updateHydrationDrain(dt, sprinting, wantsMove);
+      progress.updateHydrationDrain(dt, sprinting, wantsMove, effort);
 
-      const gx = (heightAt(p.pos.x + 1, p.pos.z) - heightAt(p.pos.x - 1, p.pos.z)) / 2;
-      const gz = (heightAt(p.pos.x, p.pos.z + 1) - heightAt(p.pos.x, p.pos.z - 1)) / 2;
-      const slopeAlong = gx * dirX + gz * dirZ;
       const slopeFactor = Math.max(0.5, 1.0 - Math.max(slopeAlong, 0) * 0.75);
 
       let topSpeed = (sprinting ? WORLD_SETTINGS.sprintSpeed : WORLD_SETTINGS.walkSpeed) * slopeFactor;

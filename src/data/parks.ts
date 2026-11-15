@@ -37,7 +37,7 @@ export interface ParkLitter {
 }
 
 export interface ParkWildlifeSpawn {
-  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog';
+  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep';
   isBuck: boolean;
   isFawn?: boolean;
   x: number;
@@ -155,6 +155,10 @@ export interface ParkFeatures {
   caveTour?: { x: number; z: number; yaw?: number };
   /** Task 25: a notched log ladder up a steep step in a trail (Badlands Notch Trail). The foot is at x, z and it climbs toward yaw (0 = south) for `run` metres. Its height comes from the ground. */
   logLadder?: { x: number; z: number; yaw: number; run: number }[];
+  /** Task 25: a natural rock window you can walk or look through (rock jambs and a lintel standing on the trail). The ground itself cannot have holes, so the window is built as a rock frame. yaw 0 = the way through points south. */
+  rockWindows?: { x: number; z: number; yaw: number; /** Clear width of the opening (m) */ opening: number; /** Clear height of the opening (m) */ height: number; colors?: number[] }[];
+  /** Task 25: wooden railings along both sides and across the end of a path's last stretch (a railed viewpoint, as at the Window Trail). Players cannot walk through them. */
+  railings?: { path: string; length: number; endCap?: boolean }[];
   /** Task 25: a prairie dog town: bare dirt mounds with burrow holes. Prairie dogs themselves come from wildlife.spawns. */
   prairieDogTown?: { x: number; z: number; radius: number; mounds: number; /** How many prairie dogs live on the mounds (default: one for every second mound). */ dogs?: number };
   /** Trail cairns (small stacks of stones) on bare ground above this height, one every `every` metres. */
@@ -3155,7 +3159,7 @@ export const BADLANDS: ParkDefinition = {
       id: 'the-window',
       name: 'The Window',
       shortName: 'Window',
-      description: 'A short boardwalk ends at a view through the Wall over an intricately eroded canyon. Please stay on the trail.',
+      description: 'A short boardwalk leads to a natural window in the Badlands Wall, with a railed viewpoint and a view of an intricately eroded canyon. Please stay on the trail.',
       x: 36, y: 3.6, z: -16, yaw: Math.PI,
     },
     {
@@ -3209,12 +3213,19 @@ export const BADLANDS: ParkDefinition = {
       { species: 'bison', isBuck: false, isFawn: false, x: 144.0, z: -160.0, roamRadius: 9.0 },
       { species: 'bison', isBuck: false, isFawn: false, x: 164.0, z: -176.0, roamRadius: 9.0 },
       { species: 'bison', isBuck: true, isFawn: false, x: 136.0, z: -176.0, roamRadius: 9.0 },
+      // bighorn sheep on the high benches of the Wall, away from the trails: a herd of ewes and lambs, and bachelor rams in separate groups
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 72.0, z: -12.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 77.0, z: -9.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 68.0, z: -9.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: -108.0, z: -6.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: -113.0, z: -4.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: 126.0, z: -6.0, roamRadius: 5.0 },
       // deer out on the prairie to the east
       { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: 200.0, z: -90.0, roamRadius: 14.0 },
       { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: 210.0, z: -82.0, roamRadius: 14.0 },
     ],
     // Badlands asks visitors to keep at least 100 feet (30.5 m) from ALL wildlife
-    safeDistanceOverrides: { 'white-tailed-deer': 30.5, bison: 30.5, 'prairie-dog': 30.5 },
+    safeDistanceOverrides: { 'white-tailed-deer': 30.5, bison: 30.5, 'prairie-dog': 30.5, 'bighorn-sheep': 30.5 },
   },
   features: {
     roads: [
@@ -3262,6 +3273,10 @@ export const BADLANDS: ParkDefinition = {
       { x: -10.0, z: -66.0, yaw: Math.PI / 2, color: 0x9a2a2a },
     ],
     logLadder: [{ x: -63, z: -14, yaw: 0, run: 5.4 }],
+    // NPS: the Window Trail leads to a natural window in the Badlands Wall. The ground cannot have a hole, so the window is a rock frame you walk through.
+    rockWindows: [{ x: 35.2, z: -22, yaw: 0.16, opening: 4.2, height: 3.4 }],
+    // NPS: the Window Trail is a full boardwalk leading out to a viewpoint with railings
+    railings: [{ path: 'window-trail', length: 7, endCap: true }],
     // hoodoo-like spires standing on the rugged slopes behind the Wall
     pinnacles: [
       { x: 60, z: 42, radius: 55, innerRadius: 8, count: 16, minHeight: 2.5, maxHeight: 7, colors: [0xd0bd98, 0xc2a584, 0xd9ccb0, 0xb99a7c] },
@@ -3290,7 +3305,7 @@ export const BADLANDS: ParkDefinition = {
   },
   about: {
     designNote:
-      'A game-scale map of the Door and Window parking area and the trails that start from it. It follows what the NPS pages say: the Door and Window trails are short boardwalks through and into the Badlands Wall; the Notch Trail starts at the south end of the same parking area, meanders through a canyon, climbs a log ladder and follows a ledge to the Notch; the Castle Trail also starts there and runs five miles one way (only its first stretch fits here); the Badlands Loop Road runs along the north side of the Wall. Distances, heights and the exact positions of the trails and the Wall are game placements, not a survey. The Window is shown as a low gap in the Wall, not as a hole. The bison herd, prairie dog town and deer are real kinds of Badlands wildlife, but they are packed close to the trails here (in reality, for example, the best-known prairie dog town is far to the west along Sage Creek Rim Road). Bighorn sheep, pronghorn and black-footed ferrets are real Badlands animals but are not modelled yet. This map has no drinking water, because the NPS lists none for this trailhead. The Badlands Wall, the overlooks along the Loop Road and the Cedar Pass area are only partly shown. The elevation range is taken from the NPS map description (Ben Reifel Visitor Center 745 m; Sheep Mountain Table about 1,000 m) and is not the height of anything you can reach in the game.',
+      'A game-scale map of the Door and Window parking area and the trails that start from it. It follows what the NPS pages say: the Door and Window trails are short boardwalks through and into the Badlands Wall; the Notch Trail starts at the south end of the same parking area, meanders through a canyon, climbs a log ladder and follows a ledge to the Notch; the Castle Trail also starts there and runs five miles one way (only its first stretch fits here); the Badlands Loop Road runs along the north side of the Wall. Distances, heights and the exact positions of the trails and the Wall are game placements, not a survey. The Window is built as a rock frame (two rock jambs and a lintel) that you walk through, because the game\'s ground cannot hold a hole; its size and exact spot are game choices. The railings follow the NPS note that the Window boardwalk ends at a viewpoint with railings. The bison herd, prairie dog town and deer are real kinds of Badlands wildlife, but they are packed close to the trails here (in reality, for example, the best-known prairie dog town is far to the west along Sage Creek Rim Road). Bighorn sheep, bison, deer and prairie dogs are modelled (a herd of ewes and separate groups of rams, as the NPS describes). Pronghorn and black-footed ferrets are real Badlands animals but are not modelled yet. This map has no drinking water, because the NPS lists none for this trailhead. The Badlands Wall, the overlooks along the Loop Road and the Cedar Pass area are only partly shown. The elevation range is taken from the NPS map description (Ben Reifel Visitor Center 745 m; Sheep Mountain Table about 1,000 m) and is not the height of anything you can reach in the game.',
     wildlifeGuidance: {
       text:
         'Badlands asks visitors to keep a distance of at least 100 feet from all wildlife. If wildlife reacts to your presence at all, you are too close.',
@@ -3317,7 +3332,7 @@ export const BADLANDS: ParkDefinition = {
       {
         id: 'door-window',
         title: 'The Door and the Window',
-        text: 'The Door Trail is an accessible boardwalk through a break in the Badlands Wall; past its end, the maintained trail stops and travel is at your own risk. The Window Trail is a short walk to a natural window in the Wall with a view of an intricately eroded canyon.',
+        text: 'The Door Trail is an accessible boardwalk through a break in the Badlands Wall; past its end, the maintained trail stops and travel is at your own risk. The Window Trail is a short boardwalk to a natural window in the Wall with a view of an intricately eroded canyon, ending at a viewpoint with railings.',
         sourceUrl: 'https://www.nps.gov/thingstodo/hiking-badl.htm',
         sourceLabel: 'nps.gov: Hiking the Badlands',
       },
@@ -3355,6 +3370,13 @@ export const BADLANDS: ParkDefinition = {
         text: 'The park\'s 244,000 acres protect an expanse of mixed-grass prairie where bison, bighorn sheep, prairie dogs and black-footed ferrets live today.',
         sourceUrl: 'https://home.nps.gov/badl',
         sourceLabel: 'nps.gov: Badlands National Park',
+      },
+      {
+        id: 'bighorn',
+        title: 'Cliff-climbing sheep',
+        text: 'Bighorn sheep drop down to grasslands to eat quickly, then retreat to cliffs away from predators. Badlands received its herd in 1964, when twenty-two bighorn were moved from Pike\'s Peak, Colorado; the park now has about 250.',
+        sourceUrl: 'https://www.nps.gov/articles/000/bighorn-sheep-badl.htm',
+        sourceLabel: 'nps.gov: Bighorn Sheep in the Badlands',
       },
       {
         id: 'prairie-dogs',

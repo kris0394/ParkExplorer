@@ -910,6 +910,139 @@ function buildLogLadders(group: THREE.Group): void {
   }
 }
 
+/** Task 25: lumpy rock blob (a squashed, bumpy icosahedron) coloured in bands, used for natural arches and windows. */
+function rockBlob(rx: number, ry: number, rz: number, colors: number[], rand: () => number): THREE.Mesh {
+  const geo = new THREE.IcosahedronGeometry(1, 2);
+  const pos = geo.attributes.position;
+  const col = new Float32Array(pos.count * 3);
+  const c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const bump = 0.86 + rand() * 0.26;
+    const x = pos.getX(i) * bump * rx;
+    const y = pos.getY(i) * bump * ry;
+    const z = pos.getZ(i) * bump * rz;
+    pos.setXYZ(i, x, y, z);
+    // horizontal rock layers: the colour changes every 0.55 m of height
+    const band = Math.floor((y + ry * 2) / 0.55);
+    c.set(colors[((band % colors.length) + colors.length) % colors.length]);
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+/** Task 25: natural rock windows (the Badlands Window): two rock jambs and a lintel over an opening you can walk or look through. */
+function buildRockWindows(group: THREE.Group, rand: () => number): void {
+  const windows = getActivePark().features?.rockWindows ?? [];
+  for (const w of windows) {
+    const colors = w.colors ?? [0xd8c8a2, 0xb99a6e, 0xc9a08a, 0xcfc6b0, 0xa68a72];
+    const fx = Math.sin(w.yaw); // the way through
+    const fz = Math.cos(w.yaw);
+    const sx = Math.cos(w.yaw); // sideways
+    const sz = -Math.sin(w.yaw);
+    const base = heightAt(w.x, w.z);
+    const half = w.opening / 2;
+    // two jambs (stacks of rock) and, behind each, a wider shoulder of the Wall
+    for (const side of [-1, 1]) {
+      const cx = w.x + sx * side * (half + 1.3);
+      const cz = w.z + sz * side * (half + 1.3);
+      for (let k = 0; k < 3; k++) {
+        const b = rockBlob(1.55 - k * 0.12, 1.25, 2.1 - k * 0.1, colors, rand);
+        b.position.set(cx + (rand() - 0.5) * 0.3, base + 0.6 + k * 1.35, cz + (rand() - 0.5) * 0.3);
+        b.rotation.y = w.yaw + (rand() - 0.5) * 0.3;
+        group.add(b);
+      }
+      const shoulder = rockBlob(3.4, 2.6, 3.0, colors, rand);
+      shoulder.position.set(w.x + sx * side * (half + 4.2), base + 1.4, w.z + sz * side * (half + 4.2));
+      shoulder.rotation.y = w.yaw;
+      group.add(shoulder);
+      // the jambs and shoulder are solid
+      for (const [off, r] of [[half + 1.3, 1.5], [half + 4.2, 2.6]] as [number, number][]) {
+        registerObstacle(w.x + sx * side * off, w.z + sz * side * off, r);
+      }
+    }
+    // the lintel spans the opening
+    const lintel = rockBlob(half + 2.9, 1.15, 2.3, colors, rand);
+    lintel.position.set(w.x + fx * 0.1, base + w.height + 0.9, w.z + fz * 0.1);
+    lintel.rotation.y = w.yaw;
+    group.add(lintel);
+  }
+}
+
+/** Task 25: wooden railings along the last stretch of a path (both sides) and across its end. */
+function buildRailings(group: THREE.Group): void {
+  const park = getActivePark();
+  const list = park.features?.railings ?? [];
+  if (list.length === 0) return;
+  const wood = new THREE.MeshLambertMaterial({ color: 0x8a7658 });
+  const OFFSET = 1.6; // metres either side of the path centre line
+  const postGeo = new THREE.BoxGeometry(0.12, 1.1, 0.12);
+  for (const r of list) {
+    const path = getTrailPaths(park).find(p => p.id === r.path);
+    if (!path || path.nodes.length < 2) continue;
+    // walk back along the path from its end, collecting points about every 0.8 m
+    const pts: { x: number; z: number }[] = [];
+    let remaining = r.length;
+    let a = path.nodes[path.nodes.length - 1];
+    pts.push({ x: a.x, z: a.z });
+    for (let i = path.nodes.length - 2; i >= 0 && remaining > 0; i--) {
+      const b = path.nodes[i];
+      const segLen = Math.hypot(a.x - b.x, a.z - b.z);
+      const use = Math.min(segLen, remaining);
+      for (let d = 0.8; d <= use + 1e-6; d += 0.8) pts.push({ x: a.x + ((b.x - a.x) * d) / segLen, z: a.z + ((b.z - a.z) * d) / segLen });
+      remaining -= use;
+      a = b;
+    }
+    pts.reverse(); // now ordered from the start of the stretch to the end of the path
+    const side = (i: number, s: number) => {
+      const p = pts[i];
+      const q = pts[Math.min(pts.length - 1, i + 1)];
+      const p0 = pts[Math.max(0, i - 1)];
+      const dx = q.x - p0.x;
+      const dz = q.z - p0.z;
+      const len = Math.hypot(dx, dz) || 1;
+      return { x: p.x + (-dz / len) * OFFSET * s, z: p.z + (dx / len) * OFFSET * s };
+    };
+    const lines: { x: number; z: number }[][] = [[], []];
+    for (let i = 0; i < pts.length; i++) { lines[0].push(side(i, 1)); lines[1].push(side(i, -1)); }
+    if (r.endCap !== false) {
+      // across the end: join the two sides with points every 0.8 m
+      const e0 = lines[0][lines[0].length - 1];
+      const e1 = lines[1][lines[1].length - 1];
+      const n = Math.max(2, Math.round(Math.hypot(e0.x - e1.x, e0.z - e1.z) / 0.8));
+      const cap: { x: number; z: number }[] = [];
+      for (let k = 0; k <= n; k++) cap.push({ x: e0.x + ((e1.x - e0.x) * k) / n, z: e0.z + ((e1.z - e0.z) * k) / n });
+      lines.push(cap);
+    }
+    for (const line of lines) {
+      for (let i = 0; i < line.length; i++) {
+        const p = line[i];
+        const gy = heightAt(p.x, p.z);
+        const post = new THREE.Mesh(postGeo, wood);
+        post.position.set(p.x, gy + 0.5, p.z);
+        post.castShadow = true;
+        group.add(post);
+        registerObstacle(p.x, p.z, 0.2);
+        if (i < line.length - 1) {
+          const q = line[i + 1];
+          const gy2 = heightAt(q.x, q.z);
+          const len = Math.hypot(q.x - p.x, q.z - p.z);
+          for (const h of [0.95, 0.55]) {
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, len), wood);
+            rail.position.set((p.x + q.x) / 2, (gy + gy2) / 2 + h, (p.z + q.z) / 2);
+            rail.rotation.y = Math.atan2(q.x - p.x, q.z - p.z);
+            group.add(rail);
+          }
+        }
+      }
+    }
+  }
+}
+
 export function createParkFeaturesGroup(): THREE.Group {
   const group = new THREE.Group();
   group.name = 'parkFeatures';
@@ -919,6 +1052,8 @@ export function createParkFeaturesGroup(): THREE.Group {
   buildCaveTour(group);
   buildPrairieDogTown(group);
   buildLogLadders(group);
+  buildRockWindows(group, mulberry32(5151 + (park.layoutSeed ?? 0)));
+  buildRailings(group);
   const f = park.features;
   if (!f) return group;
   const rand = mulberry32(7771 + (park.layoutSeed ?? 0));

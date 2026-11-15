@@ -217,6 +217,38 @@ SPECIES_CATALOGUE['prairie-dog'] = {
   ],
 };
 
+SPECIES_CATALOGUE['bighorn-sheep'] = {
+  id: 'bighorn-sheep',
+  name: 'Bighorn Sheep',
+  scientific: 'Ovis canadensis',
+  safeDistanceM: 30.5,
+  blurb:
+    'A sure-footed sheep of rocky cliffs and buttes. Rams carry massive curled horns; ewes have short, thin ones. It is watched from a distance, never approached.',
+  variants: ['Bighorn ram (curled horns)', 'Bighorn ewe'],
+  facts: [
+    {
+      id: 'grass-and-cliffs',
+      unlock: 'identified',
+      text: 'Bighorn drop down to grasslands to eat large amounts of grass and shrubs quickly, then retreat to cliffs, away from predators, where they chew their food again as cud.',
+    },
+    {
+      id: 'home-herd',
+      unlock: 'photographed',
+      text: 'The Badlands received its own herd in 1964, when twenty-two bighorn were moved from Pike\'s Peak in Colorado. A second group arrived in 2004 from Wheeler Peak in New Mexico. The park now has about 250 of the roughly 80,000 bighorn in the United States.',
+    },
+    {
+      id: 'few-predators',
+      unlock: 'responsible',
+      text: 'Adult bighorn in Badlands have few to no natural predators. The most common way for them to die is by accident or disease: a lamb that missteps climbing or descending a slope can take a fatal fall. Badlands asks visitors to stay at least 100 feet (30 m) from all wildlife.',
+    },
+    {
+      id: 'groups',
+      unlock: 'allVariants',
+      text: 'Bighorn live in separate groups by sex and age. Ewes and lambs form large herds, while young rams leave their mother\'s herd at about two to four years old and join a bachelor group of up to ten rams, led by a dominant ram.',
+    },
+  ],
+};
+
 export function getSpeciesIdFromName(name: string): string {
   for (const sp of Object.values(SPECIES_CATALOGUE)) {
     if (sp.name === name) return sp.id;

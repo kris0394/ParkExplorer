@@ -12,7 +12,7 @@ import { pushOutOfRocks } from './rocks.ts';
 
 export type DeerState = 'IDLE' | 'WANDER' | 'FEED' | 'ALERT' | 'FLEE' | 'APPROACH';
 
-export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog';
+export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep';
 
 export interface DeerConfig {
   id: string;
@@ -98,6 +98,11 @@ export class DeerEntity {
     return this.species === 'prairie-dog';
   }
 
+  /** Task 25: Rocky Mountain bighorn sheep (Badlands). A "buck" is a ram. */
+  get isBighorn(): boolean {
+    return this.species === 'bighorn-sheep';
+  }
+
   /** Big herd animals (elk and bison) tolerate people from farther away and bolt later. */
   get isHerd(): boolean {
     return this.species === 'elk' || this.species === 'bison';
@@ -114,12 +119,13 @@ export class DeerEntity {
   }
 
   get speciesName(): string {
-    return this.isBear ? 'Black Bear' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
+    return this.isBear ? 'Black Bear' : this.isBighorn ? 'Bighorn Sheep' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
   }
 
   get detailLabel(): string {
     if (this.isBear) return 'Adult black bear';
     if (this.isBison) return this.isBuck ? 'Bull bison' : 'Cow bison';
+    if (this.isBighorn) return this.isBuck ? 'Bighorn ram (curled horns)' : 'Bighorn ewe';
     if (this.isPrairieDog) return 'Adult prairie dog';
     if (this.isElk) return this.isBuck ? 'Bull elk (antlered)' : 'Cow elk';
     if (this.isFawn) return 'Spotted fawn';
@@ -131,6 +137,7 @@ export class DeerEntity {
   get visualHeight(): number {
     if (this.isBear) return 1.1;
     if (this.isBison) return this.isBuck ? 1.9 : 1.6;
+    if (this.isBighorn) return this.isBuck ? 1.2 : 1.0;
     if (this.isPrairieDog) return 0.25;
     if (this.isElk) return this.isBuck ? 2.7 : 2.1;
     return this.isFawn ? 0.8 : this.isBuck ? 1.55 : 1.35;
@@ -164,8 +171,13 @@ export class DeerEntity {
     const isBear = this.isBear;
     const isBison = this.isBison;
     const isPD = this.isPrairieDog;
-    const stocky = isBear || isBison || isPD; // short, heavy legs and a thick neck
-    const furColor = isBison
+    const isSheep = this.isBighorn;
+    const stocky = isBear || isBison || isPD || isSheep; // short, heavy legs and a thick neck
+    const furColor = isSheep
+      ? this.isBuck
+        ? 0x8a6a4b // brown ram
+        : 0x967a5a // lighter ewe
+      : isBison
       ? 0x3f2d21 // dark brown bison
       : isPD
       ? 0xb48a5a // sandy tan prairie dog
@@ -182,14 +194,14 @@ export class DeerEntity {
       : 0xb07548; // sleek warm golden-tan doe
 
     const furMat = new THREE.MeshLambertMaterial({ color: furColor });
-    const bellyMat = new THREE.MeshLambertMaterial({ color: isBear || isBison ? furColor : isPD ? 0xe3cfa8 : 0xf5eee6 }); // white underbelly (bears and bison: same fur; prairie dogs: cream)
+    const bellyMat = new THREE.MeshLambertMaterial({ color: isBear || isBison ? furColor : isPD ? 0xe3cfa8 : isSheep ? 0xe9dcc4 : 0xf5eee6 }); // white underbelly (bears and bison: same fur; prairie dogs: cream)
     const tanMat = new THREE.MeshLambertMaterial({ color: 0x9a7a55 }); // bear muzzle
     const hoofMat = new THREE.MeshLambertMaterial({ color: 0x1f1b17 });
     const antlerMat = new THREE.MeshStandardMaterial({ color: 0xe0d6c5, roughness: 0.75, metalness: 0.1 });
     const noseMat = new THREE.MeshLambertMaterial({ color: 0x161311 });
     const eyeMat = new THREE.MeshStandardMaterial({ color: 0x060504, roughness: 0.15 });
 
-    const scale = isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
+    const scale = isSheep ? (this.isBuck ? 1.0 : 0.84) : isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
     this.bodyBaseY = stocky ? 0.66 : 1.15;
     // Elk: darker neck and mane, cream rump patch, short tail
     const maneMat = new THREE.MeshLambertMaterial({ color: 0x4a3524 });
@@ -224,6 +236,14 @@ export class DeerEntity {
         spotMesh.position.set(side, 0.25, z);
         this.bodyMesh.add(spotMesh);
       }
+    }
+
+    if (isSheep) {
+      // Bighorn: a big white rump patch, pale muzzle, and horns (massive curls on rams, short thin horns on ewes)
+      const rumpMat = new THREE.MeshLambertMaterial({ color: 0xf2ece0 });
+      const rump = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.46, 0.10), rumpMat);
+      rump.position.set(0, 0.04, -0.58);
+      this.bodyMesh.add(rump);
     }
 
     if (isElk) {
@@ -365,6 +385,25 @@ export class DeerEntity {
       }
     }
 
+    if (isSheep) {
+      const hornMat = new THREE.MeshLambertMaterial({ color: this.isBuck ? 0xb5a07c : 0x3f352b });
+      const ram = this.isBuck;
+      const R = ram ? 0.2 : 0.11;
+      const tube = ram ? 0.052 : 0.02;
+      const arc = Math.PI * (ram ? 1.75 : 0.8);
+      for (const side of [-1, 1]) {
+        // an arc in the up-back-down-forward plane: starts at the head, sweeps up and back, then curls down and forward
+        const hornGeo = new THREE.TorusGeometry(R, tube, 6, 20, arc);
+        hornGeo.rotateZ(Math.PI - arc);
+        hornGeo.rotateY(Math.PI / 2);
+        const horn = new THREE.Mesh(hornGeo, hornMat);
+        horn.position.set(side * 0.1, 0.12, ram ? -R + 0.03 : -R + 0.02);
+        horn.rotation.z = side * -0.3; // flare outward
+        horn.castShadow = true;
+        this.headPivot.add(horn);
+      }
+    }
+
     if (isBison) {
       // Shaggy dark shoulder hump and mane, short curved horns, beard and a tufted tail
       const dark = new THREE.MeshLambertMaterial({ color: 0x2b1e15 });
@@ -409,6 +448,7 @@ export class DeerEntity {
     if (isElk) this.tailPivot.scale.set(0.5, 0.5, 0.5);
     if (isBear) this.tailPivot.scale.set(0.4, 0.35, 0.4);
     if (isBison) this.tailPivot.scale.set(0.55, 0.9, 0.55);
+    if (isSheep) this.tailPivot.scale.set(0.35, 0.3, 0.35);
     if (isPD) this.tailPivot.scale.set(0.5, 0.6, 0.5);
 
     const tailGeo = new THREE.BoxGeometry(0.11, 0.30, 0.08);
