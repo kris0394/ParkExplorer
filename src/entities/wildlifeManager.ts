@@ -47,7 +47,7 @@ export class WildlifeManager {
     park.wildlife.spawns.forEach((cfg, idx) => {
       // Bears are far less active in winter, so none are shown then
       if (cfg.species === 'black-bear' && !getSeasonDef().bear.active) return;
-      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : cfg.species === 'bison' ? 'bison' : cfg.species === 'prairie-dog' ? 'pdog' : 'deer';
+      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : cfg.species === 'bison' ? 'bison' : cfg.species === 'prairie-dog' ? 'pdog' : cfg.species === 'bighorn-sheep' ? 'sheep' : 'deer';
       const deer = new DeerEntity({
         id: `${prefix}_${idx}`,
         species: cfg.species,
@@ -157,6 +157,12 @@ export class WildlifeManager {
             ? 'Black Bear'
             : nearestSpeciesName === 'Elk'
             ? nearestIsDoe ? 'Cow Elk' : 'Bull Elk'
+            : nearestSpeciesName === 'Bighorn Sheep'
+            ? nearestIsDoe ? 'Bighorn Ewe' : 'Bighorn Ram'
+            : nearestSpeciesName === 'American Bison'
+            ? nearestIsDoe ? 'Cow Bison' : 'Bull Bison'
+            : nearestSpeciesName === 'Black-tailed Prairie Dog'
+            ? 'Prairie Dog'
             : nearestIsDoe ? 'White-Tailed Doe' : 'White-Tailed Buck';
         onObservationToast(
           isLookingThroughTelescope

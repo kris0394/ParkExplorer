@@ -530,7 +530,7 @@ class ProgressStore {
 
   private hydrationNotifyTimer = 0;
 
-  public updateHydrationDrain(dt: number, isSprinting: boolean, isMoving: boolean): void {
+  public updateHydrationDrain(dt: number, isSprinting: boolean, isMoving: boolean, climbEffort = 1): void {
     const cur = this.snapshot.data;
     const hasBladder = Boolean(cur.ownedEquipment.canteen_pro);
     const hasElectrolytes = Boolean(cur.ownedEquipment.first_aid);
@@ -538,6 +538,7 @@ class ProgressStore {
     let drainRate = 0.4; // % per minute resting
     if (isMoving) drainRate = 1.6;
     if (isSprinting) drainRate = 4.2;
+    if (isMoving) drainRate *= climbEffort; // Task 25: climbing makes you thirstier
 
     if (hasBladder) drainRate *= 0.7;
     if (hasElectrolytes) drainRate *= 0.8;
