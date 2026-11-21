@@ -4071,19 +4071,23 @@ export const ARCHES: ParkDefinition = {
   wildlife: {
     // NPS: mule deer, kit foxes and (more often) jackrabbits are animals you may see at Arches. All three keep at least 23 m away from the trails.
     spawns: [
-      { species: 'mule-deer', isBuck: true, isFawn: false, x: 66.0, z: -2.0, roamRadius: 9.0 },
-      { species: 'mule-deer', isBuck: false, isFawn: false, x: 74.0, z: 6.0, roamRadius: 9.0 },
-      { species: 'mule-deer', isBuck: false, isFawn: false, x: 60.0, z: 10.0, roamRadius: 9.0 },
-      { species: 'kit-fox', isBuck: false, isFawn: false, x: 80.0, z: -26.0, roamRadius: 8.0 },
-      { species: 'kit-fox', isBuck: false, isFawn: false, x: 66.0, z: -38.0, roamRadius: 8.0 },
-      { species: 'jackrabbit', isBuck: false, isFawn: false, x: -24.0, z: 26.0, roamRadius: 8.0 },
-      { species: 'jackrabbit', isBuck: false, isFawn: false, x: -36.0, z: 32.0, roamRadius: 8.0 },
-      { species: 'jackrabbit', isBuck: false, isFawn: false, x: 44.0, z: 30.0, roamRadius: 8.0 },
-      // coyotes on the desert floor, well away from the trails
-      { species: 'coyote', isBuck: false, isFawn: false, x: -92.0, z: 38.0, roamRadius: 10.0 },
-      { species: 'coyote', isBuck: false, isFawn: false, x: 96.0, z: 26.0, roamRadius: 10.0 },
-      // ONE mountain lion, far away on the edge of the fin (NPS: sightings in Arches are very rare, usually from a distance)
-      { species: 'mountain-lion', isBuck: false, isFawn: false, x: 126.0, z: -64.0, roamRadius: 3.0 },
+      // mule deer east of the parking area, about 28 to 35 m from the trails and easy to see from the lot
+      { species: 'mule-deer', isBuck: true, isFawn: false, x: 44.0, z: -4.0, roamRadius: 7.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: 48.0, z: -12.0, roamRadius: 7.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: 40.0, z: 8.0, roamRadius: 7.0 },
+      // kit foxes (shy; the real ones are mostly nocturnal)
+      { species: 'kit-fox', isBuck: false, isFawn: false, x: 0.0, z: 24.0, roamRadius: 6.0 },
+      { species: 'kit-fox', isBuck: false, isFawn: false, x: 52.0, z: -24.0, roamRadius: 6.0 },
+      // black-tailed jackrabbits south and southwest of the lot
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: -24.0, z: 28.0, roamRadius: 6.0 },
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: -36.0, z: 20.0, roamRadius: 6.0 },
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: 20.0, z: 24.0, roamRadius: 6.0 },
+      // coyotes, within sight of the Double Arch trail and the lot
+      { species: 'coyote', isBuck: false, isFawn: false, x: -76.0, z: 12.0, roamRadius: 8.0 },
+      { species: 'coyote', isBuck: false, isFawn: false, x: 36.0, z: 20.0, roamRadius: 8.0 },
+      // ONE mountain lion on the edge of the fin (NPS: sightings in Arches are very rare, usually from a distance).
+      // It can be spotted from the South Window, about 55 m away.
+      { species: 'mountain-lion', isBuck: false, isFawn: false, x: 90.0, z: -72.0, roamRadius: 3.0 },
     ],
     safeDistanceOverrides: { 'mule-deer': 23.0, 'kit-fox': 23.0, jackrabbit: 23.0, coyote: 23.0, 'mountain-lion': 46.0 },
   },

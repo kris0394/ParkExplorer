@@ -227,11 +227,11 @@ export class DeerEntity {
         ? 0x8a775e // gray-brown buck
         : 0x927f66
       : isFox
-      ? 0xcdb892 // sandy buff
+      ? 0xc0a574 // sandy buff, a little darker so it shows against the sand
       : isHare
-      ? 0xb39a76 // tan-brown
+      ? 0xa88c64 // tan-brown, a little darker so it shows against the sand
       : isCoyote
-      ? 0x9d8b6e // gray-tan
+      ? 0x8f7d60 // gray-tan
       : isCat
       ? 0xc2a074 // tawny
       : isHorse
