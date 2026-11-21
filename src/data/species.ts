@@ -281,6 +281,38 @@ SPECIES_CATALOGUE['pronghorn'] = {
   ],
 };
 
+SPECIES_CATALOGUE['wild-horse'] = {
+  id: 'wild-horse',
+  name: 'Feral Horse',
+  scientific: 'Equus caballus',
+  safeDistanceM: 23.0,
+  blurb:
+    'The "wild horses" of the South Unit are feral: they descend from domestic stock. They graze in small bands and are often seen from the Scenic Loop Drive.',
+  variants: ['Feral horse stallion', 'Feral horse mare'],
+  facts: [
+    {
+      id: 'south-unit-only',
+      unlock: 'identified',
+      text: 'Feral horses live in the South Unit only. They are often visible from the Scenic Loop Drive and from Interstate 94.',
+    },
+    {
+      id: 'cultural-resource',
+      unlock: 'photographed',
+      text: 'The horses descend from domestic stock. Today the park maintains them as a cultural resource, a reminder of the ranching days when Theodore Roosevelt lived in the badlands.',
+    },
+    {
+      id: 'not-tame',
+      unlock: 'responsible',
+      text: 'Bison, feral horses and prairie dogs may seem tame, but they are wild animals and can be dangerous. Theodore Roosevelt National Park asks you to watch wildlife from at least 25 yards (23 m).',
+    },
+    {
+      id: 'both',
+      unlock: 'allVariants',
+      text: 'Find both a stallion and a mare from a safe distance to complete the journal entry for the feral horse.',
+    },
+  ],
+};
+
 export function getSpeciesIdFromName(name: string): string {
   for (const sp of Object.values(SPECIES_CATALOGUE)) {
     if (sp.name === name) return sp.id;

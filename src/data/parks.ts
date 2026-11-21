@@ -37,7 +37,7 @@ export interface ParkLitter {
 }
 
 export interface ParkWildlifeSpawn {
-  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn';
+  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn' | 'wild-horse';
   isBuck: boolean;
   isFawn?: boolean;
   x: number;
@@ -97,7 +97,16 @@ export interface ParkRoad {
  * so they stay walkable. Leave out for every other park (their ground is unchanged).
  */
 export interface BadlandsConfig {
-  /** The crest line of the wall, west to east (z grows to the south). Land north of it is prairie, south of it is badlands. */
+  /**
+   * Which way the badlands fall away from the prairie. 'south' (default): prairie in the north, badlands to the south.
+   * 'west': prairie in the east, badlands (and the river) to the west; 'east' and 'north' likewise.
+   * `wall` and `gaps` are written in that turned frame (see wall).
+   */
+  facing?: 'south' | 'west' | 'east' | 'north';
+  /**
+   * The crest line of the wall, written in the turned frame: x runs ALONG the wall and z is how far the crest is from the prairie
+   * edge of the frame. For facing 'south' that is simply world x and z (z grows to the south). For 'west' x is world z and z is minus world x.
+   */
   wall: { x: number; z: number }[];
   /** Height of the crest above the prairie (m). */
   crestHeight: number;
@@ -117,6 +126,10 @@ export interface BadlandsConfig {
   terraceStep: number;
   /** Steepness of the banks cut beside a pinned trail (1 = 45 degrees). Default 0.9. */
   bankSlope?: number;
+  /** false = trees and grass may grow on the slopes and benches (a vegetated badlands such as Theodore Roosevelt). Default true: bare rock. */
+  bare?: boolean;
+  /** 0 to 1: how much of the grass colour flat benches keep under the rock bands (default 0). */
+  flatGrass?: number;
   /** Banded rock colours and how thick a band is (m). */
   strata: { colors: number[]; bandHeight: number; strength: number };
 }
@@ -291,6 +304,8 @@ export interface ParkDefinition {
     shallowColor: number;
     skyReflectColor: number;
     /** Optional: the winding shape of the river (defaults to the original wide river). */
+    /** Task 26: true = no trail goes near the river, so a flowing river needs no bridge (the river is scenery, as at Wind Canyon). */
+    noCrossing?: boolean;
     course?: { baseX?: number; amp1?: number; freq1?: number; amp2?: number; freq2?: number; phase2?: number };
   };
   trail: {
@@ -3407,6 +3422,415 @@ export const BADLANDS: ParkDefinition = {
   waterStations: [],
 };
 
+/**
+ * Task 26: Theodore Roosevelt National Park, South Unit (North Dakota): the Wind Canyon area. Laid out from the NPS pages for the
+ * Wind Canyon Trail (a short loop along wind-eroded cliffs above the Little Missouri River that climbs to a lookout; the trailhead is on
+ * the west side of East River Road), the NPS South Unit map and the NPS wildlife and hiking pages. Game-scale, not a survey: see about.designNote.
+ */
+export const THEODORE_ROOSEVELT: ParkDefinition = {
+  id: 'theodore-roosevelt',
+  npsParkCode: 'thro',
+  layoutSeed: 53,
+  name: 'Theodore Roosevelt',
+  subtitle: 'Roosevelt\'s Badlands',
+  parkServiceUnit: 'National Park',
+  state: 'North Dakota',
+  region: 'Great Plains',
+  description: 'In the North Dakota badlands, where a future president found his conservation spirit, a short trail follows a wind-carved canyon up to a lookout high above the Little Missouri River. Feral horses, bison and prairie dogs share the grassland beside the road.',
+  elevationRange: { min: 819, max: 870 },
+  spawn: { x: 64.0, y: 0.4, z: -30.0, yaw: Math.PI / 2 }, // in the trailhead parking lot, facing west toward the canyon
+  terrain: {
+    baseScale: 0.004,
+    heightScale: 2.2,
+    noiseX: 20,
+    noiseZ: -40,
+    // the Wind Canyon lookout sits on a knob of the rim (the "mountain" here): the deck is this high above the parking lot
+    mountain: {
+      x: -9.0,
+      z: -11.0,
+      height: 8.1,
+      radius: 30.0,
+      plateauRadius: 6.0,
+      name: 'Wind Canyon Overlook',
+    },
+    badlands: {
+      facing: 'west', // the prairie and the road are in the east; the badlands fall away to the river in the west
+      wall: [
+        { x: -240, z: -6 }, { x: -120, z: -14 }, { x: 0, z: -10 }, { x: 120, z: -4 }, { x: 240, z: -12 },
+      ],
+      crestHeight: 9.0,
+      faceWidth: 26.0,
+      topWidth: 8.0,
+      backWidth: 85.0,
+      basinDrop: 27.0,
+      gaps: [
+        { x: -21, depth: 0.55, width: 7 }, // Wind Canyon itself
+      ],
+      ruggedness: 0.75,
+      terraceStep: 1.8,
+      bankSlope: 0.9,
+      bare: false, // junipers, shrubs and grass grow on the slopes and benches
+      flatGrass: 0.5,
+      strata: {
+        // NPS: bentonite, a fine blue-gray clay, defines the badlands; dark bands are lignite coal seams; scoria is the red baked clay
+        colors: [0xa7b0ac, 0xc9b690, 0xb59a76, 0x514841, 0xc7a98a, 0x9c5a3c, 0xd6c8a8],
+        bandHeight: 1.3,
+        strength: 0.8,
+      },
+    },
+    groundLook: {
+      patchScale: 0.016,
+      strength: 0.85,
+      patches: [0x7f9a4e, 0x9aa95a, 0xb7b366, 0xc8bb72, 0x9c9a62, 0x869a60],
+      speckle: 0.2,
+      soil: { color: 0xa89466, amount: 0.3 },
+      mulch: 0.06,
+    },
+    colors: {
+      valley: 0x84985a,
+      meadow: 0x9eaa5c,
+      dryGrass: 0xc7b76c,
+      steepSlope: 0xa89a7c,
+      summitRock: 0xb9aa8c,
+      riverbed: 0x9a9078,
+      riverbank: 0x8a8a62,
+    },
+  },
+  water: {
+    hasRiver: true,
+    mode: 'river',
+    name: 'Little Missouri River',
+    noCrossing: true, // the trail ends at the lookout far above the river; nothing crosses it
+    refZ: 0,
+    surfaceY: -27.5,
+    halfWidth: 6.5,
+    bankWidth: 6.0,
+    valleyWidth: 48.0,
+    gradient: 0.0006,
+    course: { baseX: -118.0, amp1: 7.0, freq1: 0.012, amp2: 2.5, freq2: 0.037 },
+    deepColor: 0x4a5148,   // a muddy prairie river
+    shallowColor: 0x7d7f68,
+    skyReflectColor: 0xb4c4cc,
+  },
+  trail: {
+    name: 'Wind Canyon Trail',
+    width: 1.8,
+    surface: { center: 0xbfae8c, mid: 0xa8997a, edge: 0x8e9460 }, // gravel and dirt
+    paths: [
+      {
+        // NPS: a short loop that travels along wind-eroded cliffs above the Little Missouri River before climbing to a lookout (0.4 mile loop, gravel and dirt, with stairs)
+        id: 'wind-canyon-loop',
+        name: 'Wind Canyon Trail',
+        closed: true,
+        steps: 22,
+        nodes: [
+          { x: 58, z: -32, y: 0.4 },
+          { x: 46, z: -34, y: 0.4 },
+          { x: 34, z: -36, y: 0.6 },
+          { x: 24, z: -36, y: 2.4 },
+          { x: 15, z: -35, y: 5.0 },
+          { x: 6, z: -32, y: 7.0 },
+          { x: -4, z: -26, y: 7.9 },
+          { x: -10, z: -17, y: 8.1 },
+          { x: -6, z: -6, y: 7.9 },
+          { x: 4, z: -5, y: 7.2 },
+          { x: 14, z: -6, y: 5.2 },
+          { x: 24, z: -10, y: 3.0 },
+          { x: 34, z: -16, y: 1.2 },
+          { x: 46, z: -24, y: 0.5 },
+        ],
+      },
+      {
+        // the short walk out to the lookout deck
+        id: 'lookout-spur',
+        name: 'Lookout Spur',
+        steps: 12,
+        nodes: [
+          { x: -10, z: -17, y: 8.1 },
+          { x: -9.5, z: -14, y: 8.1 },
+          { x: -9, z: -11, y: 8.1 },
+        ],
+      },
+    ],
+  },
+  overlook: {
+    name: 'Wind Canyon Overlook',
+    elevationLabel: 'High above the Little Missouri River',
+    deckRadius: 4.0,
+    hasBench: false,
+    hasTelescope: false,
+    signHeading: 'WIND CANYON',
+    signSubheading: 'LITTLE MISSOURI RIVER VIEW',
+  },
+  vegetation: {
+    treeCount: 170,
+    shrubCount: 700,
+    speciesWeights: {
+      poplar: 3.0,   // cottonwoods
+      conifer: 2.0,  // junipers
+      broadleaf: 1.0,
+      pine: 0.0,
+      oak: 0.0,
+      birch: 0.0,
+      snag: 0.4,
+    },
+    look: {
+      treeScale: 0.9,
+      glades: 0.7,
+      // cottonwood bottoms along the Little Missouri River
+      groves: [
+        { x: -118, z: -150, radius: 28 },
+        { x: -118, z: -60, radius: 28 },
+        { x: -118, z: 30, radius: 28 },
+        { x: -118, z: 120, radius: 28 },
+      ],
+      palettes: {
+        conifer: [0x5f7a5a, 0x6c8466, 0x587258],
+        poplar: [0x7a9a44, 0x8aa84c, 0x6f9040, 0xb0b84a],
+      },
+      groundCover: {
+        clumps: 240,
+        flowerPatches: 70,
+        clumpPalette: [0x8fa070, 0x7f9464, 0xa5ad84, 0x76895a, 0xb0a574],
+        flowerPalette: [0xe8c83a, 0xf0efe0, 0x8a8ad0],
+      },
+      shrubPalette: [0x8a9a64, 0x7a8c58, 0x9ca46c, 0x728454],
+      grass: { root: 0x566a30, stalk: 0x9aae56, dry: 0xd2c27c, fern: 0x7b9340, flowerA: 0xe8c83a, flowerB: 0xf0efe0 },
+      grassland: {
+        density: 1.5,
+        radius: 50,
+        heightRange: [0.5, 1.6],
+        patchScale: 0.03,
+        tints: [0xc4d890, 0xfff0c0, 0xe6d8a4],
+        sway: 0.9,
+        carpet: { count: 2400, radius: 20, height: 0.26, root: 0x566a30, tip: 0x9aae56, tipDry: 0xcfbf72 },
+      },
+    },
+  },
+  atmosphere: {
+    fogColor: 0xe4dcc8,
+    fogDensity: 0.0036,
+    hemiSky: 0xdbe6f0,
+    hemiGround: 0xa89a72,
+    sunColor: 0xffecc8,
+    sunIntensity: 3.1,
+    skyHorizon: 0xece4d0,
+    skyMid: 0x8dbbe2,
+    skyZenith: 0x3478c4,
+    skySun: 0xffe2a8,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Wind Canyon Trailhead',
+      shortName: 'Trailhead',
+      description: 'The trailhead is on the west side of East River Road, in the South Unit. The parking lot has spaces for cars and RVs, including accessible spaces.',
+      x: 64, y: 0.4, z: -30, yaw: Math.PI / 2,
+    },
+    {
+      id: 'wind-canyon',
+      name: 'Wind Canyon',
+      shortName: 'Canyon',
+      description: 'The trail follows wind-eroded cliffs beside a narrow canyon. The canyon channels the wind, which rushes through before escaping across the Little Missouri River.',
+      x: 15, y: 5.0, z: -35, yaw: Math.PI * 0.5,
+    },
+    {
+      id: 'summit',
+      name: 'Wind Canyon Overlook',
+      shortName: 'Overlook',
+      description: 'The trail climbs to a lookout with the best view of the Little Missouri River in the South Unit. Rangers call it a favorite for sunsets.',
+      x: -9, y: 8.1, z: -11, yaw: Math.PI * 1.5,
+    },
+    {
+      id: 'little-missouri',
+      name: 'Little Missouri River',
+      shortName: 'River',
+      description: 'The river that carved these badlands, below the lookout, with cottonwood groves along its banks.',
+      x: -112, y: -26.9, z: -12, yaw: Math.PI * 0.5,
+    },
+    {
+      id: 'prairie-dogs',
+      name: 'Prairie Dog Town',
+      shortName: 'Prairie Dogs',
+      description: 'The park road passes through three large prairie dog towns in the South Unit. Prairie dogs may seem tame, but they are wild.',
+      x: 112, y: 0.0, z: 20, yaw: Math.PI * 0.5,
+    },
+    {
+      id: 'feral-horses',
+      name: 'Feral Horses',
+      shortName: 'Horses',
+      description: 'Feral horses live in the South Unit only, and are often seen from the road. Watch from at least 25 yards (23 m).',
+      x: 126, y: 0.0, z: -56, yaw: Math.PI * 0.5,
+    },
+    {
+      id: 'bison-grassland',
+      name: 'Bison on the Grassland',
+      shortName: 'Bison',
+      description: 'Open grassland east of the road, where bison graze. Bison may look tame, but they can be dangerous.',
+      x: 140, y: 0.0, z: 62, yaw: Math.PI * 0.5,
+    },
+  ],
+  wildlife: {
+    spawns: [
+      // feral horses (a stallion and mares), east of the road, in view of the parking lot
+      { species: 'wild-horse', isBuck: true, isFawn: false, x: 130.0, z: -60.0, roamRadius: 10.0 },
+      { species: 'wild-horse', isBuck: false, isFawn: false, x: 137.0, z: -54.0, roamRadius: 10.0 },
+      { species: 'wild-horse', isBuck: false, isFawn: false, x: 123.0, z: -52.0, roamRadius: 10.0 },
+      { species: 'wild-horse', isBuck: false, isFawn: false, x: 141.0, z: -67.0, roamRadius: 10.0 },
+      // bison on the open grassland
+      { species: 'bison', isBuck: true, isFawn: false, x: 150.0, z: 70.0, roamRadius: 10.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 158.0, z: 76.0, roamRadius: 10.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 144.0, z: 78.0, roamRadius: 9.0 },
+      { species: 'bison', isBuck: false, isFawn: false, x: 164.0, z: 62.0, roamRadius: 9.0 },
+      // deer in the cottonwood bottoms by the river
+      { species: 'white-tailed-deer', isBuck: false, isFawn: false, x: -100.0, z: -70.0, roamRadius: 10.0 },
+      { species: 'white-tailed-deer', isBuck: true, isFawn: false, x: -98.0, z: -62.0, roamRadius: 10.0 },
+    ],
+    // NPS: watch wildlife from a safe distance of 25 yards (23 m) or more
+    safeDistanceOverrides: { 'white-tailed-deer': 23.0, bison: 23.0, 'prairie-dog': 23.0, 'wild-horse': 23.0 },
+  },
+  features: {
+    roads: [
+      {
+        // East River Road (the Scenic Loop Drive) runs north-south; the trailhead is on its west side
+        id: 'east-river-road',
+        name: 'East River Road (Scenic Loop Drive)',
+        kind: 'road',
+        width: 7.5,
+        nodes: [
+          { x: 84, z: -270 },
+          { x: 90, z: -140 },
+          { x: 84, z: -30 },
+          { x: 88, z: 100 },
+          { x: 84, z: 270 },
+        ],
+      },
+      {
+        id: 'trailhead-drive',
+        name: 'Trailhead Entrance',
+        kind: 'drive',
+        levelFrom: 'east-river-road',
+        width: 6.0,
+        nodes: [
+          { x: 84, z: -29 },
+          { x: 76, z: -29 },
+          { x: 72, z: -29 },
+        ],
+      },
+      {
+        id: 'wind-canyon-lot',
+        name: 'Wind Canyon Parking Lot',
+        kind: 'lot',
+        levelFrom: 'east-river-road',
+        width: 12.0,
+        nodes: [
+          { x: 70, z: -40 },
+          { x: 70, z: -20 },
+        ],
+      },
+    ],
+    cars: [
+      { x: 67.0, z: -36.0, yaw: 0, color: 0x2f4a6b },
+      { x: 67.0, z: -28.0, yaw: Math.PI, color: 0xd9d6cc },
+      { x: 73.0, z: -22.0, yaw: 0, color: 0x9a2a2a },
+    ],
+    prairieDogTown: { x: 112, z: 20, radius: 10, mounds: 14, dogs: 8 },
+    distantRidges: true,
+  },
+  rules: {
+    zones: [
+      {
+        id: 'canyon-slope',
+        kind: 'sensitive',
+        name: 'Canyon Slope',
+        x: 14,
+        z: -21,
+        radius: 6,
+        reason: 'All plants, wildlife, and natural features are protected. Do not disturb or remove animal bones, rocks, flowers or anything else you discover while hiking. (In the game this is an example area.)',
+      },
+    ],
+    litter: STANDARD_LITTER.map(l => ({ ...l, trail: 'wind-canyon-loop' })),
+  },
+  about: {
+    designNote:
+      'A game-scale map of the Wind Canyon Trail area in the South Unit. It follows the NPS pages: the trailhead is on the west side of East River Road (the Scenic Loop Drive); the short loop trail follows wind-eroded cliffs beside a canyon, climbs to a lookout, and returns; the Little Missouri River lies below. The trail is a closed loop about 145 game metres long (the real loop is 0.4 mile), and the stairs the NPS mentions are shown as a plain climbing path. Exact distances, heights and the positions of the canyon, the lookout and the river are game placements, not a survey. The feral horses, bison and prairie dog town are real South Unit animals but are packed close to the road here (the NPS says the park road passes through three large prairie dog towns). The cottonwood groves along the river are a game choice. The rest of the park (the Scenic Loop Drive, Buck Hill, Boicourt Overlook, the Coal Vein and Ridgeline trails, Painted Canyon, Medora and Roosevelt\'s Maltese Cross Cabin, and the separate North Unit and Elkhorn Ranch Unit) is not on this map. Elk, which the NPS says live in the South Unit near Buck Hill, are not shown. This map has no drinking water because none is listed for this trailhead. The elevation range comes from the two spot heights printed on the NPS South Unit map (2,687 ft / 819 m and 2,855 ft / 870 m) and is not the height of anything you can reach in the game.',
+    wildlifeGuidance: {
+      text: 'Theodore Roosevelt National Park asks you to watch wildlife from a safe distance of 25 yards (23 m) or more.',
+      caveat: 'The game uses 23 m for every animal in this park. Bison, feral horses and prairie dogs may seem tame, but the park says they are wild and can be dangerous. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://www.nps.gov/thro/planyourvisit/hiking-and-trail-information.htm',
+      sourceLabel: 'nps.gov: Hiking and Trail Information',
+    },
+    facts: [
+      {
+        id: 'wind-canyon',
+        title: 'Wind Canyon',
+        text: 'This short loop trail travels along wind-eroded cliffs above the Little Missouri River before climbing to a dramatic lookout. The trailhead is about 10.5 miles into the South Unit, on the west side of East River Road.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/hike-wind-canyon-trail.htm',
+        sourceLabel: 'nps.gov: Hike Wind Canyon Trail',
+      },
+      {
+        id: 'canyon-wind',
+        title: 'A canyon that channels wind',
+        text: 'Wind Canyon is an excellent example of how erosion formed the badlands. It channels the wind, which rushes through before escaping across the Little Missouri River.',
+        sourceUrl: 'https://www.nps.gov/places/wind-canyon.htm',
+        sourceLabel: 'nps.gov: Wind Canyon',
+      },
+      {
+        id: 'trail-guide',
+        title: 'The trail at a glance',
+        text: 'The Wind Canyon Trail is a 0.4 mile (0.6 km) loop, about 20 minutes, with a gravel and dirt surface and stairs. It climbs to the best view of the Little Missouri River in the South Unit, and is a ranger favorite for sunsets.',
+        sourceUrl: 'https://www.nps.gov/thro/planyourvisit/hiking-and-trail-information.htm',
+        sourceLabel: 'nps.gov: Hiking and Trail Information',
+      },
+      {
+        id: 'bentonite',
+        title: 'Blue-gray clay',
+        text: 'Bentonite, a fine-grained blue-gray clay, defines the badlands landscape. The dark bands you see in the hillsides are lignite coal seams.',
+        sourceUrl: 'https://www.nps.gov/npgallery/GetAsset/257b1284-d776-43d5-9a8f-863023a2e520',
+        sourceLabel: 'nps.gov: Theodore Roosevelt National Park brochure',
+      },
+      {
+        id: 'protected',
+        title: 'Everything is protected',
+        text: 'All plants, wildlife, and natural and cultural features are protected. That includes animal bones, rocks, flowers and anything else you may discover while hiking. Do not disturb or remove them.',
+        sourceUrl: 'https://www.nps.gov/thro/planyourvisit/hiking-and-trail-information.htm',
+        sourceLabel: 'nps.gov: Hiking and Trail Information',
+      },
+      {
+        id: 'horses',
+        title: 'Feral horses',
+        text: 'Feral horses inhabit the South Unit only. They are descended from domestic stock and are maintained in the park today as a cultural resource. They are often visible from the Scenic Loop Drive and from I-94.',
+        sourceUrl: 'https://www.nps.gov/thro/planyourvisit/wildlife-viewing.htm',
+        sourceLabel: 'nps.gov: Wildlife Viewing',
+      },
+      {
+        id: 'prairie-dog-towns',
+        title: 'Prairie dog towns',
+        text: 'The park road passes through three large prairie dog towns in the South Unit. Bison, feral horses and prairie dogs may seem tame, but they are wild animals and can be dangerous.',
+        sourceUrl: 'https://www.nps.gov/thro/planyourvisit/wildlife-viewing.htm',
+        sourceLabel: 'nps.gov: Wildlife Viewing',
+      },
+      {
+        id: 'scenic-loop',
+        title: 'The Scenic Loop Drive',
+        text: 'The South Unit\'s Scenic Loop Drive is 36 miles (58 km) round trip, with overlooks, trailheads and prairie dog towns. The NPS map also shows Roosevelt\'s Maltese Cross Cabin, Buck Hill and the Coal Vein Trail.',
+        sourceUrl: 'https://www.nps.gov/npgallery/GetAsset/0b9717f0-8f0b-490c-8af8-2f240995d5d5',
+        sourceLabel: 'nps.gov: South Unit map',
+      },
+      {
+        id: 'roosevelt',
+        title: 'A president made in the badlands',
+        text: 'Theodore Roosevelt said in 1918 that he would never have become President if it had not been for his experiences in North Dakota.',
+        sourceUrl: 'https://www.nps.gov/npgallery/GetAsset/257b1284-d776-43d5-9a8f-863023a2e520',
+        sourceLabel: 'nps.gov: Theodore Roosevelt National Park brochure',
+      },
+    ],
+    checkedOn: '2026-11-21',
+  },
+  // The NPS pages for this trailhead list no drinking water, so the map has none (carry your own)
+  waterStations: [],
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
@@ -3415,6 +3839,7 @@ export const AVAILABLE_PARKS: ParkDefinition[] = [
   CHIRICAHUA,
   WIND_CAVE,
   BADLANDS,
+  THEODORE_ROOSEVELT,
   PROTOTYPE_PARK,
 ];
 

@@ -76,7 +76,7 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
   if (park.water?.mode === 'river' && !park.water.hasRiver) say('water.mode "river" needs hasRiver: true');
   if (park.water?.mode && park.water.mode !== 'river' && park.water.hasRiver) say(`water.mode "${park.water.mode}" needs hasRiver: false (hasRiver means flowing water)`);
   if (mode !== 'none' && bridges.length === 0 && typeof park.water.refZ !== 'number') say('a park with a river or dry wash but no bridge needs water.refZ (the z the channel is measured from)');
-  if (mode === 'river' && bridges.length === 0) say('a flowing river needs at least one bridge (or use mode "dry-wash" for a ground-level crossing)');
+  if (mode === 'river' && bridges.length === 0 && !park.water.noCrossing) say('a flowing river needs at least one bridge (or use mode "dry-wash" for a ground-level crossing, or set water.noCrossing: true when no trail goes near the river)');
   if (mode !== 'dry-wash' && (park.water?.stones?.length ?? 0) > 0) say('water.stones only works with mode "dry-wash"');
 
   for (const [k, v] of Object.entries(park.vegetation?.speciesWeights ?? {})) {

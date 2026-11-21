@@ -17,11 +17,21 @@
 
 import { fbm, sstep, clamp } from '../utils/noise.ts';
 import { getActivePark, type BadlandsConfig } from '../data/parks.ts';
-import { getTrailPaths } from '../data/parkStructure.ts';
+import { getTrailPaths, getPathLine } from '../data/parkStructure.ts';
 
 /** The active park's badlands settings, or null. */
 export function getBadlands(): BadlandsConfig | null {
   return getActivePark().terrain.badlands ?? null;
+}
+
+/** Turns a world point into the relief's own frame (the frame in which the badlands always fall to +z). */
+export function toFrame(cfg: BadlandsConfig, x: number, z: number): { x: number; z: number } {
+  switch (cfg.facing) {
+    case 'west': return { x: z, z: -x };
+    case 'east': return { x: -z, z: x };
+    case 'north': return { x: -x, z: -z };
+    default: return { x, z };
+  }
 }
 
 /** z of the crest line at x (straight pieces between the listed points, bent a little so it is not ruler-straight). */
@@ -55,15 +65,17 @@ export function crestAt(cfg: BadlandsConfig, x: number): number {
 }
 
 /** 0 on the prairie, 1 once you are in the wall's foot and everything behind it (bare rock and basin). */
-export function badlandsBelt(cfg: BadlandsConfig, x: number, z: number): number {
-  const u = z - wallZ(cfg, x);
+export function badlandsBelt(cfg: BadlandsConfig, wx: number, wz: number): number {
+  const f = toFrame(cfg, wx, wz);
+  const x = f.x;
+  const u = f.z - wallZ(cfg, x);
   return sstep(-cfg.faceWidth - 5, -cfg.faceWidth + 7, u);
 }
 
 /** True on bare badlands rock and basin: trees, logs and grass keep off it. False for every other park. */
 export function isBareBadlands(x: number, z: number): boolean {
   const cfg = getBadlands();
-  if (!cfg) return false;
+  if (!cfg || cfg.bare === false) return false;
   return badlandsBelt(cfg, x, z) > 0.45;
 }
 
@@ -106,9 +118,10 @@ function getPinned(): PinnedPath[] {
     if (path.nodes.length < 2) continue;
     if (!path.nodes.every(n => typeof n.y === 'number')) continue;
     const segs: number[][] = [];
-    for (let i = 0; i < path.nodes.length - 1; i++) {
-      const a = path.nodes[i];
-      const b = path.nodes[i + 1];
+    const line = getPathLine(path); // a closed loop also joins its last node back to its first
+    for (let i = 0; i < line.length - 1; i++) {
+      const a = line[i];
+      const b = line[i + 1];
       segs.push([a.x, a.z, a.y as number, b.x, b.z, b.y as number]);
     }
     out.push({ segs, halfWidth: (path.width ?? park.trail.width) / 2 });
@@ -148,12 +161,15 @@ function ridgeness(x: number, z: number, f: number, oct: number, seed: number): 
  * The finished ground height for a badlands park. `prairie` is the park's ordinary gentle rolling land at this spot
  * (rolling hills and micro-topography); the wall, back slopes, basin, butte and pinned trails are built on top of it.
  */
-export function applyBadlands(cfg: BadlandsConfig, x: number, z: number, prairie: number): number {
+export function applyBadlands(cfg: BadlandsConfig, wx: number, wz: number, prairie: number): number {
   const park = getActivePark();
+  const f = toFrame(cfg, wx, wz);
+  const x = f.x; // in the turned frame (along the wall)
+  const z = f.z; // in the turned frame (the badlands fall toward +z)
   const zw = wallZ(cfg, x);
-  const u = z - zw; // metres south of the crest line
+  const u = z - zw; // metres past the crest line, into the badlands
   const crest = crestAt(cfg, x);
-  const belt = badlandsBelt(cfg, x, z);
+  const belt = badlandsBelt(cfg, wx, wz);
 
   // 1. Broad profile: flat prairie, steep face, broken top, falling back slopes, basin
   let profile: number;
@@ -200,7 +216,7 @@ export function applyBadlands(cfg: BadlandsConfig, x: number, z: number, prairie
 
   // 5. The butte under the Notch viewpoint (the park's "mountain" deck sits flat on top of it)
   const mtn = park.terrain.mountain;
-  const dB = Math.hypot(x - mtn.x, z - mtn.z);
+  const dB = Math.hypot(wx - mtn.x, wz - mtn.z);
   const flatR = park.overlook.deckRadius + 3.0;
   if (dB < flatR + 12) {
     const w = 1 - sstep(flatR, flatR + 12, dB);
@@ -216,9 +232,9 @@ export function applyBadlands(cfg: BadlandsConfig, x: number, z: number, prairie
       const dx = x2 - x1;
       const dz = z2 - z1;
       const len2 = dx * dx + dz * dz;
-      const t = len2 > 0 ? clamp(((x - x1) * dx + (z - z1) * dz) / len2, 0, 1) : 0;
-      const px = x1 + t * dx - x;
-      const pz = z1 + t * dz - z;
+      const t = len2 > 0 ? clamp(((wx - x1) * dx + (wz - z1) * dz) / len2, 0, 1) : 0;
+      const px = x1 + t * dx - wx;
+      const pz = z1 + t * dz - wz;
       const d2 = px * px + pz * pz;
       if (d2 < bestD) { bestD = d2; bestY = y1 + (y2 - y1) * t; }
     }
