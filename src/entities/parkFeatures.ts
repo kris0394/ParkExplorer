@@ -935,39 +935,43 @@ function rockBlob(rx: number, ry: number, rz: number, colors: number[], rand: ()
   return m;
 }
 
-/** Task 25: natural rock windows (the Badlands Window): two rock jambs and a lintel over an opening you can walk or look through. */
+/** Task 25/28: natural rock windows and arches: two rock jambs and a lintel over an opening you can walk or look through. `scale` makes big arches. */
 function buildRockWindows(group: THREE.Group, rand: () => number): void {
   const windows = getActivePark().features?.rockWindows ?? [];
   for (const w of windows) {
     const colors = w.colors ?? [0xd8c8a2, 0xb99a6e, 0xc9a08a, 0xcfc6b0, 0xa68a72];
+    const sc = w.scale ?? 1;
     const fx = Math.sin(w.yaw); // the way through
     const fz = Math.cos(w.yaw);
     const sx = Math.cos(w.yaw); // sideways
     const sz = -Math.sin(w.yaw);
     const base = heightAt(w.x, w.z);
     const half = w.opening / 2;
-    // two jambs (stacks of rock) and, behind each, a wider shoulder of the Wall
+    const stack = Math.max(3, Math.ceil(w.height / (1.25 * sc)));
+    // two jambs (stacks of rock) and, behind each, a wider shoulder of the mass
     for (const side of [-1, 1]) {
-      const cx = w.x + sx * side * (half + 1.3);
-      const cz = w.z + sz * side * (half + 1.3);
-      for (let k = 0; k < 3; k++) {
-        const b = rockBlob(1.55 - k * 0.12, 1.25, 2.1 - k * 0.1, colors, rand);
-        b.position.set(cx + (rand() - 0.5) * 0.3, base + 0.6 + k * 1.35, cz + (rand() - 0.5) * 0.3);
+      const off = half + 1.3 * sc;
+      const cx = w.x + sx * side * off;
+      const cz = w.z + sz * side * off;
+      for (let k = 0; k < stack; k++) {
+        const b = rockBlob((1.55 - Math.min(k, 3) * 0.1) * sc, 1.25 * sc, (2.1 - Math.min(k, 3) * 0.1) * sc, colors, rand);
+        b.position.set(cx + (rand() - 0.5) * 0.3 * sc, base + 0.6 + k * 1.25 * sc * 0.95, cz + (rand() - 0.5) * 0.3 * sc);
         b.rotation.y = w.yaw + (rand() - 0.5) * 0.3;
         group.add(b);
       }
-      const shoulder = rockBlob(3.4, 2.6, 3.0, colors, rand);
-      shoulder.position.set(w.x + sx * side * (half + 4.2), base + 1.4, w.z + sz * side * (half + 4.2));
+      const shOff = half + 4.2 * sc;
+      const shoulder = rockBlob(3.4 * sc, sc === 1 ? 2.6 : w.height * 0.55 + 1.4, 3.0 * sc, colors, rand);
+      shoulder.position.set(w.x + sx * side * shOff, base + 1.4, w.z + sz * side * shOff);
       shoulder.rotation.y = w.yaw;
       group.add(shoulder);
       // the jambs and shoulder are solid
-      for (const [off, r] of [[half + 1.3, 1.5], [half + 4.2, 2.6]] as [number, number][]) {
-        registerObstacle(w.x + sx * side * off, w.z + sz * side * off, r);
+      for (const [o, r] of [[off, 1.5 * sc], [shOff, 2.6 * sc]] as [number, number][]) {
+        registerObstacle(w.x + sx * side * o, w.z + sz * side * o, r);
       }
     }
     // the lintel spans the opening
-    const lintel = rockBlob(half + 2.9, 1.15, 2.3, colors, rand);
-    lintel.position.set(w.x + fx * 0.1, base + w.height + 0.9, w.z + fz * 0.1);
+    const lintel = rockBlob(half + 2.9 * sc, 1.15 * sc, 2.3 * sc, colors, rand);
+    lintel.position.set(w.x + fx * 0.1, base + w.height + 0.9 * sc, w.z + fz * 0.1);
     lintel.rotation.y = w.yaw;
     group.add(lintel);
   }

@@ -37,7 +37,7 @@ export interface ParkLitter {
 }
 
 export interface ParkWildlifeSpawn {
-  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn' | 'wild-horse';
+  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn' | 'wild-horse' | 'mule-deer' | 'kit-fox' | 'jackrabbit' | 'coyote' | 'mountain-lion';
   isBuck: boolean;
   isFawn?: boolean;
   x: number;
@@ -169,7 +169,7 @@ export interface ParkFeatures {
   /** Task 25: a notched log ladder up a steep step in a trail (Badlands Notch Trail). The foot is at x, z and it climbs toward yaw (0 = south) for `run` metres. Its height comes from the ground. */
   logLadder?: { x: number; z: number; yaw: number; run: number }[];
   /** Task 25: a natural rock window you can walk or look through (rock jambs and a lintel standing on the trail). The ground itself cannot have holes, so the window is built as a rock frame. yaw 0 = the way through points south. */
-  rockWindows?: { x: number; z: number; yaw: number; /** Clear width of the opening (m) */ opening: number; /** Clear height of the opening (m) */ height: number; colors?: number[] }[];
+  rockWindows?: { x: number; z: number; yaw: number; /** Clear width of the opening (m) */ opening: number; /** Clear height of the opening (m) */ height: number; /** Size of the rock blobs (1 = a small window, 2 = a big arch) */ scale?: number; colors?: number[] }[];
   /** Task 25: wooden railings along both sides and across the end of a path's last stretch (a railed viewpoint, as at the Window Trail). Players cannot walk through them. */
   railings?: { path: string; length: number; endCap?: boolean }[];
   /** Task 25: a prairie dog town: bare dirt mounds with burrow holes. Prairie dogs themselves come from wildlife.spawns. */
@@ -3831,6 +3831,430 @@ export const THEODORE_ROOSEVELT: ParkDefinition = {
   waterStations: [],
 };
 
+/**
+ * Task 28: Arches National Park (Utah), the Windows Section. Laid out from the NPS pages for the Windows Viewpoint and Trail (North Window,
+ * South Window, Turret Arch), Double Arch and the Windows Section. Game-scale, not a survey: see about.designNote.
+ */
+export const ARCHES: ParkDefinition = {
+  id: 'arches',
+  npsParkCode: 'arch',
+  layoutSeed: 59,
+  name: 'Arches',
+  subtitle: 'The Windows Section',
+  parkServiceUnit: 'National Park',
+  state: 'Utah',
+  region: 'Colorado Plateau',
+  description: 'In southeast Utah, the Windows Section holds a dense cluster of stone arches. Climb to North Window, look through South Window, find Turret Arch, and stand beneath Double Arch, the tallest arch in the park.',
+  elevationRange: { min: 1623, max: 1653 },
+  spawn: { x: 6.0, y: 0.4, z: -6.0, yaw: 0 }, // in the Windows parking area, facing north toward the fin of arches
+  terrain: {
+    baseScale: 0.004,
+    heightScale: 0.45, // the desert floor is nearly flat
+    noiseX: 80,
+    noiseZ: 10,
+    // the North Window viewpoint deck sits on the crest just behind North Window (the "mountain" here)
+    mountain: {
+      x: -12.0,
+      z: -72.0,
+      height: 8.8,
+      radius: 20.0,
+      plateauRadius: 5.0,
+      name: 'North Window Viewpoint',
+    },
+    badlands: {
+      facing: 'north', // the desert floor and the parking area are in the south; the sandstone fin stands to the north
+      wall: [
+        { x: -240, z: 70 }, { x: -120, z: 76 }, { x: 0, z: 68 }, { x: 120, z: 72 }, { x: 240, z: 66 },
+      ],
+      crestHeight: 15.0,
+      faceWidth: 24.0,
+      topWidth: 10.0,
+      backWidth: 70.0,
+      basinDrop: 20.0,
+      gaps: [
+        { x: 14, depth: 0.42, width: 9 },   // North Window (world x = -14)
+        { x: -34, depth: 0.45, width: 10 }, // South Window (world x = 34)
+      ],
+      ruggedness: 0.55,
+      terraceStep: 2.4,
+      bankSlope: 0.9,
+      bare: true,
+      strata: {
+        // orange-red Entrada sandstone in layers
+        colors: [0xd2784a, 0xc4643c, 0xdc9568, 0xb85a38, 0xe2a77a, 0xc9733f],
+        bandHeight: 1.8,
+        strength: 0.95,
+      },
+    },
+    // desert sand, with dark patches of biological soil crust
+    groundLook: {
+      patchScale: 0.02,
+      strength: 0.85,
+      patches: [0xc98f64, 0xb9855c, 0xd4a070, 0xa8795a, 0x6f5f4c, 0xcfa67a],
+      speckle: 0.25,
+      soil: { color: 0xb98b62, amount: 0.45 },
+      mulch: 0.0,
+    },
+    colors: {
+      valley: 0xc98f64,
+      meadow: 0xbd8c60,
+      dryGrass: 0xc9a56e,
+      steepSlope: 0xc26e44,
+      summitRock: 0xd08a5a,
+      riverbed: 0xb89870,
+      riverbank: 0xa88a64,
+    },
+  },
+  water: {
+    // The NPS pages for this area mention no stream, so this map has none.
+    hasRiver: false,
+    mode: 'none',
+    name: 'No stream here',
+    surfaceY: -1.0,
+    halfWidth: 3.0,
+    bankWidth: 5.0,
+    valleyWidth: 30.0,
+    gradient: 0.003,
+    deepColor: 0x3a4a48,
+    shallowColor: 0x6a7f74,
+    skyReflectColor: 0xa8c6d8,
+  },
+  trail: {
+    name: 'Windows Trails',
+    width: 2.0,
+    surface: { center: 0xcfa87c, mid: 0xb98f64, edge: 0xa07858 }, // packed gravel
+    paths: [
+      {
+        // NPS: a gentle climb up a gravel trail leads to North Window, South Window and Turret Arch (1 mile round trip, 99 ft / 30 m elevation change)
+        id: 'windows-loop',
+        name: 'Windows Loop',
+        closed: true,
+        steps: 22,
+        nodes: [
+          { x: 10, z: -12, y: 0.4 },
+          { x: 6, z: -26, y: 0.5 },
+          { x: -2, z: -40, y: 2.6 },
+          { x: -6, z: -46, y: 4.1 },
+          { x: -10, z: -52, y: 5.6 },
+          { x: -12, z: -56, y: 7.0 },
+          { x: -14, z: -60, y: 8.4 },
+          { x: -14, z: -68, y: 8.8 }, // through North Window
+          { x: -8, z: -76, y: 8.8 },
+          { x: 12, z: -78, y: 8.7 },
+          { x: 30, z: -72, y: 8.5 },
+          { x: 36, z: -60, y: 7.2 },
+          { x: 32, z: -46, y: 3.6 },
+          { x: 24, z: -30, y: 0.9 },
+          { x: 18, z: -16, y: 0.4 },
+        ],
+      },
+      {
+        // the short walk to the viewpoint just behind North Window
+        id: 'viewpoint-spur',
+        name: 'North Window Viewpoint Spur',
+        steps: 10,
+        nodes: [
+          { x: -14, z: -68, y: 8.8 },
+          { x: -13, z: -70, y: 8.8 },
+          { x: -12, z: -72, y: 8.8 },
+        ],
+      },
+      {
+        // NPS: Turret Arch is on the loop's side trip; USGS/NPS: it lies southwest of South Window
+        id: 'turret-spur',
+        name: 'Turret Arch Spur',
+        steps: 16,
+        nodes: [
+          { x: -2, z: -40, y: 2.6 },
+          { x: -14, z: -38, y: 1.2 },
+          { x: -26, z: -36, y: 0.5 },
+          { x: -38, z: -35, y: 0.4 },
+        ],
+      },
+      {
+        // NPS: a gently sloping path leads to the base of Double Arch (0.6 mile round trip)
+        id: 'double-arch-trail',
+        name: 'Double Arch Trail',
+        steps: 20,
+        nodes: [
+          { x: -8, z: -8, y: 0.4 },
+          { x: -34, z: -12, y: 0.4 },
+          { x: -62, z: -20, y: 0.4 },
+          { x: -88, z: -30, y: 0.5 },
+          { x: -102, z: -38, y: 0.6 },
+        ],
+      },
+    ],
+  },
+  overlook: {
+    name: 'North Window Viewpoint',
+    elevationLabel: 'Behind North Window',
+    deckRadius: 4.0,
+    hasBench: false,
+    hasTelescope: false,
+    signHeading: 'NORTH WINDOW',
+    signSubheading: 'VIEW THROUGH THE FIN',
+  },
+  vegetation: {
+    treeCount: 60,
+    shrubCount: 650,
+    speciesWeights: { conifer: 4.0, pine: 0.0, broadleaf: 0.0, oak: 0.0, birch: 0.0, poplar: 0.0, snag: 0.6 },
+    look: {
+      treeScale: 0.7, // small, twisted pinyon and juniper
+      glades: 0.9,
+      palettes: { conifer: [0x6b7a52, 0x5c6c48, 0x75805a] },
+      groundCover: {
+        clumps: 200,
+        flowerPatches: 20,
+        clumpPalette: [0x9a9468, 0x8a8a5c, 0xa8a070, 0x7d8052],
+        flowerPalette: [0xe8c83a, 0xd88a3a],
+      },
+      shrubPalette: [0x8a8a5a, 0x777a4c, 0x9a966a, 0x6b6e45],
+    },
+  },
+  atmosphere: {
+    fogColor: 0xecdcc4,
+    fogDensity: 0.003,
+    hemiSky: 0xdbe6f0,
+    hemiGround: 0xc09468,
+    sunColor: 0xfff0d0,
+    sunIntensity: 3.3,
+    skyHorizon: 0xf0e2cc,
+    skyMid: 0x8dbbe2,
+    skyZenith: 0x2f72c0,
+    skySun: 0xffe2b0,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Windows Parking Area',
+      shortName: 'Parking Area',
+      description: 'The Windows Section is 12 miles (19 km) from the park entrance. Massive North Window is visible from the parking lot, and trails lead to Turret Arch, North Window, South Window and Double Arch. There is no drinking water at the trailhead.',
+      x: 6, y: 0.4, z: -6, yaw: 0,
+    },
+    {
+      id: 'north-window',
+      name: 'North Window',
+      shortName: 'North Window',
+      description: 'North Window invites you to walk up and look through it. Rock steps lead up to the arch.',
+      x: -14, y: 8.6, z: -62, yaw: 0,
+    },
+    {
+      id: 'summit',
+      name: 'North Window Viewpoint',
+      shortName: 'Viewpoint',
+      description: 'Behind North Window the fin drops away to the desert beyond. Stay on the trail and on bare rock.',
+      x: -12, y: 8.8, z: -72, yaw: Math.PI,
+    },
+    {
+      id: 'south-window',
+      name: 'South Window',
+      shortName: 'South Window',
+      description: 'South Window is an elevated arch in the same sandstone fin as North Window. The real arch is about 105 feet (32 m) wide and 66 feet (20 m) high. Do not try to climb into it.',
+      x: 34, y: 7.6, z: -58, yaw: 0,
+    },
+    {
+      id: 'turret-arch',
+      name: 'Turret Arch',
+      shortName: 'Turret Arch',
+      description: 'Turret Arch stands in a castle-like formation southwest of South Window. You can see it through North Window.',
+      x: -38, y: 0.4, z: -32, yaw: Math.PI * 1.5,
+    },
+    {
+      id: 'double-arch',
+      name: 'Double Arch',
+      shortName: 'Double Arch',
+      description: 'Double Arch is the tallest arch in the park (112 feet, 34 m) and the second longest (144 feet, 44 m). A gently sloping path leads to its base.',
+      x: -100, y: 0.6, z: -36, yaw: Math.PI * 1.5,
+    },
+  ],
+  wildlife: {
+    // NPS: mule deer, kit foxes and (more often) jackrabbits are animals you may see at Arches. All three keep at least 23 m away from the trails.
+    spawns: [
+      { species: 'mule-deer', isBuck: true, isFawn: false, x: 66.0, z: -2.0, roamRadius: 9.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: 74.0, z: 6.0, roamRadius: 9.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: 60.0, z: 10.0, roamRadius: 9.0 },
+      { species: 'kit-fox', isBuck: false, isFawn: false, x: 80.0, z: -26.0, roamRadius: 8.0 },
+      { species: 'kit-fox', isBuck: false, isFawn: false, x: 66.0, z: -38.0, roamRadius: 8.0 },
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: -24.0, z: 26.0, roamRadius: 8.0 },
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: -36.0, z: 32.0, roamRadius: 8.0 },
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: 44.0, z: 30.0, roamRadius: 8.0 },
+      // coyotes on the desert floor, well away from the trails
+      { species: 'coyote', isBuck: false, isFawn: false, x: -92.0, z: 38.0, roamRadius: 10.0 },
+      { species: 'coyote', isBuck: false, isFawn: false, x: 96.0, z: 26.0, roamRadius: 10.0 },
+      // ONE mountain lion, far away on the edge of the fin (NPS: sightings in Arches are very rare, usually from a distance)
+      { species: 'mountain-lion', isBuck: false, isFawn: false, x: 126.0, z: -64.0, roamRadius: 3.0 },
+    ],
+    safeDistanceOverrides: { 'mule-deer': 23.0, 'kit-fox': 23.0, jackrabbit: 23.0, coyote: 23.0, 'mountain-lion': 46.0 },
+  },
+  features: {
+    roads: [
+      {
+        // The park road reaches the Windows Parking Area from the south
+        id: 'windows-road',
+        name: 'Windows Road',
+        kind: 'road',
+        width: 7.0,
+        nodes: [
+          { x: 14, z: 270 },
+          { x: 6, z: 150 },
+          { x: 10, z: 40 },
+          { x: 8, z: 4 },
+        ],
+      },
+      {
+        id: 'windows-lot',
+        name: 'Windows Parking Area',
+        kind: 'lot',
+        levelFrom: 'windows-road',
+        width: 13.0,
+        nodes: [
+          { x: -14, z: -6 },
+          { x: 30, z: -6 },
+        ],
+      },
+    ],
+    cars: [
+      { x: -4.0, z: -10.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+      { x: 12.0, z: -2.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: 22.0, z: -10.0, yaw: Math.PI / 2, color: 0x9a2a2a },
+    ],
+    // NPS: North Window is a natural arch you can walk up to and look through; South Window and Turret Arch are in the same area; Double Arch has two openings
+    rockWindows: [
+      { x: -14, z: -64, yaw: 0, opening: 11, height: 7, scale: 1.8 },    // North Window
+      { x: 34, z: -62, yaw: 0, opening: 12, height: 7.5, scale: 1.9 },   // South Window
+      { x: -44, z: -34, yaw: 0.8, opening: 5, height: 4.5, scale: 1.4 }, // Turret Arch
+      { x: -108, z: -44, yaw: 0.4, opening: 14, height: 11, scale: 2.4 }, // Double Arch, the tall opening
+      { x: -126, z: -38, yaw: 0.4, opening: 8, height: 7, scale: 1.6 },   // Double Arch, the second opening
+    ],
+    pinnacles: [
+      { x: 70, z: -70, radius: 40, innerRadius: 8, count: 10, minHeight: 3, maxHeight: 9, colors: [0xc9733f, 0xd2784a, 0xb85a38, 0xdc9568] },
+      { x: -70, z: -90, radius: 40, innerRadius: 8, count: 10, minHeight: 3, maxHeight: 8, colors: [0xc9733f, 0xd2784a, 0xb85a38, 0xdc9568] },
+    ],
+    distantRidges: true,
+  },
+  rules: {
+    zones: [
+      {
+        id: 'crust-1',
+        kind: 'sensitive',
+        name: 'Biological Soil Crust',
+        x: -28,
+        z: -18,
+        radius: 8,
+        reason: 'Don\'t bust the crust! Biological soil crust is alive and holds the desert together. One footprint can destroy hundreds of years of growth. Stay on trails, bare rock or in dry washes.',
+      },
+      {
+        id: 'crust-2',
+        kind: 'sensitive',
+        name: 'Biological Soil Crust',
+        x: 42,
+        z: -30,
+        radius: 8,
+        reason: 'Don\'t bust the crust! Walk only on trails, rock or in sandy washes. A path through the crust can take hundreds of years to recover.',
+      },
+      {
+        id: 'crust-3',
+        kind: 'sensitive',
+        name: 'Biological Soil Crust',
+        x: -76,
+        z: -14,
+        radius: 8,
+        reason: 'Don\'t bust the crust! The dark, bumpy soil is a living crust that many desert plants depend on. Stay on the trail.',
+      },
+    ],
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'windows-loop', 'bottle-1': 'double-arch-trail', 'wrapper-1': 'windows-loop', 'peel-1': 'turret-spur', 'bag-1': 'double-arch-trail' } as Record<string, string>)[l.id] ?? 'windows-loop',
+    })),
+  },
+  about: {
+    designNote:
+      'A game-scale map of the Windows Section. It follows the NPS pages: the section is reached by a road from the park entrance; the Windows Viewpoint trail is a 1 mile round trip with a gentle climb up a gravel trail to North Window, South Window and Turret Arch, with a very uneven primitive section; Double Arch has its own gently sloping path, and the NPS gives its height and length. The positions of the arches and trails relative to each other are game placements (the NPS says only that the trails lead to them; the USGS says Turret Arch is southwest of South Window). The arches are shown much smaller than the real ones (for example South Window is about 105 ft wide and 66 ft high), and each is built as a rock frame (jambs and a lintel) because the game\'s ground cannot hold holes. Double Arch is shown as two openings in one mass. Mule deer, kit foxes and black-tailed jackrabbits are real Arches animals (the NPS brochure lists them); their numbers and exact spots here are game placements, and the real foxes are mostly nocturnal and rarely seen. Coyotes and one mountain lion are modelled too (the lion is deliberately far away on the fin, because the NPS says lion sightings in Arches are very rare). Other Arches animals (cottontails, kangaroo rats, lizards, birds, desert bighorn sheep, black bears) are not modelled. The sensitive patches are example areas for the biological soil crust. There is no drinking water at the trailhead (the NPS says so), so the map has none. The elevation range is a game value: the NPS gives only the 99 ft (30 m) elevation change of the loop, and the base height (about 1,623 m) is the published height of Turret Arch, not NPS-checked.',
+    wildlifeGuidance: {
+      text: 'Arches asks visitors to keep wildlife wild. National parks generally ask you to stay at least 75 feet (23 m) from most animals.',
+      caveat: 'The game uses 23 m (75 ft), the general NPS distance, for most animals in this map; no Arches-specific number was found for them. For the mountain lion it uses 46 m (150 ft), the distance Arches recommends for large animals such as black bears. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://www.nps.gov/arch/planyourvisit/hiking.htm',
+      sourceLabel: 'nps.gov: Arches hiking',
+    },
+    facts: [
+      {
+        id: 'windows-section',
+        title: 'The heart of Arches',
+        text: 'The Windows Section is 12 miles (19 km) from the park entrance. It holds a large concentration of arches in just over two square miles, and some consider it the beating heart of the park. Massive North Window is visible from the parking lot.',
+        sourceUrl: 'https://www.nps.gov/places/the-windows-section-trailhead.htm',
+        sourceLabel: 'nps.gov: The Windows Viewpoint and Trail',
+      },
+      {
+        id: 'loop-trail',
+        title: 'The Windows trail',
+        text: 'The trail is 1 mile (1.6 km) round trip, about 30 to 60 minutes, with a 99 ft (30 m) elevation change. A gentle climb up a gravel trail leads to North Window, South Window and Turret Arch. The primitive section is very uneven, with steps up and down.',
+        sourceUrl: 'https://www.nps.gov/places/the-windows-section-trailhead.htm',
+        sourceLabel: 'nps.gov: The Windows Viewpoint and Trail',
+      },
+      {
+        id: 'carry-water',
+        title: 'Bring your own water',
+        text: 'There is no drinking water at the Windows trailhead. The park brochure says you must carry all your water.',
+        sourceUrl: 'https://www.nps.gov/places/the-windows-section-trailhead.htm',
+        sourceLabel: 'nps.gov: The Windows Viewpoint and Trail',
+      },
+      {
+        id: 'south-window',
+        title: 'South Window',
+        text: 'South Window is 105 feet wide and 66 feet high. You can reach the other side of it by walking around the southeast end of the fin or by walking through North Window. Turret Arch is a short walk to the southwest.',
+        sourceUrl: 'https://nps.gov/parkhistory/online_books/geology/publications/bul/1393/sec10c.htm',
+        sourceLabel: 'NPS-hosted USGS Bulletin 1393: The Windows Section',
+      },
+      {
+        id: 'double-arch',
+        title: 'Double Arch',
+        text: 'Double Arch is the tallest arch in the park (112 ft, 34 m) and the second longest (144 ft, 44 m). A gently sloping path leads to its base. Dogs are not allowed on this trail.',
+        sourceUrl: 'https://www.nps.gov/places/double-arch.htm',
+        sourceLabel: 'nps.gov: Double Arch Viewpoint and Trail',
+      },
+      {
+        id: 'double-arch-access',
+        title: 'A barrier-free path',
+        text: 'The Double Arch trail is considered barrier free, with a hard packed surface, some slopes and a sandy surface at the end of the trail. Accessible parking is available.',
+        sourceUrl: 'https://home.nps.gov/arch/planyourvisit/the-windows.htm',
+        sourceLabel: 'nps.gov: The Windows Section',
+      },
+      {
+        id: 'names',
+        title: 'Names in the Windows Section',
+        text: 'Other named features in this area include Garden of Eden, Elephant Butte and Parade of Elephants.',
+        sourceUrl: 'https://www.nps.gov/arch/planyourvisit/the-windows.htm',
+        sourceLabel: 'nps.gov: The Windows Section',
+      },
+      {
+        id: 'animals-hours',
+        title: 'Dawn, dusk and night',
+        text: 'Most desert animals are nocturnal. Mule deer, coyotes, porcupines, desert cottontails and black-tailed jackrabbits are most active at dawn and dusk, when it is cooler. Hot weather and little water favor small mammals at Arches.',
+        sourceUrl: 'https://home.nps.gov/arch/learn/nature/animals.htm',
+        sourceLabel: 'nps.gov: Arches animals',
+      },
+      {
+        id: 'mountain-lions',
+        title: 'Rarely seen: mountain lions',
+        text: 'Mountain lion sightings in Arches are very rare, even though about 80% of a mountain lion\'s diet in Utah is mule deer. If you do see one: do not approach, do not run, stand and face it, and appear larger. Report sightings to a ranger.',
+        sourceUrl: 'https://www.nps.gov/arch/learn/nature/mammals.htm',
+        sourceLabel: 'nps.gov: Arches mammals and Mountain Lion Safety',
+      },
+      {
+        id: 'crust',
+        title: 'Don\'t bust the crust',
+        text: 'The plant communities of Arches depend on biological soil crusts, living communities of microbes that hold the sand in place and store water. Stay on established trails, or walk in dry washes or on bare rock. A path through the crust can take hundreds of years to recover.',
+        sourceUrl: 'https://www.nps.gov/arch/learn/kidsyouth/biologicalsoilcrust.htm',
+        sourceLabel: 'nps.gov: Biological Soil Crust Activity',
+      },
+    ],
+    checkedOn: '2026-11-21',
+  },
+  // No drinking water at the trailhead (NPS), so the map has none
+  waterStations: [],
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
@@ -3840,6 +4264,7 @@ export const AVAILABLE_PARKS: ParkDefinition[] = [
   WIND_CAVE,
   BADLANDS,
   THEODORE_ROOSEVELT,
+  ARCHES,
   PROTOTYPE_PARK,
 ];
 

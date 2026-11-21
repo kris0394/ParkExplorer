@@ -12,7 +12,7 @@ import { pushOutOfRocks } from './rocks.ts';
 
 export type DeerState = 'IDLE' | 'WANDER' | 'FEED' | 'ALERT' | 'FLEE' | 'APPROACH';
 
-export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn' | 'wild-horse';
+export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn' | 'wild-horse' | 'mule-deer' | 'kit-fox' | 'jackrabbit' | 'coyote' | 'mountain-lion';
 
 export interface DeerConfig {
   id: string;
@@ -103,6 +103,24 @@ export class DeerEntity {
     return this.species === 'bighorn-sheep';
   }
 
+  /** Task 28b: desert animals of Arches. A "buck" is a buck mule deer; fox and jackrabbit have one kind. */
+  get isMule(): boolean {
+    return this.species === 'mule-deer';
+  }
+  get isFox(): boolean {
+    return this.species === 'kit-fox';
+  }
+  get isHare(): boolean {
+    return this.species === 'jackrabbit';
+  }
+  /** Task 28c: coyotes and mountain lions (Arches). */
+  get isCoyote(): boolean {
+    return this.species === 'coyote';
+  }
+  get isCat(): boolean {
+    return this.species === 'mountain-lion';
+  }
+
   /** Task 26: the feral ("wild") horses of Theodore Roosevelt National Park. A "buck" is a stallion. */
   get isHorse(): boolean {
     return this.species === 'wild-horse';
@@ -129,7 +147,7 @@ export class DeerEntity {
   }
 
   get speciesName(): string {
-    return this.isBear ? 'Black Bear' : this.isBighorn ? 'Bighorn Sheep' : this.isPronghorn ? 'Pronghorn' : this.isHorse ? 'Feral Horse' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
+    return this.isBear ? 'Black Bear' : this.isBighorn ? 'Bighorn Sheep' : this.isPronghorn ? 'Pronghorn' : this.isHorse ? 'Feral Horse' : this.isMule ? 'Mule Deer' : this.isFox ? 'Kit Fox' : this.isHare ? 'Black-tailed Jackrabbit' : this.isCoyote ? 'Coyote' : this.isCat ? 'Mountain Lion' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
   }
 
   get detailLabel(): string {
@@ -138,6 +156,11 @@ export class DeerEntity {
     if (this.isBighorn) return this.isBuck ? 'Bighorn ram (curled horns)' : 'Bighorn ewe';
     if (this.isPronghorn) return this.isBuck ? 'Pronghorn buck (pronged horns)' : 'Pronghorn doe';
     if (this.isHorse) return this.isBuck ? 'Feral horse stallion' : 'Feral horse mare';
+    if (this.isMule) return this.isBuck ? 'Mule deer buck (forked antlers)' : 'Mule deer doe';
+    if (this.isFox) return 'Kit fox';
+    if (this.isHare) return 'Black-tailed jackrabbit';
+    if (this.isCoyote) return 'Coyote';
+    if (this.isCat) return 'Mountain lion';
     if (this.isPrairieDog) return 'Adult prairie dog';
     if (this.isElk) return this.isBuck ? 'Bull elk (antlered)' : 'Cow elk';
     if (this.isFawn) return 'Spotted fawn';
@@ -152,6 +175,11 @@ export class DeerEntity {
     if (this.isBighorn) return this.isBuck ? 1.2 : 1.0;
     if (this.isPronghorn) return this.isBuck ? 1.25 : 1.15;
     if (this.isHorse) return this.isBuck ? 1.9 : 1.75;
+    if (this.isMule) return this.isBuck ? 1.5 : 1.3;
+    if (this.isFox) return 0.4;
+    if (this.isHare) return 0.4;
+    if (this.isCoyote) return 0.8;
+    if (this.isCat) return 0.9;
     if (this.isPrairieDog) return 0.25;
     if (this.isElk) return this.isBuck ? 2.7 : 2.1;
     return this.isFawn ? 0.8 : this.isBuck ? 1.55 : 1.35;
@@ -188,8 +216,25 @@ export class DeerEntity {
     const isSheep = this.isBighorn;
     const isPronghorn = this.isPronghorn;
     const isHorse = this.isHorse;
-    const stocky = isBear || isBison || isPD || isSheep; // short, heavy legs and a thick neck
-    const furColor = isHorse
+    const isMule = this.isMule;
+    const isFox = this.isFox;
+    const isHare = this.isHare;
+    const isCoyote = this.isCoyote;
+    const isCat = this.isCat;
+    const stocky = isBear || isBison || isPD || isSheep || isHare || isCat; // short, heavy legs and a thick neck
+    const furColor = isMule
+      ? this.isBuck
+        ? 0x8a775e // gray-brown buck
+        : 0x927f66
+      : isFox
+      ? 0xcdb892 // sandy buff
+      : isHare
+      ? 0xb39a76 // tan-brown
+      : isCoyote
+      ? 0x9d8b6e // gray-tan
+      : isCat
+      ? 0xc2a074 // tawny
+      : isHorse
       ? this.isBuck
         ? 0x4e3425 // dark bay stallion
         : 0x8a5a38 // chestnut mare
@@ -225,7 +270,7 @@ export class DeerEntity {
     const noseMat = new THREE.MeshLambertMaterial({ color: 0x161311 });
     const eyeMat = new THREE.MeshStandardMaterial({ color: 0x060504, roughness: 0.15 });
 
-    const scale = isHorse ? (this.isBuck ? 1.0 : 0.94) : isPronghorn ? (this.isBuck ? 0.96 : 0.9) : isSheep ? (this.isBuck ? 1.0 : 0.84) : isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
+    const scale = isCoyote ? 0.5 : isCat ? 0.8 : isMule ? (this.isBuck ? 1.16 : 1.0) : isFox ? 0.3 : isHare ? 0.3 : isHorse ? (this.isBuck ? 1.0 : 0.94) : isPronghorn ? (this.isBuck ? 0.96 : 0.9) : isSheep ? (this.isBuck ? 1.0 : 0.84) : isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
     this.bodyBaseY = stocky ? 0.66 : 1.15;
     // Elk: darker neck and mane, cream rump patch, short tail
     const maneMat = new THREE.MeshLambertMaterial({ color: 0x4a3524 });
@@ -373,6 +418,27 @@ export class DeerEntity {
     this.rightEar.position.set(stocky ? 0.11 : 0.09, stocky ? 0.15 : 0.13, -0.03);
     this.rightEar.rotation.set(-0.25, -0.35, -0.55);
     this.headPivot.add(this.rightEar);
+
+    // Task 28b: mule deer have very large ears; kit foxes and jackrabbits get tall, upright ears of their own
+    if (isMule) {
+      this.leftEar.scale.set(1.5, 1.35, 1.35);
+      this.rightEar.scale.set(1.5, 1.35, 1.35);
+    }
+    if (isFox || isHare || isCoyote) {
+      this.leftEar.visible = false;
+      this.rightEar.visible = false;
+      const eh = isHare ? 0.42 : isCoyote ? 0.24 : 0.26;
+      const er = isHare ? 0.055 : 0.06;
+      for (const side of [-1, 1]) {
+        const eg = new THREE.ConeGeometry(er, eh, 5);
+        eg.translate(0, eh / 2, 0);
+        const ear = new THREE.Mesh(eg, furMat);
+        ear.position.set(side * (isHare ? 0.07 : 0.075), 0.16, -0.02);
+        ear.rotation.z = -side * 0.22; // tilt outward
+        ear.rotation.x = -0.15;
+        this.headPivot.add(ear);
+      }
+    }
 
     // Antlers (Only for Buck! Does and Fawns have graceful, sleek heads)
     if (this.isBuck && !stocky && !isPronghorn) {
@@ -525,6 +591,10 @@ export class DeerEntity {
     if (isBison) this.tailPivot.scale.set(0.55, 0.9, 0.55);
     if (isSheep) this.tailPivot.scale.set(0.35, 0.3, 0.35);
     if (isPronghorn) this.tailPivot.scale.set(0.3, 0.3, 0.3);
+    if (isFox) this.tailPivot.scale.set(2.2, 3.0, 2.2); // a long, bushy tail
+    if (isCoyote) this.tailPivot.scale.set(2.0, 3.2, 2.0); // a bushy tail carried low
+    if (isCat) this.tailPivot.scale.set(1.3, 4.2, 1.3); // a long, heavy tail
+    if (isHare) this.tailPivot.scale.set(0.6, 0.5, 0.6);
     if (isHorse) {
       this.tailPivot.scale.set(1.5, 2.6, 1.5); // a long, hanging tail, dark like the mane
       const tailMat = new THREE.MeshLambertMaterial({ color: this.isBuck ? 0x1d140e : 0x2c1d14 });
@@ -654,13 +724,22 @@ export class DeerEntity {
       // When visitors are on trails or walking quietly, deer tolerate people down to 3.8m (2.2m if crouching!)
       // Only if the player sprints / rushes right at them do they get startled.
       // Elk are bigger and tougher: they notice you from farther away and only bolt when really crowded.
+      const skittish = this.isPronghorn || this.isFox || this.isHare || this.isCoyote;
       const fleeDistance = this.isPrairieDog
         ? (isPlayerSprinting ? 12.0 : isPlayerCrouching ? 3.5 : 7.0)
+        : this.isCat
+        ? (isPlayerSprinting ? 40.0 : isPlayerCrouching ? 14.0 : 30.0) // a mountain lion avoids people long before you get close
+        : skittish
+        ? (isPlayerSprinting ? 22.0 : isPlayerCrouching ? 6.0 : this.isHare ? 9.0 : 14.0) // pronghorn, kit fox and jackrabbit are shy and bolt early
         : this.isHerd
         ? (isPlayerSprinting ? 14.0 : isPlayerCrouching ? 5.0 : 8.0)
         : (isPlayerSprinting ? 10.0 : isPlayerCrouching ? 2.2 : 3.8);
       const baseAlert = this.isPrairieDog
         ? (isPlayerSprinting ? 26.0 : isPlayerCrouching ? 9.0 : 16.0)
+        : this.isCat
+        ? (isPlayerSprinting ? 70.0 : isPlayerCrouching ? 24.0 : 50.0)
+        : skittish
+        ? (isPlayerSprinting ? 40.0 : isPlayerCrouching ? 14.0 : 26.0)
         : this.isHerd
         ? (isPlayerSprinting ? 32.0 : isPlayerCrouching ? 14.0 : 22.0)
         : (isPlayerSprinting ? 18.0 : isPlayerCrouching ? 4.5 : 7.5);
@@ -671,7 +750,7 @@ export class DeerEntity {
           this.state = 'FLEE';
           this.stateTimer = 3.8;
           const fleeAngle = Math.atan2(this.pos.z - playerPos.z, this.pos.x - playerPos.x) + (Math.random() - 0.5) * 0.4;
-          const fleeDist = (this.isElk ? 24.0 : this.isBison ? 14.0 : this.isPronghorn ? 30.0 : 16.0) + Math.random() * 8.0;
+          const fleeDist = (this.isElk ? 24.0 : this.isBison ? 14.0 : this.isPronghorn ? 30.0 : this.isFox ? 22.0 : this.isHare ? 18.0 : this.isCoyote ? 24.0 : this.isCat ? 40.0 : 16.0) + Math.random() * 8.0;
           this.targetPos.set(this.pos.x + Math.cos(fleeAngle) * fleeDist, this.pos.z + Math.sin(fleeAngle) * fleeDist);
           // Prairie dogs run back to their burrow and dive in
           if (this.isPrairieDog) this.targetPos.copy(this.homePos);
@@ -699,7 +778,7 @@ export class DeerEntity {
     } else if (this.state === 'APPROACH') {
       moveSpeed = 1.5;
     } else if (this.state === 'FLEE') {
-      moveSpeed = this.isBear ? 5.5 : this.isBison ? 6.0 : this.isElk ? 7.5 : this.isPronghorn ? 9.5 : this.isHorse ? 8.5 : 6.5; // pronghorn: the fastest animal here
+      moveSpeed = this.isBear ? 5.5 : this.isBison ? 6.0 : this.isElk ? 7.5 : this.isPronghorn ? 9.5 : this.isHorse ? 8.5 : this.isFox ? 8.0 : this.isHare ? 11.0 : this.isCoyote ? 9.0 : this.isCat ? 10.0 : 6.5; // pronghorn: the fastest animal here
     }
 
     if (moveSpeed > 0) {
@@ -708,7 +787,9 @@ export class DeerEntity {
       const distToTarget = Math.hypot(dx, dz);
 
       if (distToTarget > 0.6) {
-        const targetYaw = Math.atan2(dx, dz);
+        // jackrabbits bound away on a zigzag course (NPS)
+        const zig = this.isHare && this.state === 'FLEE' ? Math.sin(this.walkPhase * 0.7) * 0.65 : 0;
+        const targetYaw = Math.atan2(dx, dz) + zig;
         let diff = (targetYaw - this.yaw) % (Math.PI * 2);
         if (diff > Math.PI) diff -= Math.PI * 2;
         if (diff < -Math.PI) diff += Math.PI * 2;

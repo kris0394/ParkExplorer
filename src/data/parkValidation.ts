@@ -138,7 +138,7 @@ export function validateParkData(park: ParkDefinition, allParks: ParkDefinition[
 
   // Wildlife
   const spawns = park.wildlife?.spawns ?? [];
-  if (spawns.length === 0) say('needs at least one wildlife spawn');
+  if (!Array.isArray(park.wildlife.spawns)) say('needs wildlife.spawns (an empty list is fine for a park whose animals are not in the game yet)');
   spawns.forEach((s, i) => {
     if (!finite(s.x) || !finite(s.z)) say(`wildlife spawn #${i + 1} needs x and z`);
     if (!(s.roamRadius > 0)) say(`wildlife spawn #${i + 1} needs a roamRadius above 0`);
