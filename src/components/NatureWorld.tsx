@@ -662,7 +662,8 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
           const bw = badlandsBelt(bd, x, z);
           if (bw > 0) {
             cStrata.set(strataBand(bd, x, y, z));
-            col.lerp(cStrata, bw * bd.strata.strength * (0.8 + 0.2 * sstep(0.95, 0.6, ny)));
+            const steep = sstep(0.95, 0.6, ny);
+            col.lerp(cStrata, bw * bd.strata.strength * (0.8 + 0.2 * steep) * (1 - (bd.flatGrass ?? 0) * (1 - steep)));
           }
         }
 

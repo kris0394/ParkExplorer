@@ -47,7 +47,7 @@ export class WildlifeManager {
     park.wildlife.spawns.forEach((cfg, idx) => {
       // Bears are far less active in winter, so none are shown then
       if (cfg.species === 'black-bear' && !getSeasonDef().bear.active) return;
-      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : cfg.species === 'bison' ? 'bison' : cfg.species === 'prairie-dog' ? 'pdog' : cfg.species === 'bighorn-sheep' ? 'sheep' : cfg.species === 'pronghorn' ? 'prong' : 'deer';
+      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : cfg.species === 'bison' ? 'bison' : cfg.species === 'prairie-dog' ? 'pdog' : cfg.species === 'bighorn-sheep' ? 'sheep' : cfg.species === 'pronghorn' ? 'prong' : cfg.species === 'wild-horse' ? 'horse' : 'deer';
       const deer = new DeerEntity({
         id: `${prefix}_${idx}`,
         species: cfg.species,
@@ -159,6 +159,8 @@ export class WildlifeManager {
             ? nearestIsDoe ? 'Cow Elk' : 'Bull Elk'
             : nearestSpeciesName === 'Bighorn Sheep'
             ? nearestIsDoe ? 'Bighorn Ewe' : 'Bighorn Ram'
+            : nearestSpeciesName === 'Feral Horse'
+            ? nearestIsDoe ? 'Feral Mare' : 'Feral Stallion'
             : nearestSpeciesName === 'Pronghorn'
             ? nearestIsDoe ? 'Pronghorn Doe' : 'Pronghorn Buck'
             : nearestSpeciesName === 'American Bison'

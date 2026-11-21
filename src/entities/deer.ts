@@ -12,7 +12,7 @@ import { pushOutOfRocks } from './rocks.ts';
 
 export type DeerState = 'IDLE' | 'WANDER' | 'FEED' | 'ALERT' | 'FLEE' | 'APPROACH';
 
-export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn';
+export type AnimalSpecies = 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn' | 'wild-horse';
 
 export interface DeerConfig {
   id: string;
@@ -103,6 +103,11 @@ export class DeerEntity {
     return this.species === 'bighorn-sheep';
   }
 
+  /** Task 26: the feral ("wild") horses of Theodore Roosevelt National Park. A "buck" is a stallion. */
+  get isHorse(): boolean {
+    return this.species === 'wild-horse';
+  }
+
   /** Task 25b: pronghorn (Badlands). A "buck" is a buck with pronged horns; does have small straight horns. */
   get isPronghorn(): boolean {
     return this.species === 'pronghorn';
@@ -110,7 +115,7 @@ export class DeerEntity {
 
   /** Big herd animals (elk and bison) tolerate people from farther away and bolt later. */
   get isHerd(): boolean {
-    return this.species === 'elk' || this.species === 'bison';
+    return this.species === 'elk' || this.species === 'bison' || this.species === 'wild-horse';
   }
 
   /** True while a prairie dog is down its burrow (it cannot be seen or disturbed). */
@@ -124,7 +129,7 @@ export class DeerEntity {
   }
 
   get speciesName(): string {
-    return this.isBear ? 'Black Bear' : this.isBighorn ? 'Bighorn Sheep' : this.isPronghorn ? 'Pronghorn' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
+    return this.isBear ? 'Black Bear' : this.isBighorn ? 'Bighorn Sheep' : this.isPronghorn ? 'Pronghorn' : this.isHorse ? 'Feral Horse' : this.isBison ? 'American Bison' : this.isPrairieDog ? 'Black-tailed Prairie Dog' : this.isElk ? 'Elk' : 'White-tailed Deer';
   }
 
   get detailLabel(): string {
@@ -132,6 +137,7 @@ export class DeerEntity {
     if (this.isBison) return this.isBuck ? 'Bull bison' : 'Cow bison';
     if (this.isBighorn) return this.isBuck ? 'Bighorn ram (curled horns)' : 'Bighorn ewe';
     if (this.isPronghorn) return this.isBuck ? 'Pronghorn buck (pronged horns)' : 'Pronghorn doe';
+    if (this.isHorse) return this.isBuck ? 'Feral horse stallion' : 'Feral horse mare';
     if (this.isPrairieDog) return 'Adult prairie dog';
     if (this.isElk) return this.isBuck ? 'Bull elk (antlered)' : 'Cow elk';
     if (this.isFawn) return 'Spotted fawn';
@@ -145,6 +151,7 @@ export class DeerEntity {
     if (this.isBison) return this.isBuck ? 1.9 : 1.6;
     if (this.isBighorn) return this.isBuck ? 1.2 : 1.0;
     if (this.isPronghorn) return this.isBuck ? 1.25 : 1.15;
+    if (this.isHorse) return this.isBuck ? 1.9 : 1.75;
     if (this.isPrairieDog) return 0.25;
     if (this.isElk) return this.isBuck ? 2.7 : 2.1;
     return this.isFawn ? 0.8 : this.isBuck ? 1.55 : 1.35;
@@ -180,8 +187,13 @@ export class DeerEntity {
     const isPD = this.isPrairieDog;
     const isSheep = this.isBighorn;
     const isPronghorn = this.isPronghorn;
+    const isHorse = this.isHorse;
     const stocky = isBear || isBison || isPD || isSheep; // short, heavy legs and a thick neck
-    const furColor = isPronghorn
+    const furColor = isHorse
+      ? this.isBuck
+        ? 0x4e3425 // dark bay stallion
+        : 0x8a5a38 // chestnut mare
+      : isPronghorn
       ? this.isBuck
         ? 0xb3703d // tan-rust buck
         : 0xbe7e48 // slightly paler doe
@@ -206,14 +218,14 @@ export class DeerEntity {
       : 0xb07548; // sleek warm golden-tan doe
 
     const furMat = new THREE.MeshLambertMaterial({ color: furColor });
-    const bellyMat = new THREE.MeshLambertMaterial({ color: isBear || isBison ? furColor : isPD ? 0xe3cfa8 : isSheep ? 0xe9dcc4 : 0xf5eee6 }); // white underbelly (bears and bison: same fur; prairie dogs: cream)
+    const bellyMat = new THREE.MeshLambertMaterial({ color: isBear || isBison || isHorse ? furColor : isPD ? 0xe3cfa8 : isSheep ? 0xe9dcc4 : 0xf5eee6 }); // white underbelly (bears and bison: same fur; prairie dogs: cream)
     const tanMat = new THREE.MeshLambertMaterial({ color: 0x9a7a55 }); // bear muzzle
     const hoofMat = new THREE.MeshLambertMaterial({ color: 0x1f1b17 });
     const antlerMat = new THREE.MeshStandardMaterial({ color: 0xe0d6c5, roughness: 0.75, metalness: 0.1 });
     const noseMat = new THREE.MeshLambertMaterial({ color: 0x161311 });
     const eyeMat = new THREE.MeshStandardMaterial({ color: 0x060504, roughness: 0.15 });
 
-    const scale = isPronghorn ? (this.isBuck ? 0.96 : 0.9) : isSheep ? (this.isBuck ? 1.0 : 0.84) : isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
+    const scale = isHorse ? (this.isBuck ? 1.0 : 0.94) : isPronghorn ? (this.isBuck ? 0.96 : 0.9) : isSheep ? (this.isBuck ? 1.0 : 0.84) : isPD ? 0.19 : isBison ? (this.isBuck ? 1.7 : 1.45) : isBear ? 1.0 : isElk ? (this.isBuck ? 1.75 : 1.55) : this.isFawn ? 0.65 : this.isBuck ? 1.08 : 0.94;
     this.bodyBaseY = stocky ? 0.66 : 1.15;
     // Elk: darker neck and mane, cream rump patch, short tail
     const maneMat = new THREE.MeshLambertMaterial({ color: 0x4a3524 });
@@ -251,6 +263,7 @@ export class DeerEntity {
     }
 
     if (isPronghorn) {
+      // TODO (fix later, reported 15 Nov 2026): these white boxes show as obvious white squares/rectangles on the sides and rump.
       // Pronghorn: a large white rump patch (white patches on rump, side, belly and throat)
       const rumpMat = new THREE.MeshLambertMaterial({ color: 0xf6f0e6 });
       const rump = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.42, 0.10), rumpMat);
@@ -262,6 +275,7 @@ export class DeerEntity {
     }
 
     if (isSheep) {
+      // TODO (fix later, reported 15 Nov 2026): this white box shows as an obvious white square on the rump.
       // Bighorn: a big white rump patch, pale muzzle, and horns (massive curls on rams, short thin horns on ewes)
       const rumpMat = new THREE.MeshLambertMaterial({ color: 0xf2ece0 });
       const rump = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.46, 0.10), rumpMat);
@@ -408,6 +422,18 @@ export class DeerEntity {
       }
     }
 
+    if (isHorse) {
+      // a dark mane along the neck and a forelock; the tail is dark too
+      const darkMat = new THREE.MeshLambertMaterial({ color: this.isBuck ? 0x1d140e : 0x2c1d14 });
+      const mane = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.52, 0.16), darkMat);
+      mane.position.set(0, 0.2, -0.06);
+      mane.rotation.x = -0.3;
+      this.neckPivot.add(mane);
+      const fore = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.07), darkMat);
+      fore.position.set(0, 0.12, 0.02);
+      this.headPivot.add(fore);
+    }
+
     if (isPronghorn) {
       // Black horns: bucks have tall horns with a forward prong (up to a foot long); does only small straight spikes.
       const hornMat = new THREE.MeshLambertMaterial({ color: 0x231d18 });
@@ -499,6 +525,11 @@ export class DeerEntity {
     if (isBison) this.tailPivot.scale.set(0.55, 0.9, 0.55);
     if (isSheep) this.tailPivot.scale.set(0.35, 0.3, 0.35);
     if (isPronghorn) this.tailPivot.scale.set(0.3, 0.3, 0.3);
+    if (isHorse) {
+      this.tailPivot.scale.set(1.5, 2.6, 1.5); // a long, hanging tail, dark like the mane
+      const tailMat = new THREE.MeshLambertMaterial({ color: this.isBuck ? 0x1d140e : 0x2c1d14 });
+      this.tailPivot.traverse(o => { if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).material = tailMat; });
+    }
     if (isPD) this.tailPivot.scale.set(0.5, 0.6, 0.5);
 
     const tailGeo = new THREE.BoxGeometry(0.11, 0.30, 0.08);
@@ -668,7 +699,7 @@ export class DeerEntity {
     } else if (this.state === 'APPROACH') {
       moveSpeed = 1.5;
     } else if (this.state === 'FLEE') {
-      moveSpeed = this.isBear ? 5.5 : this.isBison ? 6.0 : this.isElk ? 7.5 : this.isPronghorn ? 9.5 : 6.5; // pronghorn: the fastest animal here
+      moveSpeed = this.isBear ? 5.5 : this.isBison ? 6.0 : this.isElk ? 7.5 : this.isPronghorn ? 9.5 : this.isHorse ? 8.5 : 6.5; // pronghorn: the fastest animal here
     }
 
     if (moveSpeed > 0) {
