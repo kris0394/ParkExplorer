@@ -903,11 +903,10 @@ export function computeParkStats(
   const photoTotal = speciesList.length + lTotal;
   const photoDone = sPhotographed + lmPhotographed;
 
-  const parts = [
-    lTotal ? lFound / lTotal : 1,
-    wTotal ? wIdentified / wTotal : 1,
-    photoTotal ? photoDone / photoTotal : 1,
-  ];
+  // A park with no animals in the game yet (Arches) has no wildlife share, instead of getting it for free.
+  const parts = [lTotal ? lFound / lTotal : 1];
+  if (wTotal > 0 || speciesList.length > 0) parts.push(wTotal ? wIdentified / wTotal : 1);
+  parts.push(photoTotal ? photoDone / photoTotal : 1);
   const percent = Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 100);
 
   return {

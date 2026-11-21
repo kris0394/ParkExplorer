@@ -313,6 +313,146 @@ SPECIES_CATALOGUE['wild-horse'] = {
   ],
 };
 
+SPECIES_CATALOGUE['mule-deer'] = {
+  id: 'mule-deer',
+  name: 'Mule Deer',
+  scientific: 'Odocoileus hemionus',
+  safeDistanceM: 23.0,
+  blurb:
+    'A gray-brown deer with very big ears and a black-tipped white tail. It is the large mammal most often seen at Arches, usually at dawn and dusk.',
+  variants: ['Mule deer buck (forked antlers)', 'Mule deer doe'],
+  facts: [
+    {
+      id: 'dawn-dusk',
+      unlock: 'identified',
+      text: 'Mule deer are crepuscular, most active at dawn and dusk when it is cooler. Coyotes, porcupines, desert cottontails and black-tailed jackrabbits keep the same hours.',
+    },
+    {
+      id: 'big-ears',
+      unlock: 'photographed',
+      text: 'The mule deer has big ears and a white tail with a black tip. The NPS photographs one standing among green plants in Arches.',
+    },
+    {
+      id: 'lion-prey',
+      unlock: 'responsible',
+      text: 'In Utah, around 80% of a mountain lion\'s diet is mule deer, so the two are never far apart. Unlike mule deer, mountain lion sightings are very rare. Keep a safe distance from all wildlife (the game uses 23 m).',
+    },
+    {
+      id: 'both',
+      unlock: 'allVariants',
+      text: 'Find both a buck and a doe from a safe distance to complete the journal entry for the mule deer.',
+    },
+  ],
+};
+
+SPECIES_CATALOGUE['kit-fox'] = {
+  id: 'kit-fox',
+  name: 'Kit Fox',
+  scientific: 'Vulpes macrotis',
+  safeDistanceM: 23.0,
+  blurb:
+    'A small, sandy desert fox with big upright ears and a bushy tail. It is shy and rarely seen, and the NPS says foxes are mostly active at night.',
+  variants: ['Kit fox'],
+  facts: [
+    {
+      id: 'night-fox',
+      unlock: 'identified',
+      text: 'Most desert animals are nocturnal, which helps them avoid predators and the hot daytime temperatures. Mostly nocturnal animals at Arches include kangaroo rats, woodrats, skunks, ringtails, foxes, bobcats, mountain lions, bats and owls.',
+    },
+    {
+      id: 'rarely-seen',
+      unlock: 'photographed',
+      text: 'Arches is hot and has little water, which favors small mammals. Larger mammals such as foxes are not uncommon, but they are rarely seen.',
+    },
+    {
+      id: 'brochure',
+      unlock: 'responsible',
+      text: 'The park brochure lists kit foxes among the animals you might see at Arches, though jackrabbits and cottontails are seen more often. Pets are not allowed on Arches trails, because dogs can frighten, injure or kill wild animals and pass diseases to them.',
+    },
+  ],
+};
+
+SPECIES_CATALOGUE['jackrabbit'] = {
+  id: 'jackrabbit',
+  name: 'Black-tailed Jackrabbit',
+  scientific: 'Lepus californicus',
+  safeDistanceM: 23.0,
+  blurb:
+    'A long-eared hare of the open desert. It sits still until you come close, then bounds away in a zigzag.',
+  variants: ['Black-tailed jackrabbit'],
+  facts: [
+    {
+      id: 'dawn-dusk-hare',
+      unlock: 'identified',
+      text: 'Black-tailed jackrabbits are crepuscular: they are active in the early morning and late evening, when temperatures are cooler.',
+    },
+    {
+      id: 'hare',
+      unlock: 'photographed',
+      text: 'The jackrabbit is not really a rabbit, but a hare. The NPS says it can often be seen bounding away on a zigzag course.',
+    },
+    {
+      id: 'dont-approach',
+      unlock: 'responsible',
+      text: 'The park brochure says jackrabbits and cottontails are seen more often at Arches than foxes. Remember: do not approach wildlife.',
+    },
+  ],
+};
+
+SPECIES_CATALOGUE['coyote'] = {
+  id: 'coyote',
+  name: 'Coyote',
+  scientific: 'Canis latrans',
+  safeDistanceM: 23.0,
+  blurb:
+    'A gray-tan wild dog of the desert, bigger than a kit fox, with upright ears and a bushy tail held low. Shy, and most often seen at dawn and dusk.',
+  variants: ['Coyote'],
+  facts: [
+    {
+      id: 'dawn-dusk-coyote',
+      unlock: 'identified',
+      text: 'Coyotes are crepuscular, most active at dawn and dusk, the cooler times of day. Mule deer, porcupines, desert cottontails and black-tailed jackrabbits keep the same hours.',
+    },
+    {
+      id: 'wary',
+      unlock: 'photographed',
+      text: 'Many desert animals are either inactive during daylight hours or wary of humans, so seeing one can be a special event.',
+    },
+    {
+      id: 'keep-wild',
+      unlock: 'responsible',
+      text: 'Arches asks you not to handle or feed wildlife, even if it looks distressed. Many wild animals in the park carry life-threatening diseases that can spread to humans, such as rabies, hantavirus and plague.',
+    },
+  ],
+};
+
+SPECIES_CATALOGUE['mountain-lion'] = {
+  id: 'mountain-lion',
+  name: 'Mountain Lion',
+  scientific: 'Puma concolor',
+  safeDistanceM: 46.0,
+  blurb:
+    'A big, tawny cat with a long tail, also called a cougar or puma. Sightings are very rare, and it avoids people.',
+  variants: ['Mountain lion'],
+  facts: [
+    {
+      id: 'names',
+      unlock: 'identified',
+      text: 'Mountain lions are also called cougars, pumas, panthers and catamounts.',
+    },
+    {
+      id: 'deer-eater',
+      unlock: 'photographed',
+      text: 'In Utah, around 80% of a mountain lion\'s diet is mule deer, so the two are never far apart. Unlike mule deer, mountain lion sightings in Arches are very rare.',
+    },
+    {
+      id: 'safety',
+      unlock: 'responsible',
+      text: 'Do not approach a mountain lion; most try to avoid a confrontation, so give them a way to escape. Do not run, because running may trigger the chase instinct. Stand and face the animal, make eye contact, and try to look larger. Typical sightings are from a distance, around dawn or dusk, and should be reported to a ranger. Arches recommends 150 feet (46 m) from large animals such as black bears; the game uses 46 m for the lion.',
+    },
+  ],
+};
+
 export function getSpeciesIdFromName(name: string): string {
   for (const sp of Object.values(SPECIES_CATALOGUE)) {
     if (sp.name === name) return sp.id;
@@ -323,7 +463,7 @@ export function getSpeciesIdFromName(name: string): string {
 export function getSpeciesForPark(parkId: string): string[] {
   const park = AVAILABLE_PARKS.find(p => p.id === parkId);
   const ids = new Set<string>(park ? park.wildlife.spawns.map(s => s.species) : ['white-tailed-deer']);
-  if (ids.size === 0) ids.add('white-tailed-deer');
+  if (ids.size === 0 && !park) ids.add('white-tailed-deer'); // only for an unknown park; a known park with no animals (Arches) really has none
   // Keep a stable order: deer first, then the rest as listed in the catalogue
   return Object.keys(SPECIES_CATALOGUE).filter(id => ids.has(id));
 }
