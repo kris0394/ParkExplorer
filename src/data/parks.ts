@@ -37,7 +37,7 @@ export interface ParkLitter {
 }
 
 export interface ParkWildlifeSpawn {
-  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn' | 'wild-horse' | 'mule-deer' | 'kit-fox' | 'jackrabbit' | 'coyote' | 'mountain-lion';
+  species: 'white-tailed-deer' | 'elk' | 'black-bear' | 'bison' | 'prairie-dog' | 'bighorn-sheep' | 'pronghorn' | 'wild-horse' | 'mule-deer' | 'kit-fox' | 'jackrabbit' | 'coyote' | 'mountain-lion' | 'yellow-bellied-marmot' | 'pika';
   isBuck: boolean;
   isFawn?: boolean;
   x: number;
@@ -4952,6 +4952,442 @@ export const CANYONLANDS: ParkDefinition = {
   waterStations: [],
 };
 
+export const ROCKY_MOUNTAIN: ParkDefinition = {
+  id: 'rocky-mountain',
+  npsParkCode: 'romo',
+  layoutSeed: 62,
+  name: 'Rocky Mountain',
+  subtitle: 'Trail Ridge Road, alpine tundra',
+  parkServiceUnit: 'National Park',
+  state: 'Colorado',
+  region: 'Southern Rocky Mountains',
+  description: 'In northern Colorado, Trail Ridge Road climbs above the trees and crosses the alpine tundra at more than 12,000 feet. Walk the Tundra Communities Trail to Toll Memorial, look into the glacial gulf of Forest Canyon, climb the Alpine Ridge Trail, and watch for elk, bighorn sheep, marmots and pikas.',
+  elevationRange: { min: 3486, max: 3752 },
+  spawn: { x: -60.0, y: 0.4, z: 2.0, yaw: Math.PI }, // at the Forest Canyon Overlook trailhead, facing south toward the canyon
+  terrain: {
+    baseScale: 0.004,
+    heightScale: 0.5, // rolling tundra
+    noiseX: 12,
+    noiseZ: 70,
+    // Toll Memorial, at the end of the Tundra Communities Trail, is the park's "summit" overlook
+    mountain: {
+      x: 150.0,
+      z: -78.0,
+      height: 6.0,
+      radius: 105.0,
+      plateauRadius: 7.0,
+      name: 'Toll Memorial',
+    },
+    badlands: {
+      // Forest Canyon: the land falls away to the south, into a deep glacial valley (game scale)
+      facing: 'south',
+      wall: [
+        { x: -300, z: 70 }, { x: -150, z: 62 }, { x: -40, z: 66 }, { x: 100, z: 58 }, { x: 300, z: 70 },
+      ],
+      crestHeight: 0.8,
+      faceWidth: 5.0,
+      topWidth: 4.0,
+      backWidth: 34.0,
+      basinDrop: 85.0,
+      gaps: [],
+      ruggedness: 0.6,
+      terraceStep: 0,
+      bankSlope: 0.9,
+      bankReach: 14,
+      bare: false, // tundra grows right up to the rim
+      strata: {
+        // grey granite and gneiss, muted
+        colors: [0x8f8a80, 0x7a7670, 0xa09a8e, 0x6f6c66],
+        bandHeight: 5.0,
+        strength: 0.45,
+      },
+    },
+    // Alpine Ridge: a rounded rock ridge above the Alpine Visitor Center, climbed by its gentle southern end
+    domes: [
+      {
+        x: -210,
+        z: -70,
+        halfLength: 28,
+        halfWidth: 12,
+        height: 13,
+        axis: -Math.PI / 2,
+        strata: { colors: [0x9a9488, 0x8a8478, 0xa8a296, 0x7d786e], bandHeight: 3.0, strength: 0.6 },
+      },
+    ],
+    groundLook: {
+      patchScale: 0.02,
+      strength: 0.85,
+      patches: [0x7f8a5a, 0x8d9460, 0x6f7a52, 0xa0a070, 0x8a8070, 0x9a9180],
+      speckle: 0.3,
+      soil: { color: 0x8a7a62, amount: 0.35 },
+      mulch: 0.0,
+    },
+    colors: {
+      valley: 0x7f8a5a,
+      meadow: 0x879060,
+      dryGrass: 0xa69f6a,
+      steepSlope: 0x7a7468,
+      summitRock: 0x8d877b,
+      riverbed: 0x8a8272,
+      riverbank: 0x7a7262,
+    },
+  },
+  water: {
+    hasRiver: false,
+    mode: 'none',
+    name: 'No stream here',
+    surfaceY: -1.0,
+    halfWidth: 3.0,
+    bankWidth: 5.0,
+    valleyWidth: 30.0,
+    gradient: 0.003,
+    deepColor: 0x2f4a5a,
+    shallowColor: 0x6a8a9a,
+    skyReflectColor: 0xa8c6d8,
+  },
+  trail: {
+    name: 'Trail Ridge Road Trails',
+    width: 2.0,
+    surface: { center: 0xb9b4a6, mid: 0xa49f90, edge: 0x8f8a7c },
+    paths: [
+      {
+        // NPS: a five-minute paved walk from the lot to the Forest Canyon Overlook (11,716 ft / 3,571 m)
+        id: 'forest-canyon-trail',
+        name: 'Forest Canyon Overlook Trail',
+        steps: 12,
+        nodes: [
+          { x: -60, z: 6 },
+          { x: -62, z: 22 },
+          { x: -60, z: 38 },
+          { x: -58, z: 52 },
+        ],
+      },
+      {
+        // NPS: from Rock Cut (12,050 ft) to Toll Memorial (12,310 ft / 3,752 m), 0.5 mi one way, 230 ft (70 m) gain
+        id: 'tundra-communities-trail',
+        name: 'Tundra Communities Trail',
+        steps: 14,
+        nodes: [
+          { x: 62, z: -30 },
+          { x: 80, z: -40 },
+          { x: 98, z: -52 },
+          { x: 116, z: -64 },
+          { x: 134, z: -73 },
+          { x: 150, z: -78 },
+        ],
+      },
+      {
+        // NPS: from the Alpine Visitor Center to the Alpine Ridge summit (12,005 ft / 3,659 m), 0.3 mi (0.5 km) one way, 209 ft (64 m) gain
+        id: 'alpine-ridge-trail',
+        name: 'Alpine Ridge Trail',
+        steps: 12,
+        nodes: [
+          { x: -214, z: -28 },
+          { x: -213, z: -40 },
+          { x: -211, z: -52 },
+          { x: -210, z: -64 },
+          { x: -210, z: -76 },
+        ],
+      },
+    ],
+  },
+  overlook: {
+    name: 'Toll Memorial',
+    elevationLabel: 'Toll Memorial',
+    deckRadius: 4.2,
+    hasBench: true,
+    hasTelescope: true,
+    signHeading: 'TOLL MEMORIAL',
+    signSubheading: 'END OF THE TUNDRA COMMUNITIES TRAIL',
+  },
+  vegetation: {
+    treeCount: 0, // above treeline: no trees
+    shrubCount: 260,
+    speciesWeights: { conifer: 1.0, pine: 0.0, broadleaf: 0.0, oak: 0.0, birch: 0.0, poplar: 0.0, snag: 0.0 },
+    look: {
+      treeScale: 0.5,
+      glades: 1.0,
+      groundCover: {
+        clumps: 520,
+        flowerPatches: 220,
+        clumpPalette: [0x7a8a58, 0x8a9a66, 0x9a9a6a, 0x6a7a4e, 0x8a7a5a],
+        flowerPalette: [0xe8c83a, 0xf0efe0, 0xc86aa0, 0x7a6ac8],
+      },
+      shrubPalette: [0x7a8a5a, 0x6b7c4e, 0x8d9068, 0x5f7048],
+      grass: { root: 0x5a6a3a, stalk: 0x8a9a56, dry: 0xb5ad72, fern: 0x6f8a52, flowerA: 0xe8c83a, flowerB: 0xf0efe0 },
+      grassland: {
+        density: 1.7,
+        radius: 52,
+        heightRange: [0.14, 0.5], // short alpine tundra
+        patchScale: 0.04,
+        tints: [0xb5c48a, 0xd8d4a0, 0xc9c394],
+        sway: 0.5,
+        carpet: { count: 3600, radius: 22, height: 0.16, root: 0x56683a, tip: 0x8a9a56, tipDry: 0xb5ad72 },
+      },
+    },
+  },
+  atmosphere: {
+    fogColor: 0xdfe8f0,
+    fogDensity: 0.0012,
+    hemiSky: 0xcfe0f2,
+    hemiGround: 0x8a8a70,
+    sunColor: 0xfff6e0,
+    sunIntensity: 3.4,
+    skyHorizon: 0xdfeaf4,
+    skyMid: 0x7fb0e0,
+    skyZenith: 0x2a62b8,
+    skySun: 0xfff0c8,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Forest Canyon Overlook Trailhead',
+      shortName: 'FC Trailhead',
+      description: 'The start of a short paved walk to Forest Canyon Overlook on Trail Ridge Road, at 11,716 feet (3,571 m) above sea level.',
+      x: -60, y: 0.4, z: 2, yaw: Math.PI,
+    },
+    {
+      id: 'forest-canyon',
+      name: 'Forest Canyon Overlook',
+      shortName: 'Forest Canyon',
+      description: 'A panoramic view of Forest Canyon and its tributary canyons, Hayden Gorge and Gorge Lakes. The erosive force of glacial ice is unmistakable. Stay behind the railing.',
+      x: -58, y: 0.3, z: 52, yaw: Math.PI,
+    },
+    {
+      id: 'alpine-ridge',
+      name: 'Alpine Ridge Summit',
+      shortName: 'Alpine Ridge',
+      description: 'The summit of the Alpine Ridge Trail is at 12,005 feet (3,659 m). The real trail climbs about 209 feet (64 m) from the Alpine Visitor Center in 0.3 mile (0.5 km).',
+      x: -210, y: 12.5, z: -76, yaw: 0,
+    },
+    {
+      id: 'rock-cut',
+      name: 'Rock Cut, Tundra Communities Trailhead',
+      shortName: 'Rock Cut',
+      description: 'Rock Cut, at 12,050 feet (3,673 m), is where the Tundra Communities Trail begins. The path is paved; stay on it, because tundra plants take decades to recover from trampling.',
+      x: 62, y: -0.8, z: -30, yaw: Math.PI * 0.35,
+    },
+    {
+      id: 'marmot-rocks',
+      name: 'Marmot and Pika Rocks',
+      shortName: 'Marmot Rocks',
+      description: 'Yellow-bellied marmots and pikas favor rocky areas. The NPS says marmots are best seen on the alpine tundra along Trail Ridge Road, and pikas are common in rock piles.',
+      x: 71, y: 0, z: -70, yaw: Math.PI * 0.5,
+    },
+    {
+      id: 'summit',
+      name: 'Toll Memorial',
+      shortName: 'Toll Memorial',
+      description: 'The end of the Tundra Communities Trail, at 12,310 feet (3,752 m). Look through the telescope across the tundra, with Trail Ridge Road and Forest Canyon below.',
+      x: 150, y: 6, z: -78, yaw: Math.PI * 1.5,
+    },
+  ],
+  wildlife: {
+    // NPS: elk spend much of the summer at or above treeline; bighorn sheep, marmots and pikas are commonly seen on the tundra.
+    // All animals are 24 to 45 m from trails, roads and lots (outside 23 m), in plain view; the bear and the lion are beyond 36 m (120 ft).
+    spawns: [
+      { species: 'elk', isBuck: true, isFawn: false, x: -8.0, z: -56.0, roamRadius: 9.0 },
+      { species: 'elk', isBuck: false, isFawn: false, x: -22.0, z: -60.0, roamRadius: 9.0 },
+      { species: 'elk', isBuck: false, isFawn: false, x: 6.0, z: -62.0, roamRadius: 9.0 },
+      { species: 'elk', isBuck: false, isFawn: false, x: -14.0, z: -48.0, roamRadius: 9.0 },
+      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: -112.0, z: 40.0, roamRadius: 6.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: -104.0, z: 48.0, roamRadius: 6.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: -96.0, z: 42.0, roamRadius: 6.0 },
+      { species: 'mule-deer', isBuck: true, isFawn: false, x: -150.0, z: -46.0, roamRadius: 7.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: -140.0, z: -50.0, roamRadius: 7.0 },
+      { species: 'coyote', isBuck: false, isFawn: false, x: 124.0, z: 8.0, roamRadius: 8.0 },
+      { species: 'yellow-bellied-marmot', isBuck: false, isFawn: false, x: 78.0, z: -68.0, roamRadius: 3.0 },
+      { species: 'yellow-bellied-marmot', isBuck: false, isFawn: false, x: 66.0, z: -64.0, roamRadius: 3.0 },
+      { species: 'yellow-bellied-marmot', isBuck: false, isFawn: false, x: -176.0, z: -44.0, roamRadius: 3.0 },
+      { species: 'yellow-bellied-marmot', isBuck: false, isFawn: false, x: -168.0, z: -52.0, roamRadius: 3.0 },
+      { species: 'pika', isBuck: false, isFawn: false, x: 72.0, z: -72.0, roamRadius: 2.0 },
+      { species: 'pika', isBuck: false, isFawn: false, x: 64.0, z: -70.0, roamRadius: 2.0 },
+      { species: 'pika', isBuck: false, isFawn: false, x: -172.0, z: -48.0, roamRadius: 2.0 },
+      { species: 'black-bear', isBuck: false, isFawn: false, x: 232.0, z: 38.0, roamRadius: 5.0 },
+      { species: 'mountain-lion', isBuck: false, isFawn: false, x: -184.0, z: -118.0, roamRadius: 4.0 },
+    ],
+    // NPS Rocky Mountain: at least 75 ft (23 m) from all wildlife; 120 ft (36 m) from black bears, moose and mountain lions
+    safeDistanceOverrides: { elk: 23.0, 'bighorn-sheep': 23.0, 'mule-deer': 23.0, coyote: 23.0, 'yellow-bellied-marmot': 23.0, pika: 23.0, 'black-bear': 36.0, 'mountain-lion': 36.0 },
+  },
+  features: {
+    roads: [
+      {
+        // Trail Ridge Road: the paved highway across the tundra
+        id: 'trail-ridge-road',
+        name: 'Trail Ridge Road',
+        kind: 'road',
+        width: 7.0,
+        nodes: [
+          { x: -290, z: -8 },
+          { x: -215, z: -14 },
+          { x: -120, z: -6 },
+          { x: -60, z: -10 },
+          { x: 0, z: -16 },
+          { x: 60, z: -14 },
+          { x: 120, z: -24 },
+          { x: 190, z: -34 },
+          { x: 262, z: -30 },
+        ],
+      },
+      {
+        id: 'alpine-lot',
+        name: 'Alpine Visitor Center Parking',
+        kind: 'lot',
+        levelFrom: 'trail-ridge-road',
+        width: 13.0,
+        nodes: [{ x: -234, z: -24 }, { x: -196, z: -24 }],
+      },
+      {
+        id: 'forest-canyon-lot',
+        name: 'Forest Canyon Overlook Parking',
+        kind: 'lot',
+        levelFrom: 'trail-ridge-road',
+        width: 12.0,
+        nodes: [{ x: -80, z: -2 }, { x: -44, z: -2 }],
+      },
+      {
+        id: 'rock-cut-lot',
+        name: 'Rock Cut Parking',
+        kind: 'lot',
+        levelFrom: 'trail-ridge-road',
+        width: 12.0,
+        nodes: [{ x: 40, z: -28 }, { x: 74, z: -28 }],
+      },
+      {
+        id: 'gore-range-lot',
+        name: 'Gore Range Overlook Parking',
+        kind: 'lot',
+        levelFrom: 'trail-ridge-road',
+        width: 12.0,
+        nodes: [{ x: 172, z: -22 }, { x: 208, z: -22 }],
+      },
+    ],
+    cars: [
+      { x: -68.0, z: -4.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+      { x: -56.0, z: 0.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: 52.0, z: -26.0, yaw: Math.PI / 2, color: 0x9a2a2a },
+      { x: 64.0, z: -30.0, yaw: -Math.PI / 2, color: 0x3a6b4a },
+      { x: -222.0, z: -22.0, yaw: Math.PI / 2, color: 0x6b3a2f },
+      { x: -208.0, z: -26.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: 190.0, z: -20.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+    ],
+    // Boulder fields where marmots and pikas live (NPS: they favor rocky areas)
+    talusFields: [
+      { x: 71, z: -70, radius: 13, innerRadius: 2, count: 60, sizeRange: [0.4, 1.4], colors: [0x8d877b, 0x7a756b, 0x9b958a, 0x6f6a60] },
+      { x: -172, z: -48, radius: 12, innerRadius: 2, count: 50, sizeRange: [0.4, 1.4], colors: [0x8d877b, 0x7a756b, 0x9b958a, 0x6f6a60] },
+    ],
+    // NPS: the Forest Canyon Overlook has a railing at the end of the paved trail
+    railings: [{ path: 'forest-canyon-trail', length: 10, endCap: true }],
+    distantRidges: true,
+  },
+  rules: {
+    zones: [
+      { id: 'tundra-1', kind: 'sensitive', name: 'Fragile Alpine Tundra', x: 90, z: -20, radius: 12, reason: 'Stay on the trail! Alpine plants can take decades to recover from human trampling. Off-trail hiking is prohibited in the tundra closure areas along Trail Ridge Road.' },
+      { id: 'tundra-2', kind: 'sensitive', name: 'Fragile Alpine Tundra', x: 112, z: -40, radius: 10, reason: 'Stay on the trail! The tundra closures include all areas on either side of the Tundra Communities Trail and Toll Memorial.' },
+      { id: 'tundra-3', kind: 'sensitive', name: 'Fragile Alpine Tundra', x: -40, z: 24, radius: 10, reason: 'Stay on the trail! The tundra closure at Forest Canyon Overlook covers the ground beside the lot and the trail.' },
+      { id: 'tundra-4', kind: 'sensitive', name: 'Fragile Alpine Tundra', x: -84, z: 22, radius: 10, reason: 'Stay on the trail! Tiny alpine plants hug the ground here and are easily crushed.' },
+      { id: 'tundra-5', kind: 'sensitive', name: 'Fragile Alpine Tundra', x: -186, z: -34, radius: 10, reason: 'Stay on the trail! The tundra closure at the Alpine Visitor Center covers the ground beside the lot and the Alpine Ridge Trail.' },
+      { id: 'tundra-6', kind: 'sensitive', name: 'Fragile Alpine Tundra', x: 124, z: -44, radius: 8, reason: 'Stay on the trail and the pavement! Tundra closures also protect the ground at Rock Cut and Lava Cliffs.' },
+    ],
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'tundra-communities-trail', 'bottle-1': 'forest-canyon-trail', 'wrapper-1': 'tundra-communities-trail', 'peel-1': 'alpine-ridge-trail', 'bag-1': 'forest-canyon-trail' } as Record<string, string>)[l.id] ?? 'tundra-communities-trail',
+    })),
+  },
+  about: {
+    designNote:
+      'A game-scale map of the alpine tundra stretch of Trail Ridge Road, with real features packed close together; in reality they are miles apart along the road (the NPS puts Forest Canyon Overlook at 11,716 ft, Rock Cut at 12,050 ft, the Alpine Visitor Center and the Alpine Ridge summit at 12,005 ft and Toll Memorial at 12,310 ft). All positions, the order along the road and the trail lengths are game placements; the NPS numbers (Tundra Communities Trail 0.5 mi one way, 230 ft gain; Alpine Ridge Trail 0.3 mi one way, 209 ft gain; Forest Canyon Overlook a five-minute paved walk) are given in the journal. Forest Canyon lies south of the road (NPS: the tundra closure at the overlook is on the south side) and is a game-scale drop of about 85 m. Toll Memorial is the summit with a real telescope, bench and railing; the memorial itself is not modelled. The Alpine Ridge is a rounded game-scale ridge. The ground has no trees because the road runs above treeline (about 11,500 ft). Elk, bighorn sheep, mule deer, coyotes, yellow-bellied marmots, pikas and black bears are real Rocky Mountain animals; their numbers and spots here are game placements, and the NPS gives no number for how often a mountain lion or bear is seen on Trail Ridge, so one of each is placed far from the trails. Not modelled: moose (they live in willow thickets on the west side of the park), ptarmigans and other birds, lakes and streams (the engine has no lakes), snow, the Alpine Visitor Center building, Lava Cliffs, the road closure season (mid-October to Memorial Day), and the Continental Divide. The elevation range is a game value: the top is the NPS figure for Toll Memorial; the bottom is the game canyon floor. There is no drinking water on the map because no NPS water source was verified for these stops.',
+    wildlifeGuidance: {
+      text: 'Rocky Mountain asks you to stay at least 75 feet (23 m), about two bus lengths, from all wildlife. For black bears, moose and mountain lions it recommends at least 120 feet (36 m), about three bus lengths. If an animal reacts to you, you are too close.',
+      caveat: 'The game uses 23 m for elk, bighorn sheep, mule deer, coyotes, marmots and pikas, and 36 m for the bear and the lion. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://www.nps.gov/romo/planyourvisit/wildlife-safety.htm',
+      sourceLabel: 'nps.gov: Wildlife Safety (Rocky Mountain)',
+    },
+    facts: [
+      {
+        id: 'trail-ridge-road',
+        title: 'The highway to the sky',
+        text: 'Eleven miles of Trail Ridge Road travel above treeline, which is near 11,500 feet, where the evergreen forests stop. The road reaches a high point of 12,183 feet. It closes from mid-October to Memorial Day, and extreme weather can change its status at any time.',
+        sourceUrl: 'https://www.nps.gov/romo/planyourvisit/trail_ridge_road.htm',
+        sourceLabel: 'nps.gov: Trail Ridge Road',
+      },
+      {
+        id: 'tundra-life',
+        title: 'Life on the tundra',
+        text: 'The Trail Ridge tundra is a place of vibrant life and vivid colors. Pikas, marmots, ptarmigans and bighorn sheep are commonly seen, and about 200 species of tiny alpine plants hug the ground.',
+        sourceUrl: 'https://www.nps.gov/romo/planyourvisit/trail_ridge_road.htm',
+        sourceLabel: 'nps.gov: Trail Ridge Road',
+      },
+      {
+        id: 'forest-canyon',
+        title: 'Forest Canyon Overlook',
+        text: 'A five-minute walk down a paved trail leads to a panoramic view at 11,716 feet (3,571 m) of Forest Canyon and its tributary canyons, Hayden Gorge and Gorge Lakes. The erosive force of glacial ice is unmistakable here.',
+        sourceUrl: 'https://www.nps.gov/places/romo_forestcanyon.htm',
+        sourceLabel: 'nps.gov: Forest Canyon Overlook',
+      },
+      {
+        id: 'tundra-trail',
+        title: 'Rock Cut to Toll Memorial',
+        text: 'The Tundra Communities Trail starts at Rock Cut (12,050 ft / 3,673 m) and climbs 230 feet (70 m) over 0.5 mile (0.8 km) to Toll Memorial at 12,310 feet (3,752 m). The Tundra World Nature Trail from Rock Cut is a half-hour walk.',
+        sourceUrl: 'https://www.nps.gov/romo/planyourvisit/upload/Alpine-Trail-Guide-2019-digital.pdf',
+        sourceLabel: 'nps.gov: Alpine Trail Guide',
+      },
+      {
+        id: 'alpine-ridge',
+        title: 'Alpine Ridge Trail',
+        text: 'The Alpine Ridge Trail starts at the Alpine Visitor Center and climbs 209 feet (64 m) in 0.3 mile (0.5 km) to the Alpine Ridge summit at 12,005 feet (3,659 m).',
+        sourceUrl: 'https://www.nps.gov/romo/planyourvisit/upload/Alpine-Trail-Guide-2019-digital.pdf',
+        sourceLabel: 'nps.gov: Alpine Trail Guide',
+      },
+      {
+        id: 'tundra-closures',
+        title: 'Stay off the tundra',
+        text: 'Alpine plants can take decades to recover from human trampling. Tundra closures protect the fragile ground from heavy, concentrated foot travel, and off-trail hiking is prohibited there. They include the areas on either side of the Tundra Communities Trail and its end at Toll Memorial.',
+        sourceUrl: 'https://www.nps.gov/romo/planyourvisit/area_closures.htm',
+        sourceLabel: 'nps.gov: Area closures',
+      },
+      {
+        id: 'wildlife-distance',
+        title: 'How far is far enough?',
+        text: 'Stay at least 75 feet (23 m), about two bus lengths, from all wildlife, and at least 120 feet (36 m), about three bus lengths, from black bears, moose and mountain lions. If wildlife reacts to you, you are too close.',
+        sourceUrl: 'https://www.nps.gov/romo/planyourvisit/wildlife-safety.htm',
+        sourceLabel: 'nps.gov: Wildlife Safety',
+      },
+      {
+        id: 'elk-places',
+        title: 'Where to watch elk',
+        text: 'Elk can be seen throughout the park. Popular viewing places include Moraine Park, Sheep Lakes, Horseshoe Park, Harbison Meadow and along Trail Ridge Road. Elk are most active at dawn and dusk.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/romo_watchelk.htm',
+        sourceLabel: 'nps.gov: Watching elk',
+      },
+      {
+        id: 'bighorn',
+        title: 'A comeback story',
+        text: 'The park is home to over 350 bighorn sheep, which were nearly extinct here in the 1950s. They graze the tundra in summer and migrate to lower elevations in fall.',
+        sourceUrl: 'https://www.nps.gov/romo/planyourvisit/upload/ROMO_UnigridBrochure_2022.pdf',
+        sourceLabel: 'nps.gov: Park brochure',
+      },
+      {
+        id: 'small-mammals',
+        title: 'Marmots and pikas',
+        text: 'Yellow-bellied marmots and pikas favor rocky areas. Marmots are best seen on the alpine tundra along Trail Ridge and Old Fall River roads. Pikas, small light-colored mammals, are common in rock piles: listen for their sharp, distinctive bark and watch for movement.',
+        sourceUrl: 'https://www.nps.gov/thingstodo/wildlife-viewing-in-rmnp.htm',
+        sourceLabel: 'nps.gov: Wildlife viewing',
+      },
+      {
+        id: 'ecosystems',
+        title: 'Three ecosystems',
+        text: 'Trail Ridge Road travels through the montane (below 9,000 feet), subalpine and alpine (above 11,400 feet) ecosystems. Most animals hibernate or migrate during the harsh alpine winter.',
+        sourceUrl: 'https://www.nps.gov/romo/planyourvisit/upload/ROMO_UnigridBrochure_2022.pdf',
+        sourceLabel: 'nps.gov: Park brochure',
+      },
+    ],
+    checkedOn: '2026-11-22',
+  },
+  // No drinking water source was verified on the NPS pages used for these stops
+  waterStations: [],
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
@@ -4963,6 +5399,7 @@ export const AVAILABLE_PARKS: ParkDefinition[] = [
   THEODORE_ROOSEVELT,
   ARCHES,
   CANYONLANDS,
+  ROCKY_MOUNTAIN,
   PROTOTYPE_PARK,
 ];
 

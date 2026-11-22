@@ -185,6 +185,64 @@ SPECIES_CATALOGUE['bison'] = {
   ],
 };
 
+SPECIES_CATALOGUE['elk'].facts.push({
+  id: 'treeline',
+  unlock: 'identified',
+  text: 'In Rocky Mountain National Park, elk spend much of the summer at or above treeline, moving to lower elevations in fall, winter and spring. Their favorite feeding times are dawn and dusk. The park asks you to stay at least 75 feet (23 m) away.',
+});
+
+SPECIES_CATALOGUE['yellow-bellied-marmot'] = {
+  id: 'yellow-bellied-marmot',
+  name: 'Yellow-bellied Marmot',
+  scientific: 'Marmota flaviventris',
+  safeDistanceM: 23,
+  blurb: 'A stocky, brown mountain rodent with a yellowish belly that sunbathes on rocks. It whistles a warning and dives for cover when you come near.',
+  variants: ['Adult marmot'],
+  facts: [
+    {
+      id: 'tundra-rocks',
+      unlock: 'identified',
+      text: 'Yellow-bellied marmots favor rocky areas. They are best seen on the alpine tundra along Trail Ridge Road and Old Fall River Road in Rocky Mountain National Park.',
+    },
+    {
+      id: 'hibernation',
+      unlock: 'photographed',
+      text: 'The tundra summer is short. Marmots store fat, then draw on those reserves while they hibernate through the winter.',
+    },
+    {
+      id: 'distance',
+      unlock: 'responsible',
+      text: 'Rocky Mountain asks you to stay at least 75 feet (23 m) from all wildlife and never to feed it. If an animal reacts to you, you are too close.',
+    },
+  ],
+};
+
+SPECIES_CATALOGUE['pika'] = {
+  id: 'pika',
+  name: 'Pika',
+  scientific: 'Ochotona princeps',
+  safeDistanceM: 23,
+  blurb: 'A tiny, round-eared, light-colored mammal of rock piles high in the mountains. You will hear its sharp bark before you see it.',
+  variants: ['Adult pika'],
+  facts: [
+    {
+      id: 'rabbit-relative',
+      unlock: 'identified',
+      text: 'Pikas are small mammals related to the rabbit family, even though they look more like hamsters.',
+    },
+    {
+      id: 'rock-piles',
+      unlock: 'photographed',
+      text: 'Pikas favor rocky areas and are common in rock piles. Listen for their sharp, distinctive bark and watch for movement.',
+    },
+    {
+      id: 'distance',
+      unlock: 'responsible',
+      text: 'Rocky Mountain asks you to stay at least 75 feet (23 m) from all wildlife. For black bears, moose and mountain lions it recommends at least 120 feet (36 m).',
+    },
+  ],
+};
+
 SPECIES_CATALOGUE['prairie-dog'] = {
   id: 'prairie-dog',
   name: 'Black-tailed Prairie Dog',
@@ -227,6 +285,11 @@ SPECIES_CATALOGUE['bighorn-sheep'] = {
   variants: ['Bighorn ram (curled horns)', 'Bighorn ewe'],
   facts: [
     {
+      id: 'summer-tundra',
+      unlock: 'identified',
+      text: 'On Rocky Mountain\'s Trail Ridge, bighorn sheep are commonly seen on the tundra in summer. They migrate in fall to lower elevations. In late spring and early summer they come down to Sheep Lakes to eat soil for minerals.',
+    },
+    {
       id: 'grass-and-cliffs',
       unlock: 'identified',
       text: 'Bighorn drop down to grasslands to eat large amounts of grass and shrubs quickly, then retreat to cliffs, away from predators, where they chew their food again as cud.',
@@ -234,12 +297,12 @@ SPECIES_CATALOGUE['bighorn-sheep'] = {
     {
       id: 'home-herd',
       unlock: 'photographed',
-      text: 'The Badlands received its own herd in 1964, when twenty-two bighorn were moved from Pike\'s Peak in Colorado. A second group arrived in 2004 from Wheeler Peak in New Mexico. The park now has about 250 of the roughly 80,000 bighorn in the United States.',
+      text: 'Some herds were started by moving animals. The Badlands received twenty-two bighorn from Pike\'s Peak in Colorado in 1964, and now has about 250 of the roughly 80,000 bighorn in the United States. Rocky Mountain National Park is home to over 350 bighorn sheep, which were nearly extinct there in the 1950s.',
     },
     {
       id: 'few-predators',
       unlock: 'responsible',
-      text: 'Adult bighorn in Badlands have few to no natural predators. The most common way for them to die is by accident or disease: a lamb that missteps climbing or descending a slope can take a fatal fall. Badlands asks visitors to stay at least 100 feet (30 m) from all wildlife.',
+      text: 'Adult bighorn in Badlands have few to no natural predators. The most common way for them to die is by accident or disease: a lamb that missteps climbing or descending a slope can take a fatal fall. Badlands asks visitors to stay at least 100 feet (30 m) from all wildlife; Rocky Mountain asks for at least 75 feet (23 m) from deer, bighorn sheep and elk.',
     },
     {
       id: 'groups',
