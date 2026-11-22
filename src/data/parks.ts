@@ -96,6 +96,41 @@ export interface ParkRoad {
  * of buttes and benches falls away behind it to a low basin, and trail paths whose nodes have a `y` are cut or built up
  * so they stay walkable. Leave out for every other park (their ground is unchanged).
  */
+/** Task 31: a long, rounded sandstone fin: a gentle tail at one end, a tall rounded head at the other. */
+export interface DomeConfig {
+  x: number;
+  z: number;
+  /** Half the length (m) and half the width (m). */
+  halfLength: number;
+  halfWidth: number;
+  /** Height above the surrounding ground (m). */
+  height: number;
+  /** Direction of the axis from the tail to the head, as an angle in the x/z plane (radians; 0 = toward +x, PI/2 = toward +z). */
+  axis: number;
+  /** Banded rock colours. */
+  strata: { colors: number[]; bandHeight: number; strength: number };
+}
+
+/** Task 30: a crater (a ring-shaped rim, a bowl and a dome in the middle). */
+export interface CraterConfig {
+  x: number;
+  z: number;
+  /** Distance from the centre to the crest of the rim (m). */
+  radius: number;
+  /** How far the floor lies below the surrounding ground (m). */
+  depth: number;
+  /** How high the rim stands above the surrounding ground (m) and how wide it is (m). */
+  rimHeight: number;
+  rimWidth: number;
+  /** The dome in the middle: height above the floor (m) and radius (m). */
+  domeHeight: number;
+  domeRadius: number;
+  /** 0 to 1: roughness of the bowl (default 0.5). */
+  ruggedness?: number;
+  /** Banded rock colours inside the crater. */
+  strata: { colors: number[]; bandHeight: number; strength: number };
+}
+
 export interface BadlandsConfig {
   /**
    * Which way the badlands fall away from the prairie. 'south' (default): prairie in the north, badlands to the south.
@@ -126,6 +161,8 @@ export interface BadlandsConfig {
   terraceStep: number;
   /** Steepness of the banks cut beside a pinned trail (1 = 45 degrees). Default 0.9. */
   bankSlope?: number;
+  /** Task 30: a pinned trail reshapes the ground only this far (m) beyond its banks (default: unlimited, as in older parks). */
+  bankReach?: number;
   /** false = trees and grass may grow on the slopes and benches (a vegetated badlands such as Theodore Roosevelt). Default true: bare rock. */
   bare?: boolean;
   /** 0 to 1: how much of the grass colour flat benches keep under the rock bands (default 0). */
@@ -269,6 +306,10 @@ export interface ParkDefinition {
     };
     /** Task 25: eroded badlands relief and banded rock colours (opt-in; see BadlandsConfig). */
     badlands?: BadlandsConfig;
+    /** Task 30: a crater with a raised rim, a flat floor and a central dome (Upheaval Dome). Opt-in; only works together with `badlands`. */
+    crater?: CraterConfig;
+    /** Task 31: rounded sandstone fins or domes (Whale Rock). Opt-in; only works together with `badlands`. */
+    domes?: DomeConfig[];
     colors: {
       valley: number;
       meadow: number;
@@ -4259,6 +4300,658 @@ export const ARCHES: ParkDefinition = {
   waterStations: [],
 };
 
+export const CANYONLANDS: ParkDefinition = {
+  id: 'canyonlands',
+  npsParkCode: 'cany',
+  layoutSeed: 61,
+  name: 'Canyonlands',
+  subtitle: 'Island in the Sky',
+  parkServiceUnit: 'National Park',
+  state: 'Utah',
+  region: 'Colorado Plateau',
+  description: 'In southeast Utah, the Island in the Sky mesa rests on sheer sandstone cliffs more than 1,000 feet above the land around it. Walk to Mesa Arch at the cliff edge, look over the southern tip from Grand View Point, peer into the mysterious crater of Upheaval Dome, and follow the Shafer Trail down to the White Rim Road below the mesa.',
+  elevationRange: { min: 1797, max: 1859 },
+  spawn: { x: 4.0, y: 0.4, z: -6.0, yaw: Math.PI / 2 }, // at the Mesa Arch trailhead, facing east toward the cliff edge
+  terrain: {
+    baseScale: 0.004,
+    heightScale: 0.4, // the mesa top is nearly flat
+    noiseX: 40,
+    noiseZ: 25,
+    // Grand View Point is the park's "summit" (the viewpoint deck at the south end of the scenic drive)
+    mountain: {
+      x: 50.0,
+      z: 230.0,
+      height: 1.0,
+      radius: 16.0,
+      plateauRadius: 5.0,
+      name: 'Grand View Point',
+    },
+    badlands: {
+      facing: 'east', // the flat mesa top lies to the west; the land falls away to the east, over the cliff edge
+      // written in the turned frame: x = minus world z (along the cliff), z = world x (how far east the edge is)
+      wall: [
+        { x: -240, z: 64 }, { x: -120, z: 66 }, { x: 0, z: 63 }, { x: 120, z: 66 }, { x: 240, z: 64 },
+      ],
+      crestHeight: 0.7, // a tiny lip: the mesa is flat right up to the edge
+      faceWidth: 6.0,
+      topWidth: 4.0,
+      backWidth: 26.0, // the drop itself: steep
+      basinDrop: 62.0, // game scale (the real cliffs are over 1,000 ft / 300 m)
+      gaps: [],
+      ruggedness: 0.5,
+      terraceStep: 5.0,
+      bankSlope: 0.9,
+      bankReach: 14, // a road on the bench far below the cliff must not eat the cliff top
+      bare: true,
+      strata: {
+        // Navajo sandstone orange at the rim, then the red and cream layers below
+        colors: [0xd98a52, 0xc8693f, 0xe0a070, 0xb85a38, 0xe8b88a, 0xc9733f],
+        bandHeight: 3.2,
+        strength: 0.95,
+      },
+    },
+    // Task 30: Upheaval Dome, a circular crater with a raised rim and a dome in the middle (game scale)
+    crater: {
+      x: -190,
+      z: 120,
+      radius: 50,
+      depth: 12,
+      rimHeight: 5,
+      rimWidth: 9,
+      domeHeight: 9,
+      domeRadius: 14,
+      ruggedness: 0.5,
+      strata: {
+        // the NPS photo shows layers of green, red, beige and orange rock
+        colors: [0x7d8f5c, 0xb5503a, 0xdcc9a0, 0xd98a52],
+        bandHeight: 2.2,
+        strength: 0.9,
+      },
+    },
+    // Task 31: Whale Rock, a long rounded sandstone fin in the outer ring of rock around Upheaval Dome (game scale).
+    // The gentle tail is at the east end (where the trail starts); the tall head is at the west end.
+    domes: [
+      {
+        x: -130,
+        z: 192,
+        halfLength: 32,
+        halfWidth: 9,
+        height: 11,
+        axis: -2.92,
+        strata: { colors: [0xe3b98a, 0xd9a070, 0xeac9a0, 0xcf9462], bandHeight: 2.0, strength: 0.9 },
+      },
+    ],
+    groundLook: {
+      patchScale: 0.02,
+      strength: 0.8,
+      patches: [0xcf9a6c, 0xbd8a60, 0xd8a678, 0xa8795a, 0x6f5f4c, 0xd2ad82],
+      speckle: 0.25,
+      soil: { color: 0xc4916a, amount: 0.4 },
+      mulch: 0.0,
+    },
+    colors: {
+      valley: 0xcf9a6c,
+      meadow: 0xc4966a,
+      dryGrass: 0xcdb078,
+      steepSlope: 0xc26e44,
+      summitRock: 0xd98a52,
+      riverbed: 0xb89870,
+      riverbank: 0xa88a64,
+    },
+  },
+  water: {
+    hasRiver: false,
+    mode: 'none',
+    name: 'No stream here',
+    surfaceY: -1.0,
+    halfWidth: 3.0,
+    bankWidth: 5.0,
+    valleyWidth: 30.0,
+    gradient: 0.003,
+    deepColor: 0x3a4a48,
+    shallowColor: 0x6a7f74,
+    skyReflectColor: 0xa8c6d8,
+  },
+  trail: {
+    name: 'Island in the Sky Trails',
+    width: 2.0,
+    surface: { center: 0xd4ae82, mid: 0xbf9468, edge: 0xa57c5c },
+    paths: [
+      {
+        // NPS: a short loop hike (0.6 mi / 1 km, 30 min, 56 ft / 17 m elevation change) to a cliff-edge arch
+        id: 'mesa-arch-loop',
+        name: 'Mesa Arch Loop',
+        closed: true,
+        steps: 24,
+        nodes: [
+          { x: 10, z: -10, y: 0.4 },
+          { x: 22, z: -14, y: 0.7 },
+          { x: 34, z: -16, y: 1.2 },
+          { x: 44, z: -14, y: 1.8 },
+          { x: 50, z: -11, y: 2.2 },
+          { x: 55, z: -10, y: 2.4 }, // through Mesa Arch
+          { x: 59, z: -9, y: 2.4 },
+          { x: 60, z: -2, y: 2.2 },
+          { x: 57, z: 6, y: 1.8 },
+          { x: 48, z: 12, y: 1.3 },
+          { x: 36, z: 12, y: 0.9 },
+          { x: 24, z: 6, y: 0.6 },
+          { x: 14, z: 0, y: 0.4 },
+        ],
+      },
+      {
+        // NPS: from the lot at the south end of the scenic drive to the overlook, then on along the rim (1.8 mi round trip, 73 ft / 22 m change)
+        id: 'grand-view-trail',
+        name: 'Grand View Trail',
+        steps: 14,
+        nodes: [
+          { x: -8, z: 244, y: -0.6 },
+          { x: 12, z: 240, y: 0.6 },
+          { x: 32, z: 234, y: 0.8 },
+          { x: 50, z: 230, y: 1.0 }, // the overlook deck
+          { x: 58, z: 244, y: 0.8 },
+          { x: 56, z: 262, y: 0.6 },
+        ],
+      },
+      {
+        // NPS: a short but steep trail to the first overlook, a clear view into Upheaval Dome
+        id: 'upheaval-first',
+        name: 'Upheaval Dome First Overlook Trail',
+        steps: 14,
+        nodes: [
+          { x: -124, z: 124, y: 0.9 },
+          { x: -130, z: 120, y: 1.4 },
+          { x: -135, z: 116, y: 2.6 },
+          { x: -139, z: 112, y: 4.0 },
+          { x: -142, z: 110, y: 5.2 },
+        ],
+      },
+      {
+        // NPS: the trail to the second overlook splits off the first and follows cairns, with views of the dome and Upheaval Canyon
+        id: 'upheaval-second',
+        name: 'Upheaval Dome Second Overlook Trail',
+        steps: 14,
+        nodes: [
+          { x: -139, z: 112, y: 4.0 },
+          { x: -138, z: 100, y: 3.8 },
+          { x: -146, z: 88, y: 3.8 },
+          { x: -158, z: 76, y: 4.4 },
+          { x: -166, z: 70, y: 4.1 },
+        ],
+      },
+      {
+        // NPS: the Whale Rock trail (0.8 mi / 1.3 km round trip, 100 ft / 30 m change) leads up the side of a sandstone dome.
+        // No heights here: the trail simply follows the rock, up the gentle tail.
+        id: 'whale-rock-trail',
+        name: 'Whale Rock Trail',
+        steps: 12,
+        nodes: [
+          { x: -94, z: 182 },
+          { x: -100, z: 190 },
+          { x: -108, z: 195 },
+          { x: -120, z: 194 },
+          { x: -132, z: 192 },
+          { x: -142, z: 190 },
+        ],
+      },
+      {
+        // NPS: the Shafer Trail hugs the walls of Shafer Canyon and drops 1,400 ft (427 m) to the White Rim Road; game scale is about 30 m
+        id: 'shafer-trail',
+        name: 'Shafer Trail',
+        steps: 10,
+        width: 4.0,
+        surface: { center: 0xc08a5c, mid: 0xaa7650, edge: 0x946444 },
+        nodes: [
+          { x: -28, z: -190, y: 0 },
+          { x: 10, z: -194, y: 0.2 },
+          { x: 40, z: -196, y: 0 },
+          { x: 62, z: -193, y: -0.2 },
+          { x: 72, z: -190, y: -2 },
+          { x: 79, z: -172, y: -6 },
+          { x: 79.5, z: -154, y: -10 },
+          { x: 76, z: -136, y: -14 },
+          { x: 77.5, z: -118, y: -18 },
+          { x: 78.5, z: -100, y: -22 },
+          { x: 77.5, z: -82, y: -27 },
+          { x: 81, z: -66, y: -30 },
+          { x: 85, z: -50, y: -30 },
+        ],
+      },
+      {
+        // NPS: the 100-mile White Rim Road loops around and below the mesa top; here a stretch along the bench below the cliff
+        id: 'white-rim-road',
+        name: 'White Rim Road',
+        steps: 10,
+        width: 5.0,
+        surface: { center: 0xc9966a, mid: 0xb4825a, edge: 0x9c6f4c },
+        nodes: [
+          { x: 85, z: -50, y: -30 },
+          { x: 82, z: -25, y: -30 },
+          { x: 82, z: 0, y: -30 },
+          { x: 77, z: 25, y: -30 },
+          { x: 79, z: 50, y: -30 },
+          { x: 82.5, z: 75, y: -30 },
+          { x: 85, z: 100, y: -30 },
+          { x: 84.5, z: 125, y: -30 },
+          { x: 78, z: 150, y: -30 },
+          { x: 79.5, z: 175, y: -30 },
+          { x: 80.5, z: 200, y: -30 },
+          { x: 85, z: 225, y: -30 },
+          { x: 81.5, z: 250, y: -30 },
+        ],
+      },
+    ],
+  },
+  overlook: {
+    name: 'Grand View Point',
+    elevationLabel: 'Grand View Point Overlook',
+    deckRadius: 4.0,
+    hasBench: false,
+    hasTelescope: false,
+    signHeading: 'GRAND VIEW POINT',
+    signSubheading: 'SOUTH END OF THE SCENIC DRIVE',
+  },
+  vegetation: {
+    treeCount: 40,
+    shrubCount: 520,
+    speciesWeights: { conifer: 4.0, pine: 0.0, broadleaf: 0.0, oak: 0.0, birch: 0.0, poplar: 0.0, snag: 0.8 },
+    look: {
+      treeScale: 0.7, // small, twisted pinyon and juniper
+      glades: 0.9,
+      palettes: { conifer: [0x6b7a52, 0x5c6c48, 0x75805a] },
+      groundCover: {
+        clumps: 180,
+        flowerPatches: 16,
+        clumpPalette: [0x9a9468, 0x8a8a5c, 0xa8a070, 0x7d8052],
+        flowerPalette: [0xe8c83a, 0xc0412e],
+      },
+      shrubPalette: [0x8a8a5a, 0x777a4c, 0x9a966a, 0x6b6e45],
+    },
+  },
+  atmosphere: {
+    fogColor: 0xeedfc8,
+    fogDensity: 0.0022,
+    hemiSky: 0xdbe6f0,
+    hemiGround: 0xc09468,
+    sunColor: 0xfff0d0,
+    sunIntensity: 3.3,
+    skyHorizon: 0xf0e2cc,
+    skyMid: 0x8dbbe2,
+    skyZenith: 0x2f72c0,
+    skySun: 0xffe2b0,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Mesa Arch Trailhead',
+      shortName: 'Trailhead',
+      description: 'The start of the Mesa Arch Trail on the Island in the Sky mesa top. A short loop hike leads from here to a cliff-edge arch. Dogs are not allowed on this trail.',
+      x: 4, y: 0.4, z: -6, yaw: Math.PI / 2,
+    },
+    {
+      id: 'mesa-arch',
+      name: 'Mesa Arch',
+      shortName: 'Mesa Arch',
+      description: 'Perched at the edge of the mesa top, the real arch is 27 feet (8.3 m) long and frames the canyon far below and the La Sal Mountains in the distance. It is a classic sunrise spot.',
+      x: 52, y: 2.3, z: -10, yaw: Math.PI / 2,
+    },
+    {
+      id: 'cliff-edge',
+      name: 'Cliff Edge Beyond the Arch',
+      shortName: 'Cliff Edge',
+      description: 'Just past the arch the mesa ends. The real Island in the Sky mesa rests on sheer sandstone cliffs more than 1,000 feet (300 m) above the land around it. Stay on the trail.',
+      x: 59, y: 2.4, z: -6, yaw: Math.PI / 2,
+    },
+    {
+      id: 'upheaval-first',
+      name: 'Upheaval Dome First Overlook',
+      shortName: 'Dome Overlook',
+      description: 'A short, steep trail leads to a clear view into Upheaval Dome, a circular crater whose origin is still a mystery. Signs here explain the two main theories.',
+      x: -142, y: 5.2, z: 110, yaw: Math.PI * 1.5,
+    },
+    {
+      id: 'upheaval-second',
+      name: 'Upheaval Dome Second Overlook',
+      shortName: 'Second Overlook',
+      description: 'The second overlook trail splits off the first and follows cairns to more views of Upheaval Dome and Upheaval Canyon, ending at a fenced overlook.',
+      x: -166, y: 4.1, z: 70, yaw: Math.PI * 1.15,
+    },
+    {
+      id: 'whale-rock',
+      name: 'Top of Whale Rock',
+      shortName: 'Whale Rock',
+      description: 'Whale Rock is a long sandstone dome shaped like a beached whale, part of the outer ring of rock around Upheaval Dome. The trail climbs its gentle tail to broad views of the Island in the Sky. Be careful: steep, unfenced drop-offs.',
+      x: -142, y: 11.6, z: 190, yaw: Math.PI * 1.5,
+    },
+    {
+      id: 'summit',
+      name: 'Grand View Point',
+      shortName: 'Grand View',
+      description: 'Grand View Point lies at the southernmost end of the Island in the Sky scenic drive. Canyons, rivers and the White Rim Road wind around the mesa far below.',
+      x: 50, y: 1.0, z: 230, yaw: Math.PI / 2,
+    },
+    {
+      id: 'shafer-trail',
+      name: 'Top of the Shafer Trail',
+      shortName: 'Shafer Trail',
+      description: 'The Shafer Trail hugs the cliff as it drops from the mesa top to the White Rim Road (in reality about 1,400 feet / 427 m, here about 30 m). It began as a cattle trail.',
+      x: 72, y: -2, z: -190, yaw: Math.PI,
+    },
+    {
+      id: 'white-rim-road',
+      name: 'White Rim Road',
+      shortName: 'White Rim',
+      description: 'The 100-mile White Rim Road loops around and below the Island in the Sky mesa top. Here you can walk a stretch of it along the bench below the cliff.',
+      x: 82, y: -30, z: -25, yaw: Math.PI / 2,
+    },
+  ],
+  wildlife: {
+    // NPS: mule deer, coyotes and black-tailed jackrabbits are crepuscular animals of Canyonlands; mule deer are common.
+    // Small animals are 28 to 45 m from the trails and the lots. The mountain lion (very rare) and the black bear (a fall visitor)
+    // are farther away, outside their 46 m safe distance, and visible with binoculars.
+    spawns: [
+      { species: 'mule-deer', isBuck: true, isFawn: false, x: 14.0, z: -44.0, roamRadius: 7.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: 22.0, z: -48.0, roamRadius: 7.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: 8.0, z: -50.0, roamRadius: 7.0 },
+      { species: 'coyote', isBuck: false, isFawn: false, x: -6.0, z: 30.0, roamRadius: 8.0 },
+      { species: 'coyote', isBuck: false, isFawn: false, x: 50.0, z: -44.0, roamRadius: 8.0 },
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: -14.0, z: 26.0, roamRadius: 6.0 },
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: 6.0, z: 30.0, roamRadius: 6.0 },
+      { species: 'jackrabbit', isBuck: false, isFawn: false, x: -20.0, z: -42.0, roamRadius: 6.0 },
+      { species: 'mountain-lion', isBuck: false, isFawn: false, x: 36.0, z: -80.0, roamRadius: 4.0 },
+      { species: 'black-bear', isBuck: false, isFawn: false, x: -90.0, z: -62.0, roamRadius: 5.0 },
+    ],
+    safeDistanceOverrides: { 'mule-deer': 23.0, coyote: 23.0, jackrabbit: 23.0 },
+  },
+  features: {
+    roads: [
+      {
+        // the paved scenic drive runs north to south; Mesa Arch, the Upheaval Dome road and Grand View Point are reached from it
+        id: 'scenic-drive',
+        name: 'Island in the Sky Road',
+        kind: 'road',
+        width: 7.0,
+        nodes: [
+          { x: -32, z: -270 },
+          { x: -28, z: -150 },
+          { x: -30, z: -40 },
+          { x: -28, z: 60 },
+          { x: -32, z: 150 },
+          { x: -30, z: 252 },
+        ],
+      },
+      {
+        id: 'mesa-arch-lot',
+        name: 'Mesa Arch Parking Area',
+        kind: 'lot',
+        levelFrom: 'scenic-drive',
+        width: 13.0,
+        nodes: [
+          { x: -40, z: -6 },
+          { x: 0, z: -6 },
+        ],
+      },
+      {
+        id: 'grand-view-lot',
+        name: 'Grand View Point Parking Area',
+        kind: 'lot',
+        levelFrom: 'scenic-drive',
+        width: 13.0,
+        nodes: [
+          { x: -44, z: 248 },
+          { x: -12, z: 248 },
+        ],
+      },
+      {
+        // the spur road west to the Upheaval Dome trailhead
+        id: 'upheaval-dome-road',
+        name: 'Upheaval Dome Road',
+        kind: 'road',
+        width: 6.0,
+        nodes: [
+          { x: -30, z: 120 },
+          { x: -70, z: 122 },
+          { x: -104, z: 126 },
+        ],
+      },
+      {
+        // the spur road to the Whale Rock trailhead
+        id: 'whale-rock-road',
+        name: 'Whale Rock Road',
+        kind: 'road',
+        width: 6.0,
+        nodes: [
+          { x: -32, z: 152 },
+          { x: -58, z: 166 },
+          { x: -76, z: 176 },
+        ],
+      },
+      {
+        id: 'whale-rock-lot',
+        name: 'Whale Rock Trailhead Parking',
+        kind: 'lot',
+        levelFrom: 'whale-rock-road',
+        width: 11.0,
+        nodes: [
+          { x: -96, z: 180 },
+          { x: -76, z: 178 },
+        ],
+      },
+      {
+        id: 'upheaval-lot',
+        name: 'Upheaval Dome Trailhead Parking',
+        kind: 'lot',
+        levelFrom: 'upheaval-dome-road',
+        width: 11.0,
+        nodes: [
+          { x: -122, z: 126 },
+          { x: -104, z: 126 },
+        ],
+      },
+    ],
+    cars: [
+      { x: -12.0, z: -10.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+      { x: -4.0, z: -2.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: -22.0, z: -10.0, yaw: Math.PI / 2, color: 0x9a2a2a },
+      { x: -30.0, z: 245.0, yaw: Math.PI / 2, color: 0x3a6b4a },
+      { x: -22.0, z: 251.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: -114.0, z: 124.0, yaw: Math.PI / 2, color: 0x6b3a2f },
+      { x: -86.0, z: 176.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+    ],
+    // NPS: a cliff-edge arch. The ground cannot have holes, so it is built as a rock frame (jambs and a lintel). The way through points east, over the cliff.
+    rockWindows: [
+      { x: 55, z: -10, yaw: Math.PI / 2, opening: 6, height: 3.6, scale: 1.2 },
+    ],
+    // NPS: the second Upheaval Dome overlook trail follows cairns
+    cairns: { pathIds: ['upheaval-second'], every: 12, minHeight: 1.0 },
+    // NPS: the second overlook ends at a fenced overlook
+    railings: [
+      { path: 'upheaval-second', length: 8, endCap: true },
+    ],
+    // Monument Basin: the rock towers below Grand View Point (game scale)
+    pinnacles: [
+      { x: 128, z: 205, radius: 22, innerRadius: 5, count: 9, minHeight: 5, maxHeight: 12, colors: [0xd98a52, 0xc8693f, 0xe0a070] },
+    ],
+    distantRidges: true,
+  },
+  rules: {
+    zones: [
+      {
+        id: 'crust-1',
+        kind: 'sensitive',
+        name: 'Biological Soil Crust',
+        x: 22,
+        z: -34,
+        radius: 8,
+        reason: 'Don\'t bust the crust! Biological soil crust is a living groundcover. Its organisms grow within the top 3 mm of the soil, so small impacts do big damage. Walk only on designated trails, bare rock or streambeds.',
+      },
+      {
+        id: 'crust-2',
+        kind: 'sensitive',
+        name: 'Biological Soil Crust',
+        x: 26,
+        z: 28,
+        radius: 8,
+        reason: 'Don\'t bust the crust! Stay on the trail. The dark, lumpy soil is alive, and it holds the desert soil in place.',
+      },
+      {
+        id: 'crust-3',
+        kind: 'sensitive',
+        name: 'Biological Soil Crust',
+        x: -6,
+        z: 20,
+        radius: 8,
+        reason: 'Don\'t bust the crust! Young crust is almost invisible, so staying on the trail is the best way to protect it.',
+      },
+    ],
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'mesa-arch-loop', 'bottle-1': 'grand-view-trail', 'wrapper-1': 'mesa-arch-loop', 'peel-1': 'upheaval-first', 'bag-1': 'grand-view-trail' } as Record<string, string>)[l.id] ?? 'mesa-arch-loop',
+    })),
+  },
+  about: {
+    designNote:
+      'A game-scale map of the Island in the Sky district, with its real features packed close together. In reality they are miles apart along the scenic drive; here the order is a game placement, except that the NPS puts Grand View Point at the southernmost end of the scenic drive. The Mesa Arch Trail follows the NPS page: a short loop (0.6 mi / 1 km, 30 minutes, 56 ft / 17 m elevation change) to a 27-foot (8.3 m) arch perched at the edge of the mesa top. Grand View Point has the overlook and a trail along the rim (NPS: 1.8 mi round trip, 73 ft / 22 m change). Upheaval Dome is a circular crater with a rim and a central dome, reached by its own road and two overlook trails (NPS: first overlook 0.6 mi round trip, 115 ft / 35 m change; the second splits off it and follows cairns, ending at a fenced overlook). The real crater is more than two miles wide; the game crater is about 100 m across. Whale Rock is a long rounded sandstone fin in the outer ring of rock around the crater; the NPS trail leads up the side of the dome, and the game trail climbs its gentle tail (hand rails that some guides mention are not modelled, because no NPS page was found for them). Real Canyonlands overlooks are mostly unfenced (NPS), so the game has no railings except at the Upheaval Dome second overlook. The Shafer Trail and a stretch of the White Rim Road are modelled as walking trails, the Shafer Trail dropping about 30 m instead of the real 1,400 ft (427 m); in the real park you cannot reach the White Rim by foot from the Shafer Trail without a vehicle road, and the road is for four-wheel-drive vehicles and bicycles, so walking it here is a game simplification. The cliff faces east because the NPS calls Mesa Arch a sunrise spot with views toward the La Sal Mountains; all positions, lengths and the compass layout are game placements. Mesa Arch is built as a rock frame (the game\'s ground cannot hold holes) and the mesa edge is a steep game-scale drop of about 60 m. Monument Basin (the rock towers seen from Grand View Point) is shown as a few game-placed towers. Mule deer, coyotes and black-tailed jackrabbits are real Canyonlands animals (the NPS lists them among the animals active at dawn and dusk). Mountain lion sightings are very rare and black bears are only an occasional fall visitor in late August and September (NPS), so the game has one of each, placed far away. Desert bighorn sheep, cottontails and kangaroo rats are not modelled, and neither is Green River Overlook. The sensitive patches are example areas for the biological soil crust. The map has no drinking water because no water source was found on the NPS pages used. The elevation range is a game value: the top (1,859 m) is the published height of Mesa Arch and Grand View Point is listed by the NPS at 6,080 ft (1,853 m); neither is NPS-checked as the park maximum.',
+    wildlifeGuidance: {
+      text: 'Canyonlands asks visitors to keep wildlife wild. National parks generally ask you to stay at least 75 feet (23 m) from most animals, and 150 feet (46 m) from large animals such as black bears.',
+      caveat: 'The game uses 23 m (75 ft) for the small animals and 46 m (150 ft) for the bear and the lion. No Mesa Arch-specific number was used. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://www.nps.gov/cany/learn/nature/animals.htm',
+      sourceLabel: 'nps.gov: Canyonlands animals',
+    },
+    facts: [
+      {
+        id: 'mesa-arch',
+        title: 'A cliff-edge arch',
+        text: 'Perched at the edge of the mesa top, Mesa Arch is 27 feet (8.3 m) long. It frames views of the canyon far below and the La Sal Mountains in the distance.',
+        sourceUrl: 'https://www.nps.gov/places/mesa-arch.htm',
+        sourceLabel: 'nps.gov: Mesa Arch Trail',
+      },
+      {
+        id: 'the-hike',
+        title: 'The Mesa Arch hike',
+        text: 'The loop is 0.6 mile (1 km) round trip, about 30 minutes, with a 56 ft (17 m) elevation change. It has slightly more elevation change at the start if you go counter-clockwise. The trail is rough and uneven, with a rocky hill and stone steps. Dogs are not allowed.',
+        sourceUrl: 'https://www.nps.gov/places/mesa-arch.htm',
+        sourceLabel: 'nps.gov: Mesa Arch Trail',
+      },
+      {
+        id: 'sunrise',
+        title: 'A classic sunrise spot',
+        text: 'Mesa Arch is one of the most photographed arches in southeast Utah. It is especially popular at sunrise, when photographers wait for the glow of the sun on the underside of the arch.',
+        sourceUrl: 'https://www.nps.gov/places/mesa-arch.htm',
+        sourceLabel: 'nps.gov: Mesa Arch Trail',
+      },
+      {
+        id: 'island-in-the-sky',
+        title: 'The island in the sky',
+        text: 'The Island in the Sky mesa rests on sheer sandstone cliffs more than 1,000 feet (300 m) above the surrounding terrain. The 100-mile White Rim Road loops around and below the mesa top.',
+        sourceUrl: 'https://www.nps.gov/cany/planyourvisit/islandinthesky.htm',
+        sourceLabel: 'nps.gov: Island in the Sky',
+      },
+      {
+        id: 'grand-view-point',
+        title: 'Grand View Point',
+        text: 'Grand View Point lies at the southernmost end of the Island in the Sky scenic drive. The trail is 1.8 miles (2.9 km) round trip, about 1.5 hours, with a 73 ft (22 m) elevation change, and you can hike an additional mile to a second viewpoint. Rangers often give geology talks here from spring through fall.',
+        sourceUrl: 'https://www.nps.gov/places/grand-view-point.htm',
+        sourceLabel: 'nps.gov: Grand View Point',
+      },
+      {
+        id: 'grand-river',
+        title: 'Why "Grand View"?',
+        text: 'Before 1921 the part of the Colorado River above its meeting with the Green River was known as the "Grand River", which gave Grand View Point its name. The overlook is at 6,080 feet (1,853 m).',
+        sourceUrl: 'https://www.nps.gov/places/grand-view-point-grand-view-point-overlook.htm',
+        sourceLabel: 'nps.gov: Grand View Point Overlook',
+      },
+      {
+        id: 'upheaval-overlooks',
+        title: 'Two short, steep overlook hikes',
+        text: 'Two short but steep hikes lead to overlooks of Upheaval Dome. The first overlook is 0.6 mile (1 km) round trip with a 115 ft (35 m) elevation change and a clear view into the dome. The second trail splits off the first and follows cairns to more views of the dome and Upheaval Canyon.',
+        sourceUrl: 'https://www.nps.gov/places/upheaval-dome-overlook-trails.htm',
+        sourceLabel: 'nps.gov: Upheaval Dome Overlooks Trail',
+      },
+      {
+        id: 'upheaval-mystery',
+        title: 'The Upheaval Dome mystery',
+        text: 'The rock layers at Upheaval Dome are fractured and tilted, forming a circular depression more than two miles wide. Scientists propose two causes: a salt dome that cracked and tilted the rock over time, or a violent meteorite impact. Recent findings support the meteorite hypothesis, but questions remain.',
+        sourceUrl: 'https://www.nps.gov/places/upheaval-dome-overlook-a-mystery.htm',
+        sourceLabel: 'nps.gov: Upheaval Dome Overlook: A Mystery',
+      },
+      {
+        id: 'whale-rock',
+        title: 'Whale Rock',
+        text: 'The Whale Rock trail is 0.8 mile (1.3 km) round trip, about 1 hour, with a 100 ft (30 m) elevation change. It leads up the side of a sandstone dome and ends with broad views of the Island in the Sky. Be careful: there are steep drop-offs. Dogs are not allowed.',
+        sourceUrl: 'https://www.nps.gov/places/whale-rock-trail.htm',
+        sourceLabel: 'nps.gov: Whale Rock Trail',
+      },
+      {
+        id: 'whale-ring',
+        title: 'A ring around the dome',
+        text: 'Whale Rock is part of a large outer ring of sandstone surrounding the nearby Upheaval Dome formation.',
+        sourceUrl: 'https://www.nps.gov/places/whale-rock-trail.htm',
+        sourceLabel: 'nps.gov: Whale Rock Trail',
+      },
+      {
+        id: 'unfenced',
+        title: 'Unfenced edges',
+        text: 'Kids enjoy peeking through Mesa Arch and climbing the back of the whale at Whale Rock. The park has unfenced overlooks and steep drop-offs, including on these two trails, so stay close to children and be careful near cliff edges, especially when the rock is wet or icy.',
+        sourceUrl: 'https://www.nps.gov/cany/learn/kidsyouth/index.htm',
+        sourceLabel: 'nps.gov: Canyonlands for kids',
+      },
+      {
+        id: 'syncline',
+        title: 'The loop that does not look in',
+        text: 'The Syncline Loop Trail loops around Upheaval Dome but gives no views of the dome itself. For the best views, hike the Upheaval Dome overlook trails.',
+        sourceUrl: 'https://www.nps.gov/places/syncline-loop-trail.htm',
+        sourceLabel: 'nps.gov: Syncline Loop Trail',
+      },
+      {
+        id: 'shafer-trail',
+        title: 'The Shafer Trail',
+        text: 'The road hugs the walls of Shafer Canyon as it quickly drops 1,400 feet (427 m). Starting in 1916, John "Sog" Shafer used the trail to move cattle between summer pasture on the mesa top and winter ground on the White Rim. Later the Atomic Energy Commission widened it for trucks hauling uranium-bearing rock. Today it gives access to the backcountry and the White Rim Road.',
+        sourceUrl: 'https://www.nps.gov/places/shafer-canyon-overlook-dropping-into-the-canyons.htm',
+        sourceLabel: 'nps.gov: Shafer Canyon Overlook',
+      },
+      {
+        id: 'white-rim-road',
+        title: 'The White Rim Road',
+        text: 'The 100-mile White Rim Road loops around and below the Island in the Sky mesa top. Four-wheel-drive vehicles, motorbikes and bicycles are allowed on it. Under favourable weather it is moderately difficult for high-clearance, four-wheel-drive vehicles.',
+        sourceUrl: 'https://www.nps.gov/cany/planyourvisit/whiterimroad.htm',
+        sourceLabel: 'nps.gov: White Rim Road',
+      },
+      {
+        id: 'dawn-dusk',
+        title: 'Dawn and dusk animals',
+        text: 'Many desert animals are active at night or wary of people. Mule deer, coyotes, porcupines, desert cottontails, black-tailed jackrabbits and many songbirds are crepuscular: most active in the early morning and late evening.',
+        sourceUrl: 'https://www.nps.gov/cany/learn/nature/animals.htm',
+        sourceLabel: 'nps.gov: Canyonlands animals',
+      },
+      {
+        id: 'mammals',
+        title: 'Mammals of Canyonlands',
+        text: 'Almost 50 species of mammal are known to live in Canyonlands. Desert cottontails, kangaroo rats and mule deer are common. Mountain lions and mule deer must cover more territory to find food and water, and in Utah about 80 percent of a mountain lion\'s diet is mule deer. Unlike mule deer, mountain lion sightings are very rare.',
+        sourceUrl: 'https://www.nps.gov/cany/learn/nature/mammals.htm',
+        sourceLabel: 'nps.gov: Canyonlands mammals',
+      },
+      {
+        id: 'black-bear',
+        title: 'A fall visitor',
+        text: 'Black bears are an unusual sight in the red rock canyons. They follow river and stream corridors from nearby mountains, usually in late August and September when prickly pear cactus and hackberry trees bear fruit, and return to the mountains before winter.',
+        sourceUrl: 'https://www.nps.gov/cany/learn/nature/mammals.htm',
+        sourceLabel: 'nps.gov: Canyonlands mammals',
+      },
+      {
+        id: 'crust',
+        title: 'Don\'t bust the crust',
+        text: 'Biological soil crust is a living groundcover found throughout the park. Its organisms grow within 1/8 inch (3 mm) of the surface, so small impacts have big effects. Protect fragile soils by walking only on designated trails, bare rock or streambeds.',
+        sourceUrl: 'https://www.nps.gov/places/mesa-arch-keeping-it-together.htm',
+        sourceLabel: 'nps.gov: Keeping it together (Mesa Arch)',
+      },
+    ],
+    checkedOn: '2026-11-22',
+  },
+  // No water source was found on the NPS pages used
+  waterStations: [],
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
@@ -4269,6 +4962,7 @@ export const AVAILABLE_PARKS: ParkDefinition[] = [
   BADLANDS,
   THEODORE_ROOSEVELT,
   ARCHES,
+  CANYONLANDS,
   PROTOTYPE_PARK,
 ];
 

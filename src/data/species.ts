@@ -117,7 +117,7 @@ SPECIES_CATALOGUE['black-bear'] = {
   scientific: 'Ursus americanus',
   safeDistanceM: 46,
   blurb:
-    'The most famous resident of the Smokies. Black bears are normally shy and are watched from far away. They are never an enemy, but they deserve a lot of room.',
+    'Black bears are normally shy and are watched from far away. They are never an enemy, but they deserve a lot of room.',
   variants: ['Adult black bear'],
   facts: [
     {
@@ -443,12 +443,12 @@ SPECIES_CATALOGUE['mountain-lion'] = {
     {
       id: 'deer-eater',
       unlock: 'photographed',
-      text: 'In Utah, around 80% of a mountain lion\'s diet is mule deer, so the two are never far apart. Unlike mule deer, mountain lion sightings in Arches are very rare.',
+      text: 'In Utah, around 80% of a mountain lion\'s diet is mule deer, so the two are never far apart. Unlike mule deer, mountain lion sightings are very rare.',
     },
     {
       id: 'safety',
       unlock: 'responsible',
-      text: 'Do not approach a mountain lion; most try to avoid a confrontation, so give them a way to escape. Do not run, because running may trigger the chase instinct. Stand and face the animal, make eye contact, and try to look larger. Typical sightings are from a distance, around dawn or dusk, and should be reported to a ranger. Arches recommends 150 feet (46 m) from large animals such as black bears; the game uses 46 m for the lion.',
+      text: 'Do not approach a mountain lion; most try to avoid a confrontation, so give them a way to escape. Do not run, because running may trigger the chase instinct. Stand and face the animal, make eye contact, and try to look larger. Typical sightings are from a distance, around dawn or dusk, and should be reported to a ranger. Arches and Canyonlands recommend 150 feet (46 m) from large animals such as black bears; the game uses 46 m for the lion.',
     },
   ],
 };

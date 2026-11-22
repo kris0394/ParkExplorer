@@ -19,7 +19,7 @@ import {
 import { createWaterShaderMaterial, createRiverWaterMesh } from '../shaders/waterShader.ts';
 import { createTrailMeshGroup } from '../entities/trailMesh.ts';
 import { getWaterMode } from '../data/parkStructure.ts';
-import { badlandsBelt, strataBand } from '../terrain/badlandsRelief.ts';
+import { badlandsBelt, strataBand, craterBelt, domeBelt } from '../terrain/badlandsRelief.ts';
 import { climbEffort, steepWalkDrain } from '../utils/exertion.ts';
 import { createBridgeGroup } from '../entities/bridge.ts';
 import { createSummitOverlookGroup } from '../entities/summitOverlook.ts';
@@ -664,6 +664,25 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
             cStrata.set(strataBand(bd, x, y, z));
             const steep = sstep(0.95, 0.6, ny);
             col.lerp(cStrata, bw * bd.strata.strength * (0.8 + 0.2 * steep) * (1 - (bd.flatGrass ?? 0) * (1 - steep)));
+          }
+        }
+
+        // Task 30: banded rock inside a crater (Upheaval Dome)
+        const crt = park.terrain.crater;
+        if (crt) {
+          const cw = craterBelt(crt, x, z);
+          if (cw > 0) {
+            cStrata.set(strataBand({ strata: crt.strata } as any, x, y, z));
+            col.lerp(cStrata, cw * crt.strata.strength);
+          }
+        }
+
+        // Task 31: banded sandstone on fins and domes (Whale Rock)
+        for (const dm of park.terrain.domes ?? []) {
+          const dw = domeBelt(dm, x, z);
+          if (dw > 0) {
+            cStrata.set(strataBand({ strata: dm.strata } as any, x, y, z));
+            col.lerp(cStrata, dw * dm.strata.strength);
           }
         }
 
