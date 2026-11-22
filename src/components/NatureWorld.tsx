@@ -1209,7 +1209,7 @@ export const NatureWorld: React.FC<NatureWorldProps> = ({ park, onSelectPark, on
       const teleX = park.terrain.mountain.x - 2.2;
       const teleZ = park.terrain.mountain.z + 1.8;
       const distToTelescope = Math.hypot(p.pos.x - teleX, p.pos.z - teleZ);
-      const nearTele = onSummitNow && distToTelescope < 2.4;
+      const nearTele = park.overlook.hasTelescope && onSummitNow && distToTelescope < 2.4; // Task 32: only where the park has a telescope
       isNearTelescopeRef.current = nearTele;
 
       // Potable Water Station check (Task 7): Trailhead or Summit deck

@@ -15,6 +15,7 @@ import { getBridges, getSummitApproach, getTrailPaths, getWaterMode, getPrairieD
 import { getRoadPaths, type RoadPath } from '../terrain/roadTerrain.ts';
 import { getDistanceToTrail } from './trailMesh.ts';
 import { registerObstacle } from './rocks.ts';
+import { registerOverlookRailingObstacles } from './summitOverlook.ts';
 import { mulberry32 } from '../utils/noise.ts';
 import { isNearRoad } from '../terrain/roadTerrain.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -1032,6 +1033,7 @@ function buildRailings(group: THREE.Group): void {
         group.add(post);
         registerObstacle(p.x, p.z, 0.2);
         if (i < line.length - 1) {
+          registerObstacle((p.x + line[i + 1].x) / 2, (p.z + line[i + 1].z) / 2, 0.15); // Task 32: no gap between posts
           const q = line[i + 1];
           const gy2 = heightAt(q.x, q.z);
           const len = Math.hypot(q.x - p.x, q.z - p.z);
@@ -1058,6 +1060,7 @@ export function createParkFeaturesGroup(): THREE.Group {
   buildLogLadders(group);
   buildRockWindows(group, mulberry32(5151 + (park.layoutSeed ?? 0)));
   buildRailings(group);
+  registerOverlookRailingObstacles(); // Task 32: the summit deck railing is solid
   const f = park.features;
   if (!f) return group;
   const rand = mulberry32(7771 + (park.layoutSeed ?? 0));
