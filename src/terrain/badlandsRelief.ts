@@ -16,7 +16,7 @@
  */
 
 import { fbm, sstep, clamp } from '../utils/noise.ts';
-import { getActivePark, type BadlandsConfig } from '../data/parks.ts';
+import { getActivePark, type BadlandsConfig, type CraterConfig, type DomeConfig } from '../data/parks.ts';
 import { getTrailPaths, getPathLine } from '../data/parkStructure.ts';
 
 /** The active park's badlands settings, or null. */
@@ -76,7 +76,57 @@ export function badlandsBelt(cfg: BadlandsConfig, wx: number, wz: number): numbe
 export function isBareBadlands(x: number, z: number): boolean {
   const cfg = getBadlands();
   if (!cfg || cfg.bare === false) return false;
+  const cr = getActivePark().terrain.crater; // Task 30: the crater is bare rock too
+  if (cr && Math.hypot(x - cr.x, z - cr.z) < cr.radius + cr.rimWidth) return true;
+  for (const dm of getActivePark().terrain.domes ?? []) if (domeBelt(dm, x, z) > 0.05) return true; // Task 31
   return badlandsBelt(cfg, x, z) > 0.45;
+}
+
+/** Task 30: 0 well outside a crater, 1 inside it (used to paint the crater's banded rock). */
+export function craterBelt(cr: CraterConfig, wx: number, wz: number): number {
+  const d = Math.hypot(wx - cr.x, wz - cr.z);
+  return 1 - sstep(cr.radius + cr.rimWidth * 0.5, cr.radius + cr.rimWidth * 2.2, d);
+}
+
+/** Task 31: position along (t from -1 tail to +1 head) and across (r, 0 on the axis, 1 at the edge) a dome. */
+function domeCoords(dm: DomeConfig, wx: number, wz: number): { t: number; c: number } {
+  const dx = wx - dm.x;
+  const dz = wz - dm.z;
+  const ca = Math.cos(dm.axis);
+  const sa = Math.sin(dm.axis);
+  return { t: (dx * ca + dz * sa) / dm.halfLength, c: Math.abs(-dx * sa + dz * ca) / dm.halfWidth };
+}
+
+/** Task 31: 1 on and just around a dome, 0 away from it (used to paint its banded rock and keep plants off). */
+export function domeBelt(dm: DomeConfig, wx: number, wz: number): number {
+  const { t, c } = domeCoords(dm, wx, wz);
+  if (Math.abs(t) > 1.25 || c > 1.4) return 0;
+  return (1 - sstep(1.0, 1.25, Math.abs(t))) * (1 - sstep(1.0, 1.4, c));
+}
+
+/** Task 31: ground height with the fins added (a gentle tail rising to a tall rounded head, steep sides). */
+export function applyDomes(list: DomeConfig[], wx: number, wz: number, h: number): number {
+  for (const dm of list) {
+    const { t, c } = domeCoords(dm, wx, wz);
+    if (Math.abs(t) > 1.0 || c > 1.0) continue;
+    const along = sstep(-1.0, 0.4, t) * (1 - sstep(0.55, 1.0, t));
+    const across = 1 - sstep(0.6, 1.0, c);
+    const rough = 0.25 * fbm(wx * 0.16 + 2, wz * 0.16 - 5, 2);
+    h += dm.height * along * across + rough * along * across;
+  }
+  return h;
+}
+
+/** Task 30: ground height with a crater added (rim ridge, bowl, central dome and some roughness). */
+export function applyCrater(cr: CraterConfig, wx: number, wz: number, h: number): number {
+  const d = Math.hypot(wx - cr.x, wz - cr.z);
+  const R = cr.radius;
+  if (d > R + cr.rimWidth * 3.2) return h;
+  const rim = cr.rimHeight * Math.exp(-Math.pow((d - R) / cr.rimWidth, 2));
+  const floor = 1 - sstep(R * 0.4, R, d); // 1 on the floor, 0 at the rim
+  const dome = cr.domeHeight * Math.exp(-Math.pow(d / cr.domeRadius, 2));
+  const rough = (cr.ruggedness ?? 0.5) * 2.2 * fbm(wx * 0.09 + 4, wz * 0.09 - 8, 3) * (1 - sstep(R * 0.9, R * 1.25, d));
+  return h + rim - cr.depth * floor + dome + rough;
 }
 
 /** Banded rock colour for a height (a little warped so the bands tilt and wander instead of lying like a ruler). */
@@ -223,6 +273,12 @@ export function applyBadlands(cfg: BadlandsConfig, wx: number, wz: number, prair
     h = h * (1 - w) + mtn.height * w;
   }
 
+  // 5b. Task 30: a crater (opt-in)
+  if (park.terrain.crater) h = applyCrater(park.terrain.crater, wx, wz, h);
+
+  // 5c. Task 31: rounded sandstone fins (opt-in)
+  if (park.terrain.domes) h = applyDomes(park.terrain.domes, wx, wz, h);
+
   // 6. Pinned trails: levelled under the trail, banks cut or built up beside it
   const k = cfg.bankSlope ?? 0.9;
   for (const p of getPinned()) {
@@ -245,7 +301,11 @@ export function applyBadlands(cfg: BadlandsConfig, wx: number, wz: number, prair
     } else {
       const over = d - w0;
       const bounded = clamp(h, bestY - k * over, bestY + k * over);
-      h = bestY + (bounded - bestY) * sstep(0, 2.6, over);
+      let hNew = bestY + (bounded - bestY) * sstep(0, 2.6, over);
+      // Task 30 (opt-in): a trail only reshapes the ground within `bankReach` metres of its banks, so a road on a bench far below a cliff does not eat the cliff top
+      const reach = cfg.bankReach;
+      if (reach !== undefined) hNew = h + (hNew - h) * (1 - sstep(reach * 0.5, reach, over));
+      h = hNew;
     }
   }
   return h;
