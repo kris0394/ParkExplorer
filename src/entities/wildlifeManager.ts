@@ -47,7 +47,7 @@ export class WildlifeManager {
     park.wildlife.spawns.forEach((cfg, idx) => {
       // Bears are far less active in winter, so none are shown then
       if (cfg.species === 'black-bear' && !getSeasonDef().bear.active) return;
-      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : cfg.species === 'bison' ? 'bison' : cfg.species === 'prairie-dog' ? 'pdog' : cfg.species === 'bighorn-sheep' ? 'sheep' : cfg.species === 'pronghorn' ? 'prong' : cfg.species === 'wild-horse' ? 'horse' : cfg.species === 'mule-deer' ? 'mule' : cfg.species === 'kit-fox' ? 'fox' : cfg.species === 'jackrabbit' ? 'hare' : cfg.species === 'coyote' ? 'coyote' : cfg.species === 'mountain-lion' ? 'lion' : 'deer';
+      const prefix = cfg.species === 'elk' ? 'elk' : cfg.species === 'black-bear' ? 'bear' : cfg.species === 'bison' ? 'bison' : cfg.species === 'prairie-dog' ? 'pdog' : cfg.species === 'bighorn-sheep' ? 'sheep' : cfg.species === 'pronghorn' ? 'prong' : cfg.species === 'wild-horse' ? 'horse' : cfg.species === 'mule-deer' ? 'mule' : cfg.species === 'kit-fox' ? 'fox' : cfg.species === 'jackrabbit' ? 'hare' : cfg.species === 'coyote' ? 'coyote' : cfg.species === 'mountain-lion' ? 'lion' : cfg.species === 'yellow-bellied-marmot' ? 'marmot' : cfg.species === 'pika' ? 'pika' : 'deer';
       const deer = new DeerEntity({
         id: `${prefix}_${idx}`,
         species: cfg.species,
