@@ -6,6 +6,49 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { getActivePark } from '../data/parks.ts';
+import { registerObstacle } from './rocks.ts';
+import { getTrailPaths, getPathLine } from '../data/parkStructure.ts';
+
+const RAIL_POSTS = 14;
+const RAIL_ENTRANCE_INDEX = 8; // the post that is left out: the entrance gap is centred here
+
+/**
+ * Task 32: how far the railing ring is turned so that its entrance gap faces the side the trail arrives from.
+ * The arrival side is the direction from the deck towards the trail node just before the one closest to the deck.
+ */
+function railingRotation(): number {
+  const park = getActivePark();
+  const m = park.terrain.mountain;
+  const reach = park.overlook.deckRadius + 2;
+  let best: { d: number; ang: number } | null = null;
+  for (const path of getTrailPaths(park)) {
+    const line = getPathLine(path);
+    for (let i = 0; i < line.length; i++) {
+      const d = Math.hypot(line[i].x - m.x, line[i].z - m.z);
+      if (best && d >= best.d) continue;
+      // walk back along the trail from this node to the point where it crosses a ring just outside the deck
+      let cx = line[i].x;
+      let cz = line[i].z;
+      if (d < reach) {
+        for (let j = i - 1; j >= 0; j--) {
+          const dj = Math.hypot(line[j].x - m.x, line[j].z - m.z);
+          const dn = Math.hypot(line[j + 1].x - m.x, line[j + 1].z - m.z);
+          if (dj >= reach) {
+            const t = dn >= reach ? 0 : (reach - dn) / Math.max(1e-6, dj - dn);
+            cx = line[j + 1].x + (line[j].x - line[j + 1].x) * t;
+            cz = line[j + 1].z + (line[j].z - line[j + 1].z) * t;
+            break;
+          }
+          cx = line[j].x;
+          cz = line[j].z;
+        }
+      }
+      best = { d, ang: Math.atan2(cz - m.z, cx - m.x) };
+    }
+  }
+  if (!best) return 0;
+  return best.ang - (RAIL_ENTRANCE_INDEX / RAIL_POSTS) * Math.PI * 2;
+}
 
 /**
  * Creates the scenic wooden Summit Overlook Platform on the mountain peak,
@@ -61,14 +104,15 @@ export function createSummitOverlookGroup(): THREE.Group {
 
   // 2. Perimeter Railings and Baluster Posts
   const railingGeos: THREE.BufferGeometry[] = [];
-  const numPosts = 14;
+  const numPosts = RAIL_POSTS;
   const postHeight = 1.05;
-  const entranceIndexStart = 8;
+  const entranceIndexStart = RAIL_ENTRANCE_INDEX;
+  const railRot = railingRotation(); // Task 32: the entrance gap faces the trail
 
   const postPositions: THREE.Vector3[] = [];
 
   for (let i = 0; i < numPosts; i++) {
-    const angle = (i / numPosts) * Math.PI * 2;
+    const angle = (i / numPosts) * Math.PI * 2 + railRot;
     const px = Math.cos(angle) * (deckRadius - 0.2);
     const pz = Math.sin(angle) * (deckRadius - 0.2);
     postPositions.push(new THREE.Vector3(px, deckThickness + postHeight / 2, pz));
@@ -137,6 +181,34 @@ export function createSummitOverlookGroup(): THREE.Group {
   group.add(sign);
 
   return group;
+}
+
+/**
+ * Global fix (Task 32): the summit deck railing used to be only drawn, so players could walk through it.
+ * This makes the posts and rails solid, except for the entrance gap. It must run after createRocksSystem
+ * (which clears the obstacle list), so createParkFeaturesGroup calls it.
+ */
+export function registerOverlookRailingObstacles(): void {
+  const park = getActivePark();
+  const mtn = park.terrain.mountain;
+  const R = park.overlook.deckRadius - 0.2;
+  const numPosts = RAIL_POSTS;
+  const entranceIndexStart = RAIL_ENTRANCE_INDEX;
+  const rot = railingRotation();
+  const post = (i: number) => ({ x: mtn.x + Math.cos((i / numPosts) * Math.PI * 2 + rot) * R, z: mtn.z + Math.sin((i / numPosts) * Math.PI * 2 + rot) * R });
+  for (let i = 0; i < numPosts; i++) {
+    if (i === entranceIndexStart) continue; // no post at the entrance
+    const p = post(i);
+    registerObstacle(p.x, p.z, 0.22);
+  }
+  for (let i = 0; i < numPosts; i++) {
+    if (i === entranceIndexStart - 1 || i === entranceIndexStart) continue; // no rail across the entrance
+    const a = post(i);
+    const b = post((i + 1) % numPosts);
+    const len = Math.hypot(b.x - a.x, b.z - a.z);
+    const n = Math.max(1, Math.ceil(len / 0.4)); // a solid point every 0.4 m: no gaps to squeeze through
+    for (let k = 1; k < n; k++) registerObstacle(a.x + ((b.x - a.x) * k) / n, a.z + ((b.z - a.z) * k) / n, 0.22);
+  }
 }
 
 function createScenicBench(): THREE.Group {
