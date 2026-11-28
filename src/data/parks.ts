@@ -204,7 +204,7 @@ export interface ParkFeatures {
   /** Task 35: standing rock slabs with carved figures (Fremont petroglyphs) or carved names (a pioneer register). yaw 0 = the carved face points south. */
   rockPanels?: { x: number; z: number; yaw: number; width: number; height: number; kind: 'petroglyphs' | 'register' }[];
   /** Task 35: a small gabled farmhouse with a porch (the Gifford House). yaw 0 = the front door faces south. */
-  houses?: { x: number; z: number; yaw: number; width?: number; depth?: number; wall?: number; roof?: number }[];
+  houses?: { x: number; z: number; yaw: number; width?: number; depth?: number; wall?: number; roof?: number; enterable?: boolean }[];
   /** Task 25: a small stone-and-timber cave entrance building with a railed hole, as at Wind Cave's natural entrance. */
   naturalEntrance?: { x: number; z: number; yaw?: number };
   /** Task 26: a walk-in cave tour (a rocky mound with a dark passage, boxwork and frostwork, and a chamber). The mouth is at x, z and faces the direction given by yaw. */
@@ -5676,7 +5676,7 @@ export const CAPITOL_REEF: ParkDefinition = {
       id: 'gifford-house',
       name: 'Gifford House',
       shortName: 'Gifford House',
-      description: 'The historic Gifford House in Fruita is a store and museum, open spring through fall, with exhibits on pioneer history. It is known for its pies. In the game the house is a simple model.',
+      description: 'The historic Gifford House in Fruita is a store and museum, open spring through fall, with exhibits on pioneer history. It is known for its pies. In the game you can walk in: a simple model with a counter, shelves and pies.',
       x: -30, y: -59, z: -148, yaw: Math.PI * 1.5,
     },
     {
@@ -5791,9 +5791,9 @@ export const CAPITOL_REEF: ParkDefinition = {
     ],
     // NPS: the Hickman Bridge trail goes under and around the natural bridge. The ground cannot have holes, so it is a rock frame.
     rockWindows: [
-      { x: 10.5, z: 40, yaw: 0, opening: 7, height: 5.2, scale: 1.7 },
+      { x: 10.5, z: 40, yaw: 0, opening: 9, height: 6.0, scale: 2.0 },
       // NPS: Cassidy Arch is a natural arch reached by a strenuous trail; here a rock frame on a bench of the cliff
-      { x: 21.5, z: -70, yaw: 0, opening: 7, height: 5.0, scale: 1.7 },
+      { x: 21.5, z: -70, yaw: 0, opening: 8, height: 5.6, scale: 1.9 },
     ],
     // NPS: Fremont petroglyph panels along Utah 24 (a pecked slab with human-like figures and bighorn sheep), and the Pioneer Register in Capitol Gorge
     rockPanels: [
@@ -5802,7 +5802,7 @@ export const CAPITOL_REEF: ParkDefinition = {
     ],
     // NPS: the historic Gifford House store and museum in Fruita
     houses: [
-      { x: -22, z: -152, yaw: -Math.PI / 2, width: 7, depth: 5.5 },
+      { x: -22, z: -152, yaw: -Math.PI / 2, width: 8, depth: 6, enterable: true },
     ],
     // NPS: many Capitol Reef trails are marked with rock cairns
     cairns: { pathIds: ['rim-overlook-trail'], every: 14, minHeight: -50 },
@@ -5825,7 +5825,7 @@ export const CAPITOL_REEF: ParkDefinition = {
   },
   about: {
     designNote:
-      'A game-scale map of the Fruita area of Capitol Reef, with real features packed close together. In reality the Hickman Bridge and Rim Overlook trails start from the same trailhead (NPS), but Goosenecks Overlook and Sunset Point are reached by a separate spur road about three miles west of the visitor center, and the orchards, the river and the cliffs lie along State Route 24. Here they share one valley and one mesa; the Petroglyph Panel, the Gifford House, Grand Wash, Cassidy Arch and Capitol Gorge are also packed in (in reality Grand Wash and Capitol Gorge are south of Fruita along the Scenic Drive, and the petroglyphs are about 1.1 miles east of the visitor center); all positions, the compass layout and the trail lengths are game placements. The NPS numbers are in the journal: Hickman Bridge 0.9 mi one way, 400 ft gain, a 133-foot natural bridge; Rim Overlook 2.3 mi one way, 1,110 ft gain; Goosenecks 0.1 mi; Sunset Point 0.4 mi. The cliff climb is about 58 m in the game (real: 338 m for the Rim Overlook). Hickman Bridge is built as a rock frame because the ground cannot have holes. The orchards are shown as groves of fruit-tree-coloured trees; individual fruit and picking, the schoolhouse, the blacksmith shop and the visitor center are not modelled. Grand Wash and Capitol Gorge are shown as sunken sandy trails with steep walls (the narrows and the real canyon walls are not copied); the petroglyph panel and the Pioneer Register are stylised slabs, not copies of the real art; the Gifford House is a simple model. Mule deer are the most prevalent large mammal and are accustomed to people in the Fruita historic district; desert bighorn sheep were reintroduced in the mid-1990s; a mountain lion has been reported in Fruita; their numbers and spots here are game placements. Not modelled: ringtails, foxes, rock squirrels and other small mammals, birds, the Frying Pan, Cohab Canyon and Navajo Knobs trails, and the Golden Throne. The elevation range is a game value: the bottom is the visitor center height (5,500 ft / 1,676 m) and the top adds the NPS climb to the Rim Overlook (1,110 ft). There is no drinking water on the map because no NPS water source was verified for these stops.',
+      'A game-scale map of the Fruita area of Capitol Reef, with real features packed close together. In reality the Hickman Bridge and Rim Overlook trails start from the same trailhead (NPS), but Goosenecks Overlook and Sunset Point are reached by a separate spur road about three miles west of the visitor center, and the orchards, the river and the cliffs lie along State Route 24. Here they share one valley and one mesa; the Petroglyph Panel, the Gifford House, Grand Wash, Cassidy Arch and Capitol Gorge are also packed in (in reality Grand Wash and Capitol Gorge are south of Fruita along the Scenic Drive, and the petroglyphs are about 1.1 miles east of the visitor center); all positions, the compass layout and the trail lengths are game placements. The NPS numbers are in the journal: Hickman Bridge 0.9 mi one way, 400 ft gain, a 133-foot natural bridge; Rim Overlook 2.3 mi one way, 1,110 ft gain; Goosenecks 0.1 mi; Sunset Point 0.4 mi. The cliff climb is about 58 m in the game (real: 338 m for the Rim Overlook). Hickman Bridge is built as a rock frame because the ground cannot have holes. The orchards are shown as groves of fruit-tree-coloured trees; individual fruit and picking, the schoolhouse, the blacksmith shop and the visitor center are not modelled. Grand Wash and Capitol Gorge are shown as sunken sandy trails with steep walls (the narrows and the real canyon walls are not copied); the petroglyph panel and the Pioneer Register are stylised slabs, not copies of the real art; the Gifford House is a simple model you can walk into (counter, shelves and pies; no museum exhibits). Mule deer are the most prevalent large mammal and are accustomed to people in the Fruita historic district; desert bighorn sheep were reintroduced in the mid-1990s; a mountain lion has been reported in Fruita; their numbers and spots here are game placements. Not modelled: ringtails, foxes, rock squirrels and other small mammals, birds, the Frying Pan, Cohab Canyon and Navajo Knobs trails, and the Golden Throne. The elevation range is a game value: the bottom is the visitor center height (5,500 ft / 1,676 m) and the top adds the NPS climb to the Rim Overlook (1,110 ft). There is no drinking water on the map because no NPS water source was verified for these stops.',
     wildlifeGuidance: {
       text: 'Capitol Reef asks you to keep at least 30 feet (9 m) from deer, never to feed or touch animals, and to keep pets leashed. The deer in the historic district are less wary than wild deer elsewhere, but they are not tame and will attack if provoked.',
       caveat: 'The game uses 9 m for mule deer (the Capitol Reef figure) and 23 m for bighorn sheep and coyotes, the general NPS distance of 75 ft, because no Capitol Reef-specific number was found for them. The mountain lion uses 46 m. Always check the park\'s current page and signs.',
