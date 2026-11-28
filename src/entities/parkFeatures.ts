@@ -796,22 +796,76 @@ function buildRockPanels(group: THREE.Group): void {
   }
 }
 
-/** Task 35: a small gabled farmhouse with a porch, a door, windows and a chimney (the Gifford House). Solid. */
+/** Task 35/36: a small gabled farmhouse with a porch, a door, windows and a chimney (the Gifford House). Solid, or enterable (a store with a counter, shelves and pies). */
 function buildHouses(group: THREE.Group): void {
   const list = getActivePark().features?.houses ?? [];
   for (const hs of list) {
     const w = hs.width ?? 7;
     const d = hs.depth ?? 5.5;
     const wallH = 3.0;
+    const enterable = !!hs.enterable;
     const g = new THREE.Group();
-    const wallMat = new THREE.MeshLambertMaterial({ color: hs.wall ?? 0xe8dcc0 });
-    const roofMat = new THREE.MeshLambertMaterial({ color: hs.roof ?? 0x6a3b2c });
+    const wallMat = new THREE.MeshLambertMaterial({ color: hs.wall ?? 0xe8dcc0, side: enterable ? THREE.DoubleSide : THREE.FrontSide });
+    const roofMat = new THREE.MeshLambertMaterial({ color: hs.roof ?? 0x6a3b2c, side: THREE.DoubleSide });
     const trim = new THREE.MeshLambertMaterial({ color: 0xf2ead6 });
     const dark = new THREE.MeshLambertMaterial({ color: 0x2a2622 });
     const glass = new THREE.MeshLambertMaterial({ color: 0x5b7184 });
     const wood = new THREE.MeshLambertMaterial({ color: 0x8a6a4a });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(w, wallH, d), wallMat);
-    body.position.y = wallH / 2;
+    const T = 0.22; // wall thickness
+    const DOOR = 0.85; // half width of the door opening
+    if (!enterable) {
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, wallH, d), wallMat);
+      body.position.y = wallH / 2;
+      g.add(body);
+    } else {
+      // four walls (the front wall has a door opening), a floor and a ceiling, so you can walk in
+      const back = new THREE.Mesh(new THREE.BoxGeometry(w, wallH, T), wallMat);
+      back.position.set(0, wallH / 2, -d / 2);
+      const sideL = new THREE.Mesh(new THREE.BoxGeometry(T, wallH, d), wallMat);
+      sideL.position.set(-w / 2, wallH / 2, 0);
+      const sideR = sideL.clone();
+      sideR.position.set(w / 2, wallH / 2, 0);
+      const frontLen = w / 2 - DOOR;
+      const frontL = new THREE.Mesh(new THREE.BoxGeometry(frontLen, wallH, T), wallMat);
+      frontL.position.set(-DOOR - frontLen / 2, wallH / 2, d / 2);
+      const frontR = frontL.clone();
+      frontR.position.set(DOOR + frontLen / 2, wallH / 2, d / 2);
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(DOOR * 2, wallH - 2.2, T), wallMat);
+      lintel.position.set(0, 2.2 + (wallH - 2.2) / 2, d / 2);
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(w - T, 0.05, d - T), wood);
+      floor.position.y = 0.04;
+      const ceiling = new THREE.Mesh(new THREE.BoxGeometry(w, 0.15, d), new THREE.MeshLambertMaterial({ color: 0xf0e6d0 }));
+      ceiling.position.y = wallH;
+      g.add(back, sideL, sideR, frontL, frontR, lintel, floor, ceiling);
+      // inside: a counter with pies, shelves along the back wall and a display case
+      const counter = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.0, 0.8), wood);
+      counter.position.set(0.4, 0.5, -d / 2 + 1.6);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 1.0), new THREE.MeshLambertMaterial({ color: 0xb89870 }));
+      top.position.set(0.4, 1.04, -d / 2 + 1.6);
+      g.add(counter, top);
+      const pieMat = new THREE.MeshLambertMaterial({ color: 0xc98a4a });
+      const crustMat = new THREE.MeshLambertMaterial({ color: 0xe8c98a });
+      for (let i = 0; i < 4; i++) {
+        const pie = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.1, 10), i % 2 ? pieMat : crustMat);
+        pie.position.set(-0.6 + i * 0.55, 1.13, -d / 2 + 1.6);
+        g.add(pie);
+      }
+      for (const sy of [0.7, 1.35, 2.0]) {
+        const shelf = new THREE.Mesh(new THREE.BoxGeometry(w - 1.2, 0.07, 0.35), wood);
+        shelf.position.set(0, sy, -d / 2 + 0.3);
+        g.add(shelf);
+        for (let i = 0; i < 6; i++) {
+          const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.22, 8), i % 2 ? pieMat : new THREE.MeshLambertMaterial({ color: 0xa8403a }));
+          jar.position.set(-w / 2 + 1.0 + i * 0.9, sy + 0.15, -d / 2 + 0.3);
+          g.add(jar);
+        }
+      }
+      const caseBox = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.6), new THREE.MeshLambertMaterial({ color: 0x6a5a48 }));
+      caseBox.position.set(-w / 2 + 1.0, 0.45, 0.4);
+      const caseGlass = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.08, 0.65), glass);
+      caseGlass.position.set(-w / 2 + 1.0, 0.94, 0.4);
+      g.add(caseBox, caseGlass);
+    }
     // gabled roof: a triangle (the gable) extruded along the length of the house
     const shape = new THREE.Shape();
     shape.moveTo(-d / 2 - 0.5, 0);
@@ -825,11 +879,24 @@ function buildHouses(group: THREE.Group): void {
     roof.position.y = wallH;
     const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.7, 2.2, 0.7), new THREE.MeshLambertMaterial({ color: 0x8a5a44 }));
     chimney.position.set(w / 2 - 1.2, wallH + 1.6, 0);
-    const door = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.0, 0.12), dark);
-    door.position.set(0, 1.0, d / 2 + 0.07);
-    const doorTrim = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.3, 0.1), trim);
-    doorTrim.position.set(0, 1.15, d / 2 + 0.03);
-    g.add(body, roof, chimney, doorTrim, door);
+    g.add(roof, chimney);
+    if (!enterable) {
+      const door = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.0, 0.12), dark);
+      door.position.set(0, 1.0, d / 2 + 0.07);
+      const doorTrim = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.3, 0.1), trim);
+      doorTrim.position.set(0, 1.15, d / 2 + 0.03);
+      g.add(doorTrim, door);
+    } else {
+      // an open door: a trim frame around the opening
+      for (const sx2 of [-1, 1]) {
+        const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.3, 0.3), trim);
+        jamb.position.set(sx2 * (DOOR + 0.05), 1.15, d / 2 + 0.05);
+        g.add(jamb);
+      }
+      const head = new THREE.Mesh(new THREE.BoxGeometry(DOOR * 2 + 0.3, 0.14, 0.3), trim);
+      head.position.set(0, 2.25, d / 2 + 0.05);
+      g.add(head);
+    }
     for (const wx of [-w / 3, w / 3]) {
       const win = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.12), glass);
       win.position.set(wx, 1.8, d / 2 + 0.07);
@@ -853,18 +920,33 @@ function buildHouses(group: THREE.Group): void {
     g.position.set(hs.x, y, hs.z);
     g.rotation.y = hs.yaw;
     group.add(g);
-    // solid walls: circles along the outline of the house (the porch stays open)
     const ca = Math.cos(hs.yaw);
     const sa = Math.sin(hs.yaw);
     const to = (lx: number, lz: number): [number, number] => [hs.x + lx * ca + lz * sa, hs.z - lx * sa + lz * ca];
-    for (let lx = -w / 2; lx <= w / 2 + 0.01; lx += 1.4) {
-      for (const lz of [-d / 2, d / 2]) { const [ox, oz] = to(lx, lz); registerObstacle(ox, oz, 1.0); }
+    if (!enterable) {
+      // solid walls: circles along the outline of the house (the porch stays open)
+      for (let lx = -w / 2; lx <= w / 2 + 0.01; lx += 1.4) {
+        for (const lz of [-d / 2, d / 2]) { const [ox, oz] = to(lx, lz); registerObstacle(ox, oz, 1.0); }
+      }
+      for (let lz = -d / 2 + 1.4; lz < d / 2 - 0.7; lz += 1.4) {
+        for (const lx of [-w / 2, w / 2]) { const [ox, oz] = to(lx, lz); registerObstacle(ox, oz, 1.0); }
+      }
+      const [cx, cz] = to(0, 0);
+      registerObstacle(cx, cz, 1.6);
+    } else {
+      // thin solid walls all round, with a door gap in the front wall; the inside is open except the counter and display case
+      const STEP = 0.55;
+      const R = 0.3;
+      for (let lx = -w / 2; lx <= w / 2 + 0.01; lx += STEP) {
+        { const [ox, oz] = to(lx, -d / 2); registerObstacle(ox, oz, R); }
+        if (Math.abs(lx) > DOOR + 0.55) { const [ox, oz] = to(lx, d / 2); registerObstacle(ox, oz, R); }
+      }
+      for (let lz = -d / 2; lz <= d / 2 + 0.01; lz += STEP) {
+        for (const lx of [-w / 2, w / 2]) { const [ox, oz] = to(lx, lz); registerObstacle(ox, oz, R); }
+      }
+      for (let lx = -1.0; lx <= 1.8; lx += 0.5) { const [ox, oz] = to(lx, -d / 2 + 1.6); registerObstacle(ox, oz, 0.45); }
+      { const [ox, oz] = to(-w / 2 + 1.0, 0.4); registerObstacle(ox, oz, 0.7); }
     }
-    for (let lz = -d / 2 + 1.4; lz < d / 2 - 0.7; lz += 1.4) {
-      for (const lx of [-w / 2, w / 2]) { const [ox, oz] = to(lx, lz); registerObstacle(ox, oz, 1.0); }
-    }
-    const [cx, cz] = to(0, 0);
-    registerObstacle(cx, cz, 1.6);
   }
 }
 
@@ -1144,15 +1226,22 @@ function buildRockWindows(group: THREE.Group, rand: () => number): void {
       const off = half + 1.3 * sc;
       const cx = w.x + sx * side * off;
       const cz = w.z + sz * side * off;
-      for (let k = 0; k < stack; k++) {
+      // Task 36: on a slope each jamb stands on its own ground (before, one side floated and the other was buried).
+      // On flat ground (every older park) the old placement is kept exactly.
+      const jambGround = heightAt(cx, cz);
+      const sloped = Math.abs(jambGround - base) > 1.2;
+      const jambBase = sloped ? Math.min(base, jambGround) - 0.3 : base;
+      const jambStack = sloped ? Math.max(stack, Math.ceil((base + w.height - jambBase) / (1.25 * sc * 0.95))) : stack;
+      for (let k = 0; k < jambStack; k++) {
         const b = rockBlob((1.55 - Math.min(k, 3) * 0.1) * sc, 1.25 * sc, (2.1 - Math.min(k, 3) * 0.1) * sc, colors, rand);
-        b.position.set(cx + (rand() - 0.5) * 0.3 * sc, base + 0.6 + k * 1.25 * sc * 0.95, cz + (rand() - 0.5) * 0.3 * sc);
+        b.position.set(cx + (rand() - 0.5) * 0.3 * sc, jambBase + 0.6 + k * 1.25 * sc * 0.95, cz + (rand() - 0.5) * 0.3 * sc);
         b.rotation.y = w.yaw + (rand() - 0.5) * 0.3;
         group.add(b);
       }
       const shOff = half + 4.2 * sc;
       const shoulder = rockBlob(3.4 * sc, sc === 1 ? 2.6 : w.height * 0.55 + 1.4, 3.0 * sc, colors, rand);
-      shoulder.position.set(w.x + sx * side * shOff, base + 1.4, w.z + sz * side * shOff);
+      const shGround = heightAt(w.x + sx * side * shOff, w.z + sz * side * shOff);
+      shoulder.position.set(w.x + sx * side * shOff, (sloped ? Math.min(base, shGround) : base) + 1.4, w.z + sz * side * shOff);
       shoulder.rotation.y = w.yaw;
       group.add(shoulder);
       // the jambs and shoulder are solid
