@@ -89,7 +89,7 @@ export function proceduralBaseHeight(x: number, z: number): number {
   if (badlands) {
     const dSp = Math.hypot(x - park.spawn.x, z - park.spawn.z);
     const wSp = 1.0 - sstep(26.0, 100.0, dSp); // a wide, flat prairie around the parking area
-    return applyBadlands(badlands, x, z, baseH * (1.0 - wSp) + park.spawn.y * wSp);
+    return applyBadlands(badlands, x, z, baseH * (1.0 - wSp) + (badlands.spawnPrairieY ?? park.spawn.y) * wSp); // Task 34: a spawn down in a valley can set its own prairie level
   }
 
   // 2. Mountain Peak from park definition

@@ -678,6 +678,196 @@ function buildLookoutHut(group: THREE.Group): void {
   registerObstacle(x - 1.0, z, 1.4);
 }
 
+
+/** Task 35: draws pecked figures (petroglyphs) or carved names (a pioneer register) onto a canvas. Deterministic. */
+function drawRockArt(canvas: HTMLCanvasElement, kind: 'petroglyphs' | 'register'): void {
+  const w = 512;
+  const h = 320;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(232,206,170,0.92)';
+  ctx.fillStyle = 'rgba(232,206,170,0.92)';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  if (kind === 'register') {
+    ctx.font = 'bold 30px serif';
+    const names = ['J. W. 1871', 'E. B. 1888', 'C. M. 1904', 'A. T. 1914', 'H. R. 1927', 'L. S. 1946', 'W. O. 1893', 'D. K. 1909'];
+    names.forEach((t, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      ctx.save();
+      ctx.translate(30 + col * 250, 60 + row * 68);
+      ctx.rotate(((i * 37) % 7 - 3) * 0.012);
+      ctx.fillText(t, 0, 0);
+      ctx.restore();
+    });
+    return;
+  }
+  // trapezoid human figures with horned headdresses
+  const human = (cx: number, base: number, sc: number): void => {
+    ctx.beginPath();
+    ctx.moveTo(cx - 22 * sc, base - 80 * sc);
+    ctx.lineTo(cx + 22 * sc, base - 80 * sc);
+    ctx.lineTo(cx + 12 * sc, base);
+    ctx.lineTo(cx - 12 * sc, base);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, base - 98 * sc, 11 * sc, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 10 * sc, base - 106 * sc);
+    ctx.lineTo(cx - 20 * sc, base - 128 * sc);
+    ctx.moveTo(cx + 10 * sc, base - 106 * sc);
+    ctx.lineTo(cx + 20 * sc, base - 128 * sc);
+    ctx.stroke();
+  };
+  // bighorn sheep: body, curled horn, legs
+  const sheep = (x: number, y: number, sc: number): void => {
+    ctx.beginPath();
+    ctx.ellipse(x, y, 34 * sc, 15 * sc, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + 38 * sc, y - 12 * sc, 9 * sc, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + 32 * sc, y - 22 * sc, 12 * sc, -Math.PI * 0.2, Math.PI * 1.3);
+    ctx.stroke();
+    for (const dx of [-24, -10, 12, 26]) {
+      ctx.beginPath();
+      ctx.moveTo(x + dx * sc, y + 12 * sc);
+      ctx.lineTo(x + dx * sc, y + 36 * sc);
+      ctx.stroke();
+    }
+  };
+  human(70, 200, 1.0);
+  human(150, 230, 1.25);
+  human(380, 215, 0.9);
+  sheep(280, 90, 1.0);
+  sheep(440, 120, 0.8);
+  sheep(250, 270, 0.9);
+  ctx.beginPath(); // zigzag and spiral
+  for (let i = 0; i < 8; i++) ctx.lineTo(60 + i * 22, i % 2 ? 40 : 70);
+  ctx.stroke();
+  ctx.beginPath();
+  for (let a = 0; a < 14; a += 0.3) ctx.lineTo(470 + Math.cos(a) * (3 + a * 2.2), 250 + Math.sin(a) * (3 + a * 2.2));
+  ctx.stroke();
+}
+
+/** Task 35: standing rock slabs carrying petroglyphs or a pioneer register. The slab is solid. */
+function buildRockPanels(group: THREE.Group): void {
+  const list = getActivePark().features?.rockPanels ?? [];
+  for (const pnl of list) {
+    const g = new THREE.Group();
+    const thick = 1.4;
+    const slabMat = new THREE.MeshLambertMaterial({ color: pnl.kind === 'register' ? 0x9a5a3c : 0x7a4a36, flatShading: true });
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(pnl.width, pnl.height, thick, 3, 3, 1), slabMat);
+    slab.position.y = pnl.height / 2 - 0.4;
+    // a little roughness on the front corners so the slab is not a perfect box
+    const pos = slab.geometry.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      pos.setX(i, pos.getX(i) + Math.sin(i * 12.9898) * 0.05);
+      pos.setY(i, pos.getY(i) + Math.sin(i * 78.233) * 0.05);
+    }
+    slab.geometry.computeVertexNormals();
+    const tex = new THREE.CanvasTexture((() => { const c = document.createElement('canvas'); drawRockArt(c, pnl.kind); return c; })());
+    const art = new THREE.Mesh(
+      new THREE.PlaneGeometry(pnl.width * 0.88, pnl.height * 0.78),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+    );
+    art.position.set(0, pnl.height / 2 - 0.2, thick / 2 + 0.02);
+    g.add(slab, art);
+    g.traverse(o => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const y = heightAt(pnl.x, pnl.z);
+    g.position.set(pnl.x, y, pnl.z);
+    g.rotation.y = pnl.yaw;
+    group.add(g);
+    // solid along the width of the slab
+    const ca = Math.cos(pnl.yaw);
+    const sa = -Math.sin(pnl.yaw);
+    const n = Math.max(2, Math.ceil(pnl.width / 0.8));
+    for (let i = 0; i <= n; i++) {
+      const t = (i / n - 0.5) * pnl.width;
+      registerObstacle(pnl.x + ca * t, pnl.z + sa * t, 0.8);
+    }
+  }
+}
+
+/** Task 35: a small gabled farmhouse with a porch, a door, windows and a chimney (the Gifford House). Solid. */
+function buildHouses(group: THREE.Group): void {
+  const list = getActivePark().features?.houses ?? [];
+  for (const hs of list) {
+    const w = hs.width ?? 7;
+    const d = hs.depth ?? 5.5;
+    const wallH = 3.0;
+    const g = new THREE.Group();
+    const wallMat = new THREE.MeshLambertMaterial({ color: hs.wall ?? 0xe8dcc0 });
+    const roofMat = new THREE.MeshLambertMaterial({ color: hs.roof ?? 0x6a3b2c });
+    const trim = new THREE.MeshLambertMaterial({ color: 0xf2ead6 });
+    const dark = new THREE.MeshLambertMaterial({ color: 0x2a2622 });
+    const glass = new THREE.MeshLambertMaterial({ color: 0x5b7184 });
+    const wood = new THREE.MeshLambertMaterial({ color: 0x8a6a4a });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w, wallH, d), wallMat);
+    body.position.y = wallH / 2;
+    // gabled roof: a triangle (the gable) extruded along the length of the house
+    const shape = new THREE.Shape();
+    shape.moveTo(-d / 2 - 0.5, 0);
+    shape.lineTo(d / 2 + 0.5, 0);
+    shape.lineTo(0, 2.2);
+    shape.closePath();
+    const roofGeo = new THREE.ExtrudeGeometry(shape, { depth: w + 1.0, bevelEnabled: false });
+    roofGeo.translate(0, 0, -(w + 1.0) / 2);
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.rotation.y = Math.PI / 2; // ridge runs along the width
+    roof.position.y = wallH;
+    const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.7, 2.2, 0.7), new THREE.MeshLambertMaterial({ color: 0x8a5a44 }));
+    chimney.position.set(w / 2 - 1.2, wallH + 1.6, 0);
+    const door = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.0, 0.12), dark);
+    door.position.set(0, 1.0, d / 2 + 0.07);
+    const doorTrim = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.3, 0.1), trim);
+    doorTrim.position.set(0, 1.15, d / 2 + 0.03);
+    g.add(body, roof, chimney, doorTrim, door);
+    for (const wx of [-w / 3, w / 3]) {
+      const win = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 0.12), glass);
+      win.position.set(wx, 1.8, d / 2 + 0.07);
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 0.1), trim);
+      frame.position.set(wx, 1.8, d / 2 + 0.03);
+      g.add(frame, win);
+    }
+    // porch: a low deck with a roof on two posts
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 0.25, 2.0), wood);
+    deck.position.set(0, 0.12, d / 2 + 1.0);
+    const porchRoof = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6 + 0.4, 0.15, 2.2), roofMat);
+    porchRoof.position.set(0, 2.55, d / 2 + 1.1);
+    g.add(deck, porchRoof);
+    for (const px of [-w * 0.3 + 0.1, w * 0.3 - 0.1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.5, 0.15), trim);
+      post.position.set(px, 1.25, d / 2 + 1.9);
+      g.add(post);
+    }
+    g.traverse(o => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const y = heightAt(hs.x, hs.z);
+    g.position.set(hs.x, y, hs.z);
+    g.rotation.y = hs.yaw;
+    group.add(g);
+    // solid walls: circles along the outline of the house (the porch stays open)
+    const ca = Math.cos(hs.yaw);
+    const sa = Math.sin(hs.yaw);
+    const to = (lx: number, lz: number): [number, number] => [hs.x + lx * ca + lz * sa, hs.z - lx * sa + lz * ca];
+    for (let lx = -w / 2; lx <= w / 2 + 0.01; lx += 1.4) {
+      for (const lz of [-d / 2, d / 2]) { const [ox, oz] = to(lx, lz); registerObstacle(ox, oz, 1.0); }
+    }
+    for (let lz = -d / 2 + 1.4; lz < d / 2 - 0.7; lz += 1.4) {
+      for (const lx of [-w / 2, w / 2]) { const [ox, oz] = to(lx, lz); registerObstacle(ox, oz, 1.0); }
+    }
+    const [cx, cz] = to(0, 0);
+    registerObstacle(cx, cz, 1.6);
+  }
+}
+
 /**
  * Task 24: a tall steel fire tower like the one at Rankin Ridge (NPS: climbing the historic tower is not permitted, so it is
  * a solid prop). Four slanted legs, cross braces, a small cab with a roof, and a short skirt of stones at the base.
@@ -1060,6 +1250,8 @@ export function createParkFeaturesGroup(): THREE.Group {
   buildLogLadders(group);
   buildRockWindows(group, mulberry32(5151 + (park.layoutSeed ?? 0)));
   buildRailings(group);
+  buildRockPanels(group); // Task 35
+  buildHouses(group); // Task 35
   registerOverlookRailingObstacles(); // Task 32: the summit deck railing is solid
   const f = park.features;
   if (!f) return group;

@@ -163,6 +163,8 @@ export interface BadlandsConfig {
   bankSlope?: number;
   /** Task 30: a pinned trail reshapes the ground only this far (m) beyond its banks (default: unlimited, as in older parks). */
   bankReach?: number;
+  /** Task 34: the height of the flat prairie around the spawn clearing, when the spawn itself lies down in a valley (default: the spawn height). */
+  spawnPrairieY?: number;
   /** false = trees and grass may grow on the slopes and benches (a vegetated badlands such as Theodore Roosevelt). Default true: bare rock. */
   bare?: boolean;
   /** 0 to 1: how much of the grass colour flat benches keep under the rock bands (default 0). */
@@ -199,6 +201,10 @@ export interface ParkFeatures {
   lookoutHut?: boolean;
   /** Task 24: a tall steel fire tower (you cannot climb it) at the given spot, as at Rankin Ridge. */
   fireTower?: { x: number; z: number; height?: number };
+  /** Task 35: standing rock slabs with carved figures (Fremont petroglyphs) or carved names (a pioneer register). yaw 0 = the carved face points south. */
+  rockPanels?: { x: number; z: number; yaw: number; width: number; height: number; kind: 'petroglyphs' | 'register' }[];
+  /** Task 35: a small gabled farmhouse with a porch (the Gifford House). yaw 0 = the front door faces south. */
+  houses?: { x: number; z: number; yaw: number; width?: number; depth?: number; wall?: number; roof?: number }[];
   /** Task 25: a small stone-and-timber cave entrance building with a railed hole, as at Wind Cave's natural entrance. */
   naturalEntrance?: { x: number; z: number; yaw?: number };
   /** Task 26: a walk-in cave tour (a rocky mound with a dark passage, boxwork and frostwork, and a chamber). The mouth is at x, z and faces the direction given by yaw. */
@@ -5388,6 +5394,578 @@ export const ROCKY_MOUNTAIN: ParkDefinition = {
   waterStations: [],
 };
 
+export const CAPITOL_REEF: ParkDefinition = {
+  id: 'capitol-reef',
+  npsParkCode: 'care',
+  layoutSeed: 63,
+  name: 'Capitol Reef',
+  subtitle: 'Fruita and the Waterpocket Fold',
+  parkServiceUnit: 'National Park',
+  state: 'Utah',
+  region: 'Colorado Plateau',
+  description: 'In south-central Utah, the pioneer orchards of Fruita lie along the Fremont River below the red cliffs of the Waterpocket Fold. Walk to Hickman Bridge, climb to the Rim Overlook, look into Sulphur Creek from Goosenecks and Sunset Point, and watch for mule deer in the orchards and desert bighorn sheep on the cliffs.',
+  elevationRange: { min: 1676, max: 2015 },
+  spawn: { x: -26.0, y: -58.8, z: -30.0, yaw: Math.PI / 2 }, // at the Hickman Bridge trailhead, facing east toward the cliffs
+  terrain: {
+    baseScale: 0.004,
+    heightScale: 0.6,
+    noiseX: 31,
+    noiseZ: -17,
+    // the Rim Overlook, on the mesa top above the valley, is the park's "summit"
+    mountain: {
+      x: 96.0,
+      z: 200.0,
+      height: 0.4,
+      radius: 20.0,
+      plateauRadius: 5.0,
+      name: 'Rim Overlook',
+    },
+    badlands: {
+      // the cliffs rise in the east (the mesa top); the valley with the river and the orchards lies in the west
+      facing: 'west',
+      wall: [
+        { x: -240, z: -58 }, { x: -120, z: -62 }, { x: 0, z: -60 }, { x: 120, z: -63 }, { x: 240, z: -60 },
+      ],
+      crestHeight: 1.0,
+      faceWidth: 6.0,
+      topWidth: 4.0,
+      backWidth: 66.0,
+      basinDrop: 58.0, // game scale (the real climb to the Rim Overlook is 1,110 ft / 338 m)
+      gaps: [],
+      ruggedness: 0.15,
+      terraceStep: 3.0,
+      bankSlope: 0.9,
+      bankReach: 14,
+      spawnPrairieY: 0.4, // the spawn is down in the valley; the mesa level is about 0
+      bare: false, // orchards, cottonwoods and desert scrub grow on the valley floor and benches
+      strata: {
+        // the red Wingate cliffs, cream Navajo sandstone and brown Moenkopi layers
+        colors: [0xb5532f, 0xc8693f, 0xe0b890, 0x7a4a3a, 0xd9a070, 0xa94a2c],
+        bandHeight: 3.4,
+        strength: 0.9,
+      },
+    },
+    groundLook: {
+      patchScale: 0.018,
+      strength: 0.8,
+      patches: [0xc79a6a, 0xb98a5e, 0xd2a878, 0x9a8a5a, 0x8a9a5a, 0xc4a076],
+      speckle: 0.25,
+      soil: { color: 0xbf8f64, amount: 0.35 },
+      mulch: 0.05,
+    },
+    colors: {
+      valley: 0x93a360,
+      meadow: 0x9aa862,
+      dryGrass: 0xc8b070,
+      steepSlope: 0xb85f3a,
+      summitRock: 0xd98a52,
+      riverbed: 0x9a8a6a,
+      riverbank: 0x8a9460,
+    },
+  },
+  water: {
+    hasRiver: true,
+    mode: 'river',
+    name: 'Fremont River',
+    noCrossing: true,
+    refZ: 0,
+    surfaceY: -58.5,
+    halfWidth: 4.5,
+    bankWidth: 6.0,
+    valleyWidth: 40.0,
+    gradient: 0.0006,
+    course: { baseX: -84.0, amp1: 7.0, freq1: 0.012, amp2: 2.5, freq2: 0.037 },
+    deepColor: 0x5a5a48,
+    shallowColor: 0x8a8a68,
+    skyReflectColor: 0xb4c4cc,
+  },
+  trail: {
+    name: 'Fruita Trails',
+    width: 1.9,
+    surface: { center: 0xcaa476, mid: 0xb48a5e, edge: 0x9a7a52 },
+    paths: [
+      {
+        // NPS: Hickman Bridge, 0.9 mi one way, 400 ft (122 m) gain, moderate; the trail goes under and around the natural bridge
+        id: 'hickman-bridge-trail',
+        name: 'Hickman Bridge Trail',
+        steps: 12,
+        nodes: [
+          { x: -14, z: -30, y: -58.8 },
+          { x: 4.5, z: -22, y: -55.8 },
+          { x: 4.5, z: -14, y: -53.8 },
+          { x: 1.5, z: -6, y: -51.9 },
+          { x: 6.5, z: 2, y: -49.9 },
+          { x: 6, z: 10, y: -47.9 },
+          { x: 10.5, z: 20, y: -45.9 },
+          { x: 12, z: 30, y: -44 },
+          { x: 10.5, z: 40, y: -42 },
+          { x: 10, z: 48, y: -42 },
+        ],
+      },
+      {
+        // NPS: Rim Overlook, 2.3 mi one way, 1,110 ft (338 m) gain, strenuous; it shares the trailhead with Hickman Bridge
+        id: 'rim-overlook-trail',
+        name: 'Rim Overlook Trail',
+        steps: 10,
+        nodes: [
+          { x: 10, z: 48, y: -42 },
+          { x: 17, z: 64, y: -37.4 },
+          { x: 25.5, z: 80, y: -32.9 },
+          { x: 28.5, z: 96, y: -28.3 },
+          { x: 30.5, z: 112, y: -23.8 },
+          { x: 35.5, z: 128, y: -19.2 },
+          { x: 36, z: 144, y: -14.7 },
+          { x: 35.5, z: 160, y: -10.1 },
+          { x: 42.5, z: 176, y: -5.6 },
+          { x: 51, z: 192, y: -1 },
+          { x: 66, z: 194, y: 0.2 },
+          { x: 80, z: 198, y: 0.4 },
+          { x: 92, z: 200, y: 0.4 },
+        ],
+      },
+      {
+        // NPS: Grand Wash, 2.2 mi (3.6 km) one way, 200 ft (61 m) gain, an easy walk through a deep canyon with narrows. A wash cuts through the reef.
+        id: 'grand-wash-trail',
+        name: 'Grand Wash Trail',
+        steps: 10,
+        width: 5.0,
+        surface: { center: 0xd8c49a, mid: 0xc8b088, edge: 0xb09870 },
+        nodes: [
+          { x: -14, z: -190, y: -58.6 },
+          { x: 10, z: -190, y: -57.6 },
+          { x: 40, z: -189, y: -55 },
+          { x: 70, z: -188, y: -51.5 },
+          { x: 100, z: -190, y: -47.5 },
+          { x: 130, z: -192, y: -44 },
+          { x: 160, z: -192, y: -41.5 },
+        ],
+      },
+      {
+        // NPS: Cassidy Arch via Grand Wash, 3.6 mi (5.8 km) one way, 870 ft (246 m) gain, natural arch, slickrock and canyon views; same trailhead as Grand Wash
+        id: 'cassidy-arch-trail',
+        name: 'Cassidy Arch Trail',
+        steps: 10,
+        nodes: [
+          { x: -12, z: -184, y: -58.6 },
+          { x: 2.5, z: -170, y: -55 },
+          { x: 7, z: -156, y: -51.4 },
+          { x: 12, z: -142, y: -47.9 },
+          { x: 12, z: -128, y: -44.3 },
+          { x: 12, z: -114, y: -40.7 },
+          { x: 15.5, z: -100, y: -37.1 },
+          { x: 19.5, z: -86, y: -33.6 },
+          { x: 21.5, z: -70, y: -30 },
+          { x: 22, z: -62, y: -30 },
+        ],
+      },
+      {
+        // NPS: Capitol Gorge, 1.0 mi (1.6 km) one way, 80 ft (24 m) gain, an easy walk to historic inscriptions
+        id: 'capitol-gorge-trail',
+        name: 'Capitol Gorge Trail',
+        steps: 10,
+        width: 5.0,
+        surface: { center: 0xd8c49a, mid: 0xc8b088, edge: 0xb09870 },
+        nodes: [
+          { x: -14, z: -258, y: -58.6 },
+          { x: 10, z: -258, y: -57.6 },
+          { x: 40, z: -257, y: -55 },
+          { x: 70, z: -256, y: -51.5 },
+          { x: 100, z: -258, y: -47.5 },
+          { x: 130, z: -259, y: -44 },
+        ],
+      },
+      {
+        // NPS: the Fremont petroglyph panels along Utah 24 are reached by wooden boardwalks
+        id: 'petroglyph-boardwalk',
+        name: 'Petroglyph Boardwalk',
+        boardwalk: true,
+        width: 1.8,
+        steps: 8,
+        nodes: [
+          { x: -26, z: -100 },
+          { x: -18, z: -100 },
+          { x: -12, z: -100 },
+        ],
+      },
+      {
+        // NPS: Goosenecks, 0.1 mi (0.2 km) one way, dramatic canyon views
+        id: 'goosenecks-trail',
+        name: 'Goosenecks Trail',
+        steps: 10,
+        nodes: [
+          { x: 92, z: 200, y: 0.4 },
+          { x: 84, z: 188, y: 0.4 },
+          { x: 76, z: 178, y: 0.4 },
+          { x: 69, z: 170, y: 0.4 },
+        ],
+      },
+      {
+        // NPS: Sunset Point, 0.4 mi (0.6 km) one way, a panorama that is good for sunset
+        id: 'sunset-point-trail',
+        name: 'Sunset Point Trail',
+        steps: 10,
+        nodes: [
+          { x: 92, z: 200, y: 0.4 },
+          { x: 84, z: 214, y: 0.4 },
+          { x: 76, z: 226, y: 0.4 },
+          { x: 69, z: 236, y: 0.4 },
+        ],
+      },
+    ],
+  },
+  overlook: {
+    name: 'Rim Overlook',
+    elevationLabel: 'Above Fruita',
+    deckRadius: 4.2,
+    hasBench: true,
+    hasTelescope: false,
+    signHeading: 'RIM OVERLOOK',
+    signSubheading: 'FRUITA AND THE WATERPOCKET FOLD',
+  },
+  vegetation: {
+    treeCount: 260,
+    shrubCount: 520,
+    speciesWeights: { broadleaf: 3.0, poplar: 2.0, conifer: 1.2, pine: 0.0, oak: 0.0, birch: 0.0, snag: 0.3 },
+    look: {
+      treeScale: 0.9,
+      glades: 0.8,
+      // historic orchards and cottonwoods along the Fremont River
+      groves: [
+        { x: -60, z: -20, radius: 16 },
+        { x: -62, z: 30, radius: 16 },
+        { x: -58, z: -86, radius: 14 },
+        { x: -60, z: 86, radius: 14 },
+        { x: -88, z: -40, radius: 16 },
+        { x: -88, z: 50, radius: 16 },
+      ],
+      palettes: {
+        broadleaf: [0x6f9a44, 0x7fae4a, 0x8cb856, 0x5f8a3c],
+        poplar: [0x7a9a44, 0x8aa84c, 0xb0b84a, 0x6f9040],
+        conifer: [0x5f7a58, 0x6c8466, 0x587258],
+      },
+      groundCover: {
+        clumps: 260,
+        flowerPatches: 60,
+        clumpPalette: [0x9a9a62, 0x8a9a5a, 0xa8a070, 0x7d8a52],
+        flowerPalette: [0xe8c83a, 0xd05a3a, 0xf0e0c0],
+      },
+      shrubPalette: [0x8a8a5a, 0x777a4c, 0x9a966a, 0x6b6e45],
+    },
+  },
+  atmosphere: {
+    fogColor: 0xf0dcc4,
+    fogDensity: 0.0020,
+    hemiSky: 0xdbe6f0,
+    hemiGround: 0xc09468,
+    sunColor: 0xfff0d0,
+    sunIntensity: 3.3,
+    skyHorizon: 0xf2e0c8,
+    skyMid: 0x8dbbe2,
+    skyZenith: 0x2f72c0,
+    skySun: 0xffe2b0,
+  },
+  landmarks: [
+    {
+      id: 'spawn',
+      name: 'Hickman Bridge Trailhead',
+      shortName: 'Trailhead',
+      description: 'The Hickman Bridge, Rim Overlook and Navajo Knobs trails all start from this trailhead near Fruita. Parking fills by 9 am, so hike early or late in the day.',
+      x: -26, y: -58.8, z: -30, yaw: Math.PI / 2,
+    },
+    {
+      id: 'gifford-house',
+      name: 'Gifford House',
+      shortName: 'Gifford House',
+      description: 'The historic Gifford House in Fruita is a store and museum, open spring through fall, with exhibits on pioneer history. It is known for its pies. In the game the house is a simple model.',
+      x: -30, y: -59, z: -148, yaw: Math.PI * 1.5,
+    },
+    {
+      id: 'petroglyphs',
+      name: 'Fremont Petroglyph Panel',
+      shortName: 'Petroglyphs',
+      description: 'The Fremont people lived in Utah for about 1,000 years. Their petroglyphs along Utah 24 show human-like figures and bighorn sheep. The panels are protected: look, but do not touch, and do not climb the slope.',
+      x: -14, y: -58.5, z: -100, yaw: Math.PI / 2,
+    },
+    {
+      id: 'hickman-bridge',
+      name: 'Hickman Bridge',
+      shortName: 'Hickman Bridge',
+      description: 'The real Hickman Bridge is a 133-foot natural bridge. The trail goes under and around it. In the game it is built as a rock frame (the ground cannot hold holes).',
+      x: 10.5, y: -42, z: 40, yaw: 0,
+    },
+    {
+      id: 'cassidy-arch',
+      name: 'Cassidy Arch',
+      shortName: 'Cassidy Arch',
+      description: 'Cassidy Arch is a natural arch on the cliff above Grand Wash, reached by a strenuous slickrock trail with canyon views. In the game it is a rock frame.',
+      x: 21.5, y: -30, z: -70, yaw: 0,
+    },
+    {
+      id: 'grand-wash',
+      name: 'Grand Wash',
+      shortName: 'Grand Wash',
+      description: 'Grand Wash is an easy walk through a deep canyon with narrows. Flash floods are a hazard in washes, and it is dangerous to park in them.',
+      x: 60, y: -52.5, z: -188, yaw: Math.PI / 2,
+    },
+    {
+      id: 'capitol-gorge',
+      name: 'Capitol Gorge and the Pioneer Register',
+      shortName: 'Capitol Gorge',
+      description: 'An easy walk up Capitol Gorge leads to the Pioneer Register, where pioneers and explorers carved their names in the canyon wall between 1871 and 1946. Defacing it is illegal.',
+      x: 70, y: -52, z: -254, yaw: 0,
+    },
+    {
+      id: 'goosenecks',
+      name: 'Goosenecks Overlook',
+      shortName: 'Goosenecks',
+      description: 'A short walk to dramatic canyon views of the deep S-bends of Sulphur Creek. Stay behind the railing.',
+      x: 69, y: 0.4, z: 170, yaw: Math.PI * 1.5,
+    },
+    {
+      id: 'summit',
+      name: 'Rim Overlook',
+      shortName: 'Rim Overlook',
+      description: 'Panoramas of Fruita and the Waterpocket Fold from atop a dramatic cliff. The real trail climbs 1,110 feet (338 m) in 2.3 miles; here it is much shorter.',
+      x: 96, y: 0.4, z: 200, yaw: Math.PI * 1.5,
+    },
+  ],
+  wildlife: {
+    // NPS: mule deer are the most prevalent large mammal and are accustomed to people in the historic district (keep 30 ft / 9 m away);
+    // desert bighorn sheep were reintroduced in the mid-1990s and are commonly seen on the cliffs; a mountain lion has been reported in Fruita.
+    spawns: [
+      { species: 'mule-deer', isBuck: true, isFawn: false, x: -58.0, z: -8.0, roamRadius: 6.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: -64.0, z: 6.0, roamRadius: 6.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: -56.0, z: 38.0, roamRadius: 6.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: -68.0, z: 54.0, roamRadius: 6.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: true, x: -62.0, z: -48.0, roamRadius: 6.0 },
+      { species: 'mule-deer', isBuck: false, isFawn: false, x: -74.0, z: -30.0, roamRadius: 6.0 },
+      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: 24.0, z: -34.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 30.0, z: -42.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 20.0, z: -44.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 28.0, z: -26.0, roamRadius: 5.0 },
+      { species: 'bighorn-sheep', isBuck: true, isFawn: false, x: 36.0, z: -156.0, roamRadius: 4.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 36.0, z: -148.0, roamRadius: 4.0 },
+      { species: 'bighorn-sheep', isBuck: false, isFawn: false, x: 20.0, z: -226.0, roamRadius: 4.0 },
+      { species: 'coyote', isBuck: false, isFawn: false, x: -130.0, z: 36.0, roamRadius: 8.0 },
+      { species: 'mountain-lion', isBuck: false, isFawn: false, x: 170.0, z: -60.0, roamRadius: 4.0 },
+    ],
+    // NPS Capitol Reef: keep at least 30 ft (9 m) from deer; no Capitol Reef figure was found for other animals
+    safeDistanceOverrides: { 'mule-deer': 9.15, 'bighorn-sheep': 23.0, coyote: 23.0, 'mountain-lion': 46.0 },
+  },
+  features: {
+    roads: [
+      {
+        // State Route 24 through Fruita
+        id: 'sr-24',
+        name: 'Scenic Byway 24',
+        kind: 'road',
+        width: 7.0,
+        nodes: [
+          { x: -40, z: -270 },
+          { x: -44, z: -120 },
+          { x: -42, z: 0 },
+          { x: -46, z: 120 },
+          { x: -40, z: 270 },
+        ],
+      },
+      {
+        id: 'hickman-lot',
+        name: 'Hickman Bridge Trailhead Parking',
+        kind: 'lot',
+        levelFrom: 'sr-24',
+        width: 11.0,
+        nodes: [{ x: -34, z: -30 }, { x: -18, z: -30 }],
+      },
+      { id: 'petroglyph-pullout', name: 'Petroglyph Panel Pullout', kind: 'lot', levelFrom: 'sr-24', width: 8.0, nodes: [{ x: -38, z: -100 }, { x: -28, z: -100 }] },
+      { id: 'gifford-lot', name: 'Gifford House Parking', kind: 'lot', levelFrom: 'sr-24', width: 9.0, nodes: [{ x: -36, z: -134 }, { x: -24, z: -134 }] },
+      { id: 'grand-wash-lot', name: 'Grand Wash and Cassidy Arch Trailhead Parking', kind: 'lot', levelFrom: 'sr-24', width: 11.0, nodes: [{ x: -36, z: -190 }, { x: -20, z: -190 }] },
+      { id: 'capitol-gorge-lot', name: 'Capitol Gorge Parking', kind: 'lot', levelFrom: 'sr-24', width: 11.0, nodes: [{ x: -36, z: -258 }, { x: -20, z: -258 }] },
+    ],
+    cars: [
+      { x: -28.0, z: -32.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+      { x: -22.0, z: -27.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: -30.0, z: -136.0, yaw: Math.PI / 2, color: 0x3a6b4a },
+      { x: -32.0, z: -192.0, yaw: Math.PI / 2, color: 0x9a2a2a },
+      { x: -26.0, z: -188.0, yaw: -Math.PI / 2, color: 0xd9d6cc },
+      { x: -30.0, z: -260.0, yaw: Math.PI / 2, color: 0x2f4a6b },
+    ],
+    // NPS: the Hickman Bridge trail goes under and around the natural bridge. The ground cannot have holes, so it is a rock frame.
+    rockWindows: [
+      { x: 10.5, z: 40, yaw: 0, opening: 7, height: 5.2, scale: 1.7 },
+      // NPS: Cassidy Arch is a natural arch reached by a strenuous trail; here a rock frame on a bench of the cliff
+      { x: 21.5, z: -70, yaw: 0, opening: 7, height: 5.0, scale: 1.7 },
+    ],
+    // NPS: Fremont petroglyph panels along Utah 24 (a pecked slab with human-like figures and bighorn sheep), and the Pioneer Register in Capitol Gorge
+    rockPanels: [
+      { x: -7.5, z: -100, yaw: -Math.PI / 2, width: 7, height: 5, kind: 'petroglyphs' },
+      { x: 70, z: -266, yaw: 0, width: 7, height: 4.6, kind: 'register' },
+    ],
+    // NPS: the historic Gifford House store and museum in Fruita
+    houses: [
+      { x: -22, z: -152, yaw: -Math.PI / 2, width: 7, depth: 5.5 },
+    ],
+    // NPS: many Capitol Reef trails are marked with rock cairns
+    cairns: { pathIds: ['rim-overlook-trail'], every: 14, minHeight: -50 },
+    // NPS: Goosenecks and Sunset Point end at the edge of canyon views; railings are a game choice
+    railings: [
+      { path: 'goosenecks-trail', length: 8, endCap: true },
+      { path: 'sunset-point-trail', length: 8, endCap: true },
+    ],
+    distantRidges: true,
+  },
+  rules: {
+    zones: [
+      { id: 'locked-orchard-1', kind: 'closed', name: 'Locked Orchard', x: -68, z: -88, radius: 9, reason: 'Some orchards are locked to prevent premature harvest of ripening fruit and damage by wildlife. Only pick ripe fruit in orchards with "U-Pick Fruit" signs.' },
+      { id: 'locked-orchard-2', kind: 'closed', name: 'Locked Orchard', x: -60, z: -112, radius: 6, reason: 'Some orchards are locked to protect sensitive natural and cultural resources. Only pick ripe fruit in orchards with "U-Pick Fruit" signs.' },
+    ],
+    litter: STANDARD_LITTER.map(l => ({
+      ...l,
+      trail: ({ 'can-1': 'hickman-bridge-trail', 'bottle-1': 'rim-overlook-trail', 'wrapper-1': 'hickman-bridge-trail', 'peel-1': 'rim-overlook-trail', 'bag-1': 'goosenecks-trail' } as Record<string, string>)[l.id] ?? 'hickman-bridge-trail',
+    })),
+  },
+  about: {
+    designNote:
+      'A game-scale map of the Fruita area of Capitol Reef, with real features packed close together. In reality the Hickman Bridge and Rim Overlook trails start from the same trailhead (NPS), but Goosenecks Overlook and Sunset Point are reached by a separate spur road about three miles west of the visitor center, and the orchards, the river and the cliffs lie along State Route 24. Here they share one valley and one mesa; the Petroglyph Panel, the Gifford House, Grand Wash, Cassidy Arch and Capitol Gorge are also packed in (in reality Grand Wash and Capitol Gorge are south of Fruita along the Scenic Drive, and the petroglyphs are about 1.1 miles east of the visitor center); all positions, the compass layout and the trail lengths are game placements. The NPS numbers are in the journal: Hickman Bridge 0.9 mi one way, 400 ft gain, a 133-foot natural bridge; Rim Overlook 2.3 mi one way, 1,110 ft gain; Goosenecks 0.1 mi; Sunset Point 0.4 mi. The cliff climb is about 58 m in the game (real: 338 m for the Rim Overlook). Hickman Bridge is built as a rock frame because the ground cannot have holes. The orchards are shown as groves of fruit-tree-coloured trees; individual fruit and picking, the schoolhouse, the blacksmith shop and the visitor center are not modelled. Grand Wash and Capitol Gorge are shown as sunken sandy trails with steep walls (the narrows and the real canyon walls are not copied); the petroglyph panel and the Pioneer Register are stylised slabs, not copies of the real art; the Gifford House is a simple model. Mule deer are the most prevalent large mammal and are accustomed to people in the Fruita historic district; desert bighorn sheep were reintroduced in the mid-1990s; a mountain lion has been reported in Fruita; their numbers and spots here are game placements. Not modelled: ringtails, foxes, rock squirrels and other small mammals, birds, the Frying Pan, Cohab Canyon and Navajo Knobs trails, and the Golden Throne. The elevation range is a game value: the bottom is the visitor center height (5,500 ft / 1,676 m) and the top adds the NPS climb to the Rim Overlook (1,110 ft). There is no drinking water on the map because no NPS water source was verified for these stops.',
+    wildlifeGuidance: {
+      text: 'Capitol Reef asks you to keep at least 30 feet (9 m) from deer, never to feed or touch animals, and to keep pets leashed. The deer in the historic district are less wary than wild deer elsewhere, but they are not tame and will attack if provoked.',
+      caveat: 'The game uses 9 m for mule deer (the Capitol Reef figure) and 23 m for bighorn sheep and coyotes, the general NPS distance of 75 ft, because no Capitol Reef-specific number was found for them. The mountain lion uses 46 m. Always check the park\'s current page and signs.',
+      sourceUrl: 'https://www.nps.gov/care/planyourvisit/upload/Mammals-of-CARE-PredatorPrey-color-01-23-24.pdf',
+      sourceLabel: 'nps.gov: Mammals of Capitol Reef',
+    },
+    facts: [
+      {
+        id: 'fruita',
+        title: 'The pioneer town of Fruita',
+        text: 'The orchards along the Fremont River and Sulphur Creek are remnants of the pioneer community of Fruita, settled in 1880. Fruita has been called the "Eden of Wayne County".',
+        sourceUrl: 'https://www.nps.gov/care/learn/historyculture/orchards.htm',
+        sourceLabel: 'nps.gov: Fruita Orchards',
+      },
+      {
+        id: 'orchards',
+        title: 'One of the largest orchards in the park system',
+        text: 'Capitol Reef maintains one of the largest groups of historic orchards in the National Park Service, with about 2,000 trees including apple, peach, pear, apricot, cherry and plum. Flowering is typically March to May and harvest June through October.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/upload/Fruita-Area-Map-and-Guide.pdf',
+        sourceLabel: 'nps.gov: Fruita Area Map and Guide',
+      },
+      {
+        id: 'u-pick',
+        title: 'Picking fruit',
+        text: 'Only harvest ripe fruit from orchards with "U-Pick Fruit" signs. Fruit is free to sample while in an open orchard, and a small fee is charged for fruit taken out. The money supports the preservation of the orchards. Never climb the historic trees.',
+        sourceUrl: 'https://www.nps.gov/care/learn/historyculture/orchards.htm',
+        sourceLabel: 'nps.gov: Fruita Orchards',
+      },
+      {
+        id: 'hickman',
+        title: 'Hickman Bridge',
+        text: 'The Hickman Bridge Trail goes under and around a 133-foot natural bridge. It is a moderate hike of 0.9 mile (1.4 km) one way with a 400 ft (122 m) elevation change.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/trailguide.htm',
+        sourceLabel: 'nps.gov: Trail Guide',
+      },
+      {
+        id: 'rim-overlook',
+        title: 'Rim Overlook',
+        text: 'The strenuous Rim Overlook Trail is 2.3 miles (3.6 km) one way with a 1,110 ft (338 m) climb. It gives panoramas of Fruita and the Waterpocket Fold from atop a dramatic cliff. It starts at the same trailhead as Hickman Bridge and Navajo Knobs.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/trailguide.htm',
+        sourceLabel: 'nps.gov: Trail Guide',
+      },
+      {
+        id: 'overlooks',
+        title: 'Goosenecks and Sunset Point',
+        text: 'Goosenecks is an easy 0.1 mile (0.2 km) walk with dramatic canyon views. Sunset Point is 0.4 mile (0.6 km), with less than 50 feet of elevation change, a panorama that is good for sunset.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/trailguide.htm',
+        sourceLabel: 'nps.gov: Trail Guide',
+      },
+      {
+        id: 'cairns',
+        title: 'Rock cairns',
+        text: 'Many Capitol Reef trails are marked with rock cairns. Look for rock piles or stacks. Please do not build new cairns.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/trailguide.htm',
+        sourceLabel: 'nps.gov: Trail Guide',
+      },
+      {
+        id: 'high-start',
+        title: 'Start high, go early',
+        text: 'The starting elevation of many trails is around 5,000 feet (1,524 m), which makes even easy trails challenging for visitors from lower elevations. Parking at many trailheads fills by 9 am and stays crowded until after 4 pm, so hike early or late. Always carry water.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/trailguide.htm',
+        sourceLabel: 'nps.gov: Trail Guide',
+      },
+      {
+        id: 'hazards',
+        title: 'Natural hazards',
+        text: 'Use caution: natural hazards in Capitol Reef include rockfall, lightning, flash floods and steep drop-offs.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/upload/Fruita-Area-Map-and-Guide-508.pdf',
+        sourceLabel: 'nps.gov: Fruita Area Map and Guide',
+      },
+      {
+        id: 'petroglyphs',
+        title: 'Fremont petroglyphs',
+        text: 'The Fremont Culture lived in what is now Utah for about one thousand years, from 300 to 1300 CE. Their petroglyphs, images carved or pecked into stone, can be seen along Utah 24 from two wooden boardwalks. The shorter boardwalk shows large human-like figures, bighorn sheep, other animals and geometric designs. All archeological sites are protected.',
+        sourceUrl: 'https://www.nps.gov/care/learn/historyculture/fremont-culture-petroglyphs.htm',
+        sourceLabel: 'nps.gov: Fremont Culture Petroglyphs',
+      },
+      {
+        id: 'gifford-house',
+        title: 'The Gifford House',
+        text: 'The historic Gifford House store and museum is open spring through fall, with exhibits on pioneer history. The sales outlet is known for its pies. The park maintains the orchards, the schoolhouse, the blacksmith shop and the Gifford Homestead as reminders of pioneer times.',
+        sourceUrl: 'https://www.nps.gov/care/learn/historyculture/places.htm',
+        sourceLabel: 'nps.gov: Historic Fruita',
+      },
+      {
+        id: 'pioneer-register',
+        title: 'The Pioneer Register',
+        text: 'Pioneers and explorers carved their names into the canyon wall of Capitol Gorge between 1871 and 1946. The Pioneer Register was listed on the National Register of Historic Places in 1999, and defacing it is illegal.',
+        sourceUrl: 'https://www.nps.gov/places/pioneer-register.htm',
+        sourceLabel: 'nps.gov: Pioneer Register',
+      },
+      {
+        id: 'capitol-gorge',
+        title: 'Capitol Gorge Trail',
+        text: 'The Capitol Gorge Trail is an easy 1.0 mile (1.6 km) walk one way with an 80 ft (24 m) elevation change. It leads to historic inscriptions, and a side route climbs to views of Capitol Gorge and Golden Throne (7,042 ft / 2,146 m).',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/trailguide.htm',
+        sourceLabel: 'nps.gov: Trail Guide',
+      },
+      {
+        id: 'grand-wash',
+        title: 'Grand Wash',
+        text: 'The Grand Wash Trail is an easy 2.2 mile (3.6 km) walk one way with a 200 ft (61 m) elevation change through a deep canyon with narrows. Flash floods are a natural hazard in Capitol Reef, and it is dangerous to park in washes.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/trailguide.htm',
+        sourceLabel: 'nps.gov: Trail Guide',
+      },
+      {
+        id: 'cassidy-arch',
+        title: 'Cassidy Arch',
+        text: 'The trail to Cassidy Arch via Grand Wash is 3.6 miles (5.8 km) one way with an 870 ft (246 m) elevation change, past a natural arch, across slickrock, with canyon views. The Frying Pan Trail connects it with Cohab Canyon.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/upload/Fruita-Area-Map-and-Guide-2024-508a.pdf',
+        sourceLabel: 'nps.gov: Fruita Area Map and Guide',
+      },
+      {
+        id: 'mule-deer',
+        title: 'The orchard deer',
+        text: 'Mule deer are the most prevalent large mammal in Capitol Reef, and the concentrated deer population in the historic district has become accustomed to people. They are not tame and will attack if provoked. Keep at least 30 feet (9 m) away and never feed them.',
+        sourceUrl: 'https://www.nps.gov/care/planyourvisit/upload/Mammals-of-CARE-PredatorPrey-color-01-23-24.pdf',
+        sourceLabel: 'nps.gov: Mammals of Capitol Reef',
+      },
+      {
+        id: 'bighorn',
+        title: 'Desert bighorn sheep',
+        text: 'Desert bighorn sheep are native to Utah. In the mid-1990s, 40 sheep from Canyonlands National Park were reintroduced to Capitol Reef, and they are now commonly seen in areas south and east of Fruita. They are most active in the early morning and late evening.',
+        sourceUrl: 'https://www.nps.gov/care/learn/nature/mammals.htm',
+        sourceLabel: 'nps.gov: Capitol Reef mammals',
+      },
+      {
+        id: 'mountain-lion',
+        title: 'A shy predator',
+        text: 'Mountain lions are active year-round, mostly at dawn and dusk, and have been reported in Capitol Reef including Fruita, where they prey on mule deer. Their diet is mostly large mammals such as deer and elk.',
+        sourceUrl: 'https://www.nps.gov/care/learn/nature/mammals.htm',
+        sourceLabel: 'nps.gov: Capitol Reef mammals',
+      },
+    ],
+    checkedOn: '2026-11-22',
+  },
+  // No drinking water source was verified on the NPS pages used for these stops
+  waterStations: [],
+};
+
 /** Real parks first. Practice (fictional) parks come last. */
 export const AVAILABLE_PARKS: ParkDefinition[] = [
   GREAT_SMOKY_MOUNTAINS,
@@ -5400,6 +5978,7 @@ export const AVAILABLE_PARKS: ParkDefinition[] = [
   ARCHES,
   CANYONLANDS,
   ROCKY_MOUNTAIN,
+  CAPITOL_REEF,
   PROTOTYPE_PARK,
 ];
 
